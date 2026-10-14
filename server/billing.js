@@ -192,6 +192,9 @@ export function createBilling({ db, stripe, config, log = console }) {
         metadata,
         subscription_data: { metadata },
         locale: 'es',
+        custom_text: {
+          submit: { message: 'El acceso a Aliento empieza de inmediato. La suscripción se renueva automáticamente al mismo precio hasta que la canceles desde «Mi suscripción».' },
+        },
         success_url: `${config.appUrl}/bienvenida?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${config.appUrl}/planes?pago=cancelado`,
       });

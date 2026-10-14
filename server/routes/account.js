@@ -20,12 +20,13 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
 
   r.post('/auth/register', wrap(async (req, res) => {
     if (!authLimiter(`r:${req.ip}`)) throw new HttpError(429, 'Demasiados intentos. Espera unos minutos.');
-    const { name, email, acceptTerms, timezone } = req.body ?? {};
+    const { name, email, acceptTerms, healthConsent, timezone } = req.body ?? {};
     const cleanName = String(name ?? '').trim();
     if (!cleanName || cleanName.length > 80) throw new HttpError(422, 'Escribe tu nombre.', 'INVALID', { field: 'name' });
     if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
     password(req.body?.password);
     if (acceptTerms !== true) throw new HttpError(422, 'Debes aceptar los términos y la política de privacidad.', 'INVALID', { field: 'acceptTerms' });
+    if (healthConsent !== true) throw new HttpError(422, 'Necesitamos tu consentimiento para tratar los datos sobre tu consumo de tabaco.', 'INVALID', { field: 'healthConsent' });
     const session = await auth.register({
       name: cleanName, email: email.trim().toLowerCase(), password: req.body.password,
       timezone: isValidTimezone(timezone) ? timezone : 'UTC',

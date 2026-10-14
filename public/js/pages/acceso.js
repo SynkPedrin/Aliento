@@ -33,7 +33,7 @@ form.addEventListener('submit', async (e) => {
   errorEl.textContent = '';
   form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
   const body = mode === 'register'
-    ? { name: form.name.value, email: form.email.value, password: form.password.value, acceptTerms: form.acceptTerms.checked, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+    ? { name: form.name.value, email: form.email.value, password: form.password.value, acceptTerms: form.acceptTerms.checked, healthConsent: form.healthConsent.checked, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
     : { email: form.email.value, password: form.password.value };
   setBusy(submit, true);
   try {

@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Borrador redactado sin asesoría jurídica. Debe revisarlo un abogado antes de publicarse. -->
 <html lang="es">
 <head>
 <meta charset="utf-8">
@@ -11,42 +12,176 @@
 <title>Política de privacidad · Aliento</title>
 </head>
 <body>
-<!-- PLANTILLA: revisar con asesoría legal y completar los datos entre corchetes antes de publicar. -->
 <div data-header></div>
 <main class="legal-page">
   <div class="container narrow">
     <h1 class="title-lg">Política de privacidad</h1>
-    <p class="muted small">Última actualización: [FECHA]</p>
+    <p class="muted small">Última actualización: <span data-legal="updatedAt"></span></p>
 
-    <h2>Responsable</h2>
-    <p>[RAZÓN SOCIAL], [DIRECCIÓN], [NIF]. Contacto de privacidad: [CORREO].</p>
-
-    <h2>Qué datos tratamos</h2>
+    <h2>Resumen</h2>
+    <p>Este resumen te ayuda a entender lo esencial, pero no sustituye el texto completo de la política.</p>
     <ul>
-      <li>Respuestas del cuestionario (consumo, hábitos, gatillos, motivaciones y rango de edad).</li>
-      <li>Datos de cuenta: nombre, correo electrónico y contraseña cifrada.</li>
-      <li>Datos de uso del programa: registros diarios, antojos, metas y preferencias de recordatorio.</li>
-      <li>Datos de suscripción. Los datos de pago los trata directamente Stripe; Aliento no almacena los datos de tu tarjeta.</li>
+      <li>Usamos tus datos solo para prestarte el servicio de Aliento, protegerlo y cumplir la ley.</li>
+      <li>Tus respuestas sobre consumo de tabaco y tus registros pueden ser <strong>datos relacionados con la salud</strong>. Los tratamos con tu <strong>consentimiento explícito</strong>, que puedes retirar.</li>
+      <li><strong>No vendemos tus datos</strong>, no hacemos publicidad personalizada y no enviamos datos sensibles a herramientas de analítica.</li>
+      <li>Solo usamos <strong>cookies estrictamente necesarias</strong>. No hay cookies publicitarias ni de analítica.</li>
+      <li>Los datos de tu tarjeta los trata Stripe; nosotros no los almacenamos.</li>
+      <li>Puedes <strong>descargar tus datos</strong> y <strong>eliminar tu cuenta</strong> desde «Mi perfil», y ejercer el resto de tus derechos escribiéndonos.</li>
+      <li>Aliento es solo para mayores de 18 años.</li>
     </ul>
 
-    <h2>Para qué los usamos</h2>
-    <p>Para calcular tus resultados, crear y adaptar tu plan personalizado, prestarte el servicio contratado y gestionar tu suscripción. [BASES JURÍDICAS DEL TRATAMIENTO].</p>
-    <p>Las respuestas sobre consumo de tabaco pueden considerarse datos relativos a la salud; solo las usamos para prestarte el servicio.</p>
+    <h2>1. Quién es el responsable de tus datos</h2>
+    <p>El responsable del tratamiento de tus datos personales es <span data-legal="name"></span>, sociedad constituida en <span data-legal="country"></span>, con CNPJ <span data-legal="taxId"></span> y domicilio en <span data-legal="address"></span> (en adelante, «Aliento» o «nosotros»).</p>
+    <p>Para cualquier asunto relacionado con tus datos, incluido el contacto con nuestro encargado de protección de datos, escríbenos a <span data-legal="email"></span>.</p>
+    <p>Esta política se aplica al sitio web y a la aplicación web de Aliento. Complementa los <a href="/terminos">Términos de servicio</a>.</p>
 
-    <h2>Con quién los compartimos</h2>
-    <p>Con Stripe, como proveedor de pagos, y con [PROVEEDOR DE ALOJAMIENTO]. [TRANSFERENCIAS INTERNACIONALES, SI LAS HAY].</p>
+    <h2>2. Qué datos tratamos</h2>
+    <h3>2.1. Datos de tu cuenta</h3>
+    <ul>
+      <li>Nombre y correo electrónico.</li>
+      <li>Contraseña: la gestiona nuestro proveedor de autenticación (Supabase Auth) y se guarda de forma cifrada mediante una función hash; nadie en Aliento puede verla.</li>
+    </ul>
+    <h3>2.2. Respuestas del cuestionario</h3>
+    <p>Consumo de tabaco, cigarrillos electrónicos o vapeadores, hábitos, situaciones que te provocan ganas de fumar (gatillos), motivaciones y rango de edad. Puedes responder al cuestionario antes de crear una cuenta; en ese caso, tus respuestas se vinculan a un identificador anónimo guardado en una cookie de tu navegador.</p>
+    <h3>2.3. Datos de uso del programa</h3>
+    <ul>
+      <li>Registros de cigarrillos y de antojos.</li>
+      <li>Entradas del diario de estado de ánimo y las notas que escribas.</li>
+      <li>Metas y objetivos.</li>
+      <li>Sesiones de ejercicios de respiración.</li>
+      <li>Respuestas a las lecciones, incluidas las reflexiones en texto libre.</li>
+      <li>Logros y progreso en la jornada educativa.</li>
+    </ul>
+    <p>Te recomendamos no incluir en los campos de texto libre información sensible que no sea necesaria ni datos de otras personas.</p>
+    <h3>2.4. Notificaciones</h3>
+    <p>Tus preferencias de recordatorio y, si activas las notificaciones, la suscripción push de tu navegador (una dirección técnica del servicio de notificaciones y claves de cifrado) junto con el agente de usuario (tipo de navegador y dispositivo) para identificar tus dispositivos.</p>
+    <h3>2.5. Datos de suscripción y facturación</h3>
+    <p>Plan contratado, estado de la suscripción, fechas de cobro y renovación, e identificador de cliente en Stripe. Los datos de tu tarjeta los introduces directamente en Stripe: Aliento no los recibe ni los almacena.</p>
+    <h3>2.6. Datos técnicos</h3>
+    <ul>
+      <li>Cookies estrictamente necesarias (ver apartado 8).</li>
+      <li>Dirección IP, usada para la seguridad del servicio y para limitar intentos abusivos (por ejemplo, intentos repetidos de inicio de sesión).</li>
+      <li>Registros técnicos y de seguridad, y registros de auditoría de las acciones administrativas.</li>
+    </ul>
 
-    <h2>Cuánto tiempo los conservamos</h2>
-    <p>[PLAZOS DE CONSERVACIÓN].</p>
+    <h2>3. Datos relacionados con la salud</h2>
+    <p>Tu consumo de tabaco o nicotina, tus antojos y tu estado de ánimo pueden considerarse <strong>datos personales sensibles relativos a la salud</strong> según la Ley General de Protección de Datos de Brasil (LGPD) y el Reglamento General de Protección de Datos de la Unión Europea (RGPD), entre otras normas.</p>
+    <p>Tratamos estos datos únicamente con tu <strong>consentimiento explícito</strong> (art. 11, I de la LGPD y art. 9.2.a del RGPD), que nos das de forma específica y destacada al completar el cuestionario y al crear tu cuenta, y solo para las finalidades indicadas en esta política: calcular tus resultados y prestarte el programa.</p>
+    <p>Puedes retirar tu consentimiento en cualquier momento eliminando tu cuenta desde «Mi perfil» o escribiéndonos. La retirada no afecta a la licitud del tratamiento anterior, pero sin estos datos no podemos prestarte el servicio.</p>
 
-    <h2>Tus derechos</h2>
-    <p>Puedes descargar tus datos en cualquier momento desde «Mi cuenta». También puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo a [CORREO]. [AUTORIDAD DE CONTROL COMPETENTE].</p>
+    <h2>4. Para qué usamos tus datos y con qué base legal</h2>
+    <table>
+      <thead>
+        <tr><th>Finalidad</th><th>Datos</th><th>Base legal</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Crear y gestionar tu cuenta y prestarte el servicio contratado (plan, jornada, registros, gráficos, logros, apoyo guiado)</td><td>Cuenta, uso del programa</td><td>Ejecución del contrato (art. 7, V LGPD; art. 6.1.b RGPD)</td></tr>
+        <tr><td>Calcular tus resultados y personalizar tu plan usando datos relacionados con la salud</td><td>Cuestionario, uso del programa</td><td>Consentimiento explícito (art. 11, I LGPD; art. 9.2.a RGPD)</td></tr>
+        <tr><td>Gestionar pagos, renovaciones, facturación y reembolsos</td><td>Suscripción y facturación</td><td>Ejecución del contrato y cumplimiento de obligaciones legales, como las fiscales (art. 7, II y V LGPD; art. 6.1.b y c RGPD)</td></tr>
+        <tr><td>Enviarte recordatorios por notificación push</td><td>Notificaciones</td><td>Consentimiento, que das al activarlos y puedes retirar cuando quieras (art. 7, I LGPD; art. 6.1.a RGPD)</td></tr>
+        <tr><td>Proteger el servicio, prevenir fraudes y abusos y mantener registros de seguridad</td><td>Datos técnicos</td><td>Interés legítimo (art. 7, IX LGPD; art. 6.1.f RGPD)</td></tr>
+        <tr><td>Enviarte comunicaciones necesarias sobre el servicio (por ejemplo, cambios de precio o de estas políticas, recuperación de contraseña)</td><td>Correo electrónico</td><td>Ejecución del contrato y obligaciones legales</td></tr>
+        <tr><td>Atender tus solicitudes, reclamaciones y el ejercicio de tus derechos, y defendernos ante reclamaciones</td><td>Los necesarios en cada caso</td><td>Obligación legal y ejercicio regular de derechos (art. 7, II y VI LGPD; art. 6.1.c y f RGPD)</td></tr>
+      </tbody>
+    </table>
+    <p>Cuando la base legal es el interés legítimo, hemos valorado que no prevalecen sobre él tus derechos y libertades. Puedes oponerte a ese tratamiento (ver apartado 10).</p>
 
-    <h2>Cookies</h2>
-    <p>Usamos únicamente cookies técnicas necesarias: una para mantener tu sesión y otra para guardar tu progreso en el cuestionario.</p>
+    <h2>5. Lo que no hacemos</h2>
+    <ul>
+      <li>No vendemos ni alquilamos tus datos personales.</li>
+      <li>No usamos tus datos para publicidad ni creamos perfiles con fines publicitarios.</li>
+      <li>No enviamos tus datos de salud ni tus registros a herramientas de analítica o a redes publicitarias.</li>
+      <li>No tomamos decisiones con efectos jurídicos o significativos sobre ti basadas únicamente en tratamientos automatizados. La personalización del plan se basa en reglas predefinidas a partir de tus respuestas y no tiene efectos de ese tipo.</li>
+      <li>El apoyo guiado usa respuestas predefinidas; no enviamos tus mensajes a servicios de inteligencia artificial.</li>
+    </ul>
+
+    <h2>6. Con quién compartimos tus datos</h2>
+    <p>Solo compartimos tus datos con proveedores que nos ayudan a prestar el servicio (encargados u operadores del tratamiento), que actúan siguiendo nuestras instrucciones y con obligaciones contractuales de confidencialidad y seguridad:</p>
+    <ul>
+      <li><strong>Supabase</strong>: alojamiento de la base de datos y autenticación de usuarios.</li>
+      <li><strong>Vercel</strong>: alojamiento y ejecución de la aplicación.</li>
+      <li><strong>Stripe</strong>: procesamiento de pagos y gestión de suscripciones. Para algunos fines (por ejemplo, prevención de fraude y obligaciones financieras), Stripe puede actuar como responsable independiente según su propia política de privacidad.</li>
+      <li><strong>Servicios de notificaciones push de los navegadores</strong> (Google, Apple, Mozilla, Microsoft): solo si activas los recordatorios, para entregar las notificaciones a tu dispositivo. El contenido de las notificaciones se envía cifrado.</li>
+    </ul>
+    <p>También podremos comunicar datos a autoridades públicas o tribunales cuando la ley nos obligue, y a un eventual comprador o sucesor del negocio en caso de reorganización o venta, que deberá respetar esta política. Te avisaremos antes en este último caso.</p>
+    <p>Si lo solicitas, te informaremos de las entidades concretas con las que hemos compartido tus datos.</p>
+
+    <h2>7. Transferencias internacionales</h2>
+    <p>Nuestros proveedores pueden alojar o tratar tus datos en servidores ubicados fuera de tu país, por ejemplo en los Estados Unidos o en la Unión Europea. Cuando esto ocurre, lo hacemos con garantías adecuadas según la ley aplicable, como las cláusulas contractuales tipo aprobadas por la Comisión Europea o por la Autoridad Nacional de Protección de Datos de Brasil (ANPD), los acuerdos de tratamiento de datos de cada proveedor y, cuando corresponda, decisiones de adecuación o marcos de certificación reconocidos.</p>
+    <p>Puedes pedirnos información sobre estas garantías escribiéndonos.</p>
+
+    <h2>8. Cookies y almacenamiento local</h2>
+    <p>Usamos únicamente cookies y almacenamiento <strong>estrictamente necesarios</strong> para que el servicio funcione. Por eso no te pedimos consentimiento para ellas. No usamos cookies publicitarias, de analítica ni de terceros con fines de seguimiento.</p>
+    <table>
+      <thead>
+        <tr><th>Nombre</th><th>Finalidad</th><th>Duración</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>al_at</td><td>Mantener tu sesión iniciada (token de acceso)</td><td>Aproximadamente 1 hora</td></tr>
+        <tr><td>al_rt</td><td>Renovar tu sesión sin volver a pedir tu contraseña (token de renovación)</td><td>30 días</td></tr>
+        <tr><td>fg_aid</td><td>Guardar tu progreso en el cuestionario y vincularlo a tus resultados</td><td>180 días</td></tr>
+        <tr><td>Plan seleccionado (sessionStorage)</td><td>Recordar el plan que elegiste durante el proceso de pago</td><td>Hasta que cierras la pestaña</td></tr>
+      </tbody>
+    </table>
+    <p>Puedes borrar o bloquear las cookies desde la configuración de tu navegador, pero entonces el inicio de sesión y el cuestionario podrían no funcionar.</p>
+
+    <h2>9. Cuánto tiempo conservamos tus datos</h2>
+    <ul>
+      <li><strong>Datos de cuenta, cuestionario y uso del programa:</strong> mientras tu cuenta exista. Cuando eliminas tu cuenta, se borran de nuestra base de datos, junto con todos los datos asociados.</li>
+      <li><strong>Cuestionarios anónimos no vinculados a una cuenta:</strong> se eliminan o anonimizan en un plazo máximo de 12 meses.</li>
+      <li><strong>Suscripciones push:</strong> hasta que desactives los recordatorios, el navegador invalide la suscripción o elimines tu cuenta.</li>
+      <li><strong>Datos de facturación:</strong> los registros de pagos y facturas los conservamos nosotros y Stripe durante el plazo que exijan las leyes fiscales, contables y de consumo (en Brasil, normalmente 5 años), aunque elimines tu cuenta.</li>
+      <li><strong>Registros de seguridad y auditoría:</strong> durante un período limitado, el necesario para proteger el servicio y cumplir la ley (por ejemplo, el plazo mínimo de 6 meses que exige el Marco Civil de Internet de Brasil para los registros de acceso a aplicaciones).</li>
+      <li>Las copias de seguridad de nuestros proveedores pueden conservar datos borrados durante un período corto adicional, hasta que se sobrescriben.</li>
+    </ul>
+    <p>También podemos conservar datos bloqueados durante el tiempo necesario para atender posibles responsabilidades legales.</p>
+
+    <h2>10. Tus derechos</h2>
+    <p>Según la ley aplicable (incluidas la LGPD y el RGPD), tienes derecho a:</p>
+    <ul>
+      <li><strong>Confirmar y acceder</strong> a los datos que tratamos sobre ti.</li>
+      <li><strong>Rectificar</strong> datos incompletos, inexactos o desactualizados. Puedes cambiar tu nombre y otros datos desde la app.</li>
+      <li><strong>Eliminar</strong> tus datos. Puedes eliminar tu cuenta desde «Mi perfil»: necesitarás tu contraseña y no tener una renovación pendiente (cancela antes tu suscripción).</li>
+      <li><strong>Portabilidad</strong>: descargar tus datos en formato JSON desde «Mi perfil».</li>
+      <li><strong>Oponerte</strong> a tratamientos basados en interés legítimo y pedir la <strong>limitación</strong> del tratamiento, o la anonimización o el bloqueo de datos innecesarios o excesivos.</li>
+      <li><strong>Retirar tu consentimiento</strong> en cualquier momento, por ejemplo desactivando los recordatorios o eliminando tu cuenta, y ser informado de las consecuencias de no darlo.</li>
+      <li><strong>Saber con quién</strong> hemos compartido tus datos.</li>
+      <li><strong>Reclamar</strong> ante la autoridad de protección de datos competente.</li>
+    </ul>
+    <p>Para ejercer cualquier derecho que no puedas gestionar directamente en la app, escríbenos a <span data-legal="email"></span> desde el correo de tu cuenta. Podremos pedirte información adicional para verificar tu identidad. Responderemos en los plazos que fije la ley aplicable (por ejemplo, 15 días para el acceso completo según la LGPD, o un mes ampliable según el RGPD).</p>
+    <h3>10.1. Autoridades de control</h3>
+    <ul>
+      <li><strong>Brasil:</strong> Autoridad Nacional de Protección de Datos (ANPD).</li>
+      <li><strong>España:</strong> Agencia Española de Protección de Datos (AEPD).</li>
+      <li><strong>Otros países:</strong> la autoridad de protección de datos o de defensa del consumidor de tu país de residencia (por ejemplo, la Agencia de Acceso a la Información Pública en Argentina, la Superintendencia de Industria y Comercio en Colombia o la autoridad de protección de datos personales competente en México).</li>
+    </ul>
+    <p>Te agradeceremos que nos escribas primero para intentar resolver tu inquietud.</p>
+    <h3>10.2. Residentes en los Estados Unidos</h3>
+    <p>Si resides en un estado de los Estados Unidos con leyes de privacidad del consumidor o de datos de salud (por ejemplo, California o Washington), tienes los derechos que esas leyes reconocen, como acceder a tus datos, eliminarlos y no ser discriminado por ejercerlos. No vendemos ni compartimos tus datos con fines de publicidad comportamental entre contextos.</p>
+
+    <h2>11. Menores de edad</h2>
+    <p>Aliento está dirigido solo a personas mayores de 18 años. No recogemos de forma consciente datos de menores. Si crees que un menor nos ha facilitado datos, escríbenos y los eliminaremos.</p>
+
+    <h2>12. Cómo protegemos tus datos</h2>
+    <ul>
+      <li>Cifrado de las comunicaciones mediante HTTPS.</li>
+      <li>Contraseñas guardadas mediante funciones hash, nunca en texto plano.</li>
+      <li>Controles de acceso a nivel de fila en la base de datos, para que cada usuario solo pueda acceder a sus propios datos.</li>
+      <li>Acceso interno según el principio de mínimo privilegio: solo las personas que lo necesitan para su función pueden acceder a datos personales.</li>
+      <li>Registros de auditoría de las acciones administrativas.</li>
+      <li>Limitación de intentos para prevenir accesos abusivos.</li>
+    </ul>
+    <p>Ningún sistema es totalmente infalible. Si se produce un incidente de seguridad que pueda suponer un riesgo para ti, te lo comunicaremos a ti y a las autoridades competentes cuando la ley lo exija.</p>
+
+    <h2>13. Cambios en esta política</h2>
+    <p>Podemos actualizar esta política para reflejar cambios en el servicio o en la ley. Publicaremos la nueva versión en esta página con su fecha de actualización. Si el cambio es importante, te avisaremos por correo electrónico o dentro de la app antes de que entre en vigor y, si la ley lo exige, te pediremos de nuevo tu consentimiento.</p>
+
+    <h2>14. Contacto</h2>
+    <p><span data-legal="name"></span> · CNPJ <span data-legal="taxId"></span> · <span data-legal="address"></span>, <span data-legal="country"></span>.</p>
+    <p>Correo electrónico para asuntos de privacidad: <span data-legal="email"></span></p>
   </div>
 </main>
 <div data-footer></div>
-<script type="module" src="/js/pages/static.js"></script>
+<script type="module" src="/js/pages/legal.js"></script>
 </body>
 </html>

@@ -89,7 +89,7 @@ const email = () => `prueba-${randomUUID().slice(0, 8)}@example.com`;
 const madridToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid' }).format(new Date());
 
 async function register(c, mail = email()) {
-  const r = await c('/api/auth/register', { method: 'POST', body: { name: 'Ana', email: mail, password: 'secreta123', acceptTerms: true, timezone: 'Europe/Madrid' } });
+  const r = await c('/api/auth/register', { method: 'POST', body: { name: 'Ana', email: mail, password: 'secreta123', acceptTerms: true, healthConsent: true, timezone: 'Europe/Madrid' } });
   assert.equal(r.status, 201, JSON.stringify(r.body));
   const u = await db.service.one('select id from auth.users where email = $1', [mail]);
   createdUsers.push(u.id);

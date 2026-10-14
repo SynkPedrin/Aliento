@@ -49,7 +49,7 @@ export function createAuth({ config, db }) {
     }
     try {
       await db.service.exec(
-        'insert into public.profiles (user_id, name, timezone, terms_accepted_at) values ($1, $2, $3, now())',
+        'insert into public.profiles (user_id, name, timezone, terms_accepted_at, health_consent_at) values ($1, $2, $3, now(), now())',
         [data.user.id, name, timezone || 'UTC'],
       );
     } catch (err) {
