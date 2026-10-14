@@ -1,44 +1,32 @@
-# Aliento: checklist de produção
+# Aliento: checklist de produção (atualizado em 14/10/2026)
 
-Marque cada item **na ordem**. Nenhum deles foi executado contra produção.
+**Produção:** https://aliento-alpha.vercel.app · **Repositório:** github.com/SynkPedrin/Aliento (deploy automático a cada push na `main`)
 
-## 1. Segredos (bloqueante)
-- [ ] **Rotacionar** a chave secreta do Supabase que foi compartilhada antes e gerar novas chaves no painel do projeto `gbryzdyawsiaezqysexq`.
-- [ ] Rotacionar a chave Stripe `rk_test` que foi enviada pelo chat.
-- [ ] No servidor de produção (nunca no código), configurar: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `SUPABASE_DB_URL` (Settings › Database › Connection string, pooler em modo *session*), `STRIPE_SECRET_KEY` (live), `STRIPE_WEBHOOK_SECRET` (live), `STRIPE_EXIT_COUPON`, `APP_URL=https://…`, `NODE_ENV=production`.
+## Feito
+- [x] Projeto Vercel `aliento`, ligado ao GitHub. Função serverless em `api/index.js` e páginas estáticas em `public/`.
+- [x] Variáveis de produção na Vercel: Stripe live, webhook secret, VAPID, CRON_SECRET, moeda, idioma, oferta, identidade legal (nome e país), `APP_URL`.
+- [x] Stripe **live**:
+  - produto `Aliento Premium` com descritor de fatura "ALIENTO";
+  - 3 preços em USD (7,99 / 19,99 / 34,99);
+  - cupom `aliento-salida-20`;
+  - webhook `https://aliento-alpha.vercel.app/api/stripe/webhook` com 11 eventos;
+  - Customer Portal (cancelar ao fim do período, trocar de plano, cartão, faturas, links para termos e privacidade).
+- [x] Notificações Web Push: chaves VAPID, service worker, ativação por dispositivo, lembrete diário, resumo semanal, sugestão de exercício e aviso de conquista, todos sem duplicados.
+- [x] Revisão do conteúdo (precisão, segurança, linguagem). O validador passa.
+- [x] Termos e privacidade completos (CDC/LGPD, compatíveis com o RGPD), com a identidade legal configurável via `LEGAL_*`.
+- [x] Consentimento específico para dados de saúde no cadastro.
+- [x] Acesso de cortesia (`access_grants`) e conta interna criada por script.
 
-## 2. Banco de dados
-- [ ] Confirmar que existe um backup restaurável (Point-in-Time Recovery ou dump), **antes** de qualquer migration.
-- [ ] Revisar se o projeto já tem tabelas com os mesmos nomes. As migrations usam `if not exists`; se houver uma tabela equivalente com outra estrutura, é preciso adaptar antes de aplicar.
-- [ ] `npm run db:migrate` (aplica `supabase/migrations/` com `supabase db push`).
-- [ ] `npm run content:seed` (publica a jornada; pode ser rodado de novo sem duplicar nada).
-- [ ] `npm run admin:grant -- seu@email` (primeiro administrador).
-- [ ] Supabase Auth: configurar SMTP próprio e o modelo de e-mail de recuperação em espanhol; incluir `https://SEU-DOMINIO/restablecer` em *Redirect URLs*.
+## Falta (nesta ordem)
+1. [ ] **Aceitar os termos da integração Supabase** (só você pode fazer):
+   https://vercel.com/pgvenegeroles09-9629s-projects/~/integrations/accept-terms/supabase?source=cli
+2. [ ] `npx vercel integration add supabase --name aliento-db --non-interactive` (cria o banco e injeta as variáveis).
+3. [ ] `npm run prod:finish -- admin@admin.com 'Elefante#123'`: migrations, jornada, conta admin, lembretes (pg_cron) e deploy.
+4. [ ] No Supabase › Authentication › URL Configuration: *Site URL* `https://aliento-alpha.vercel.app` e *Redirect URL* `https://aliento-alpha.vercel.app/restablecer`. Para volume real de e-mails de recuperação, configurar SMTP próprio.
+5. [ ] Stripe Dashboard › Settings › Business › Public details: hoje o Checkout mostra **"GS MIDIA"** e o descritor padrão da conta é **"ZIVAHSTORE"**. O produto já força "ALIENTO" nas assinaturas, mas o nome público só muda pelo painel.
+6. [ ] Vercel: `LEGAL_TAX_ID` (CNPJ), `LEGAL_ADDRESS` e `LEGAL_EMAIL` (e-mail de contato público). Sem eles, as páginas legais mostram "disponible a solicitud".
+7. [ ] **Rotacionar** as chaves Stripe live (enviadas por mensagem) e atualizar `STRIPE_SECRET_KEY` na Vercel.
 
-## 3. Stripe (produção)
-- [ ] Conta própria do Aliento, ou nome público corrigido (hoje aparece "Área restrita de Orvyn IA").
-- [ ] Criar o catálogo live: `npm run stripe:setup -- --currency usd --semanal 7.99 --mensual 19.99 --trimestral 34.99`.
-- [ ] Criar o cupom live `aliento-salida-20` (20%, `once`, restrito ao produto) ou deixar `STRIPE_EXIT_COUPON` vazio para desativar a oferta.
-- [ ] Endpoint de webhook em `https://SEU-DOMINIO/api/stripe/webhook` com os eventos de `STRIPE_INTEGRATION.md`.
-- [ ] Customer Portal ativo, com cancelamento e troca de plano.
-- [ ] `npm run billing:reconcile` (relatório) e, se houver casos, `-- --apply`. Revisar /admin › Suscripciones.
-
-## 4. Deploy
-- [ ] Hospedagem Node 22.13+ com HTTPS (cookies `Secure` e HSTS ficam ativos com `NODE_ENV=production`).
-- [ ] `npm ci && npm start` atrás de um proxy (o `trust proxy` já está configurado).
-- [ ] Monitoramento de erros (logs do servidor e /admin › Resumen › webhooks com falha).
-
-## 5. Conteúdo e jurídico
-- [ ] Revisão das 30 lições por um profissional de saúde (pontos sinalizados: lição de estresse no cap. 7, menção a tratamentos no cap. 2).
-- [ ] Preencher `terminos.html` e `privacidad.html` (campos `[ENTRE COLCHETES]`) e revisar com assessoria jurídica, incluindo o tratamento de dados de saúde e a política de reembolso.
-
-## 6. Verificação final (com cartão real de valor baixo ou em modo teste no ambiente de produção)
-- [ ] Questionário → resultados → pagamento → configuração inicial → painel.
-- [ ] Concluir uma lição; registrar um cigarro; mudar um objetivo.
-- [ ] Cancelar pelo Portal e confirmar a perda de acesso ao fim do período.
-- [ ] Login em outro dispositivo e retomar de onde parou.
-
-## Riscos que continuam
-- Sem canal de notificações: os lembretes não são enviados (o aplicativo diz isso ao usuário).
-- O cache de 30 s de usuário no servidor atrasa mudanças de nome no cabeçalho, nada mais. Acesso premium e admin são sempre verificados no banco.
-- O limite de tentativas (*rate limit*) fica em memória: com várias instâncias do servidor, cada uma conta separadamente.
+## Revisão humana (obrigatória antes de escalar)
+- Profissional de saúde: os 8 pontos listados no relatório de revisão do conteúdo (`IMPLEMENTATION_STATUS.md`).
+- Advogado: os pontos marcados no fim de `public/terminos.html` e `public/privacidad.html` (comentário no topo) e em `IMPLEMENTATION_STATUS.md`.

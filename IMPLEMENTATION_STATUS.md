@@ -46,3 +46,26 @@ Além dos testes automatizados:
 2. **Deploy**: não existe hospedagem configurada.
 3. **Envio de e-mails e notificações**: não há provedor. A recuperação de senha usa o e-mail do próprio Supabase Auth, cujo SMTP precisa ser configurado no projeto para volume real.
 4. **Revisão editorial e jurídica**: as lições foram escritas com base em diretrizes públicas, mas devem passar por um profissional de saúde. Termos e privacidade são modelos.
+
+---
+
+## Revisões de 14/10/2026: pontos que exigem decisão humana
+
+### Profissional de saúde (conteúdo da jornada)
+1. Linguagem neutra em gênero: ainda há várias formas no masculino genérico.
+2. "enojo/enojado" (América Latina) ou "enfado" (Espanha).
+3. A redução gradual aparece como equivalente a marcar uma data para parar; não fala em redução com terapia de reposição de nicotina sob orientação.
+4. Confirmar as frases "beneficios… mucho mayores" que o ganho de peso e "a cualquier edad".
+5. A linha do tempo de benefícios é pensada para quem fuma, não para quem só usa vaporizador.
+6. A posição sobre cigarro eletrônico ("no los recomienda como método").
+7. O texto de crise é genérico, sem números de telefone por país.
+8. "Diversos estudios indican…" sobre ansiedade e estresse depois de parar.
+
+### Advogado (termos e privacidade)
+- CNPJ, endereço, e-mail e encarregado de dados (DPO) da empresa; se é preciso um representante na UE.
+- Validade do consentimento para dados de saúde. A caixa específica no cadastro já foi adicionada; falta validar o texto e o momento (o questionário anônimo vem antes).
+- Direito de arrependimento: 7 dias no Brasil (vale para renovações?), 14 dias na UE/Espanha (renúncia expressa no checkout), 10 dias na Argentina com o botão de arrependimento.
+- Regras de renovação automática nos EUA (FTC e leis estaduais, como a ARL da Califórnia).
+- Reembolsos proporcionais prometidos no rascunho em três casos: fechamento da conta pela empresa, perda substancial de funções e encerramento do serviço. **Decisão comercial.**
+- Limite de responsabilidade (provavelmente inválido para consumidores no Brasil e na Espanha), lei e foro aplicáveis, tributos de serviço digital vendido em USD.
+- Prazos de guarda dos dados, transferências internacionais (cláusulas-padrão e acordos de tratamento de dados com Supabase, Vercel e Stripe) e leis de dados de saúde de estados dos EUA.
