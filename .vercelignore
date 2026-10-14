@@ -1,0 +1,8 @@
+node_modules
+data
+.tools
+.env
+.env.*
+supabase/.temp
+supabase/.branches
+Fôlego.html

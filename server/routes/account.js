@@ -1,0 +1,217 @@
+// Cuenta: identificación, sesión, recuperación de contraseña, perfil, suscripción, exportación y baja.
+import { Router } from 'express';
+import {
+  AuthError, ACCESS_COOKIE, clearSessionCookies, isValidEmail, rateLimiter, setSessionCookies,
+} from '../auth.js';
+import { isValidTimezone } from '../services/stats.js';
+import { HttpError, requireUser, wrap } from './util.js';
+
+export function accountRoutes({ db, auth, billing, config, store, log = console }) {
+  const r = Router();
+  const authLimiter = rateLimiter({ windowMs: 15 * 60_000, max: 20 });
+  const recoveryLimiter = rateLimiter({ windowMs: 60 * 60_000, max: 5 });
+
+  const password = (v, field = 'password') => {
+    if (typeof v !== 'string' || v.length < 8 || v.length > 72) {
+      throw new HttpError(422, 'La contraseña debe tener entre 8 y 72 caracteres.', 'INVALID', { field });
+    }
+    return v;
+  };
+
+  r.post('/auth/register', wrap(async (req, res) => {
+    if (!authLimiter(`r:${req.ip}`)) throw new HttpError(429, 'Demasiados intentos. Espera unos minutos.');
+    const { name, email, acceptTerms, timezone } = req.body ?? {};
+    const cleanName = String(name ?? '').trim();
+    if (!cleanName || cleanName.length > 80) throw new HttpError(422, 'Escribe tu nombre.', 'INVALID', { field: 'name' });
+    if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
+    password(req.body?.password);
+    if (acceptTerms !== true) throw new HttpError(422, 'Debes aceptar los términos y la política de privacidad.', 'INVALID', { field: 'acceptTerms' });
+    const session = await auth.register({
+      name: cleanName, email: email.trim().toLowerCase(), password: req.body.password,
+      timezone: isValidTimezone(timezone) ? timezone : 'UTC',
+    });
+    await store.claim(req, session.user.id);
+    setSessionCookies(res, config, session);
+    res.status(201).json({ ok: true });
+  }));
+
+  r.post('/auth/login', wrap(async (req, res) => {
+    if (!authLimiter(`l:${req.ip}`)) throw new HttpError(429, 'Demasiados intentos. Espera unos minutos.');
+    const { email } = req.body ?? {};
+    if (!isValidEmail(email) || typeof req.body?.password !== 'string') throw new AuthError('INVALID_LOGIN', 'Correo o contraseña incorrectos.', 401);
+    const session = await auth.signIn({ email: email.trim().toLowerCase(), password: req.body.password });
+    await store.claim(req, session.user.id);
+    setSessionCookies(res, config, session);
+    res.json({ ok: true });
+  }));
+
+  r.post('/auth/logout', wrap(async (req, res) => {
+    await auth.signOut(req.cookies[ACCESS_COOKIE]);
+    clearSessionCookies(res);
+    res.json({ ok: true });
+  }));
+
+  // Siempre la misma respuesta: no revela si el correo tiene cuenta.
+  r.post('/auth/forgot', wrap(async (req, res) => {
+    const { email } = req.body ?? {};
+    if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
+    if (recoveryLimiter(`f:${req.ip}`) && recoveryLimiter(`f:${email.toLowerCase()}`)) {
+      await auth.sendRecovery(email.trim().toLowerCase());
+    }
+    res.json({ ok: true });
+  }));
+
+  // El enlace del correo trae un token de acceso de recuperación; con él se fija la nueva contraseña.
+  r.post('/auth/reset', wrap(async (req, res) => {
+    const { accessToken, refreshToken } = req.body ?? {};
+    password(req.body?.password);
+    const user = await auth.userFromToken(accessToken);
+    if (!user) throw new HttpError(400, 'El enlace no es válido o ha caducado. Solicita uno nuevo.', 'INVALID_LINK');
+    await auth.setPassword(user.id, req.body.password);
+    const session = await auth.signIn({ email: user.email, password: req.body.password });
+    if (refreshToken) await auth.signOut(accessToken);
+    setSessionCookies(res, config, session);
+    res.json({ ok: true });
+  }));
+
+  r.get('/me', wrap(async (req, res) => {
+    if (!req.user) return res.json({ user: null });
+    const active = await billing.activeSubscription(req.user.id);
+    const onboarded = await db.service.one('select onboarded_at from public.profiles where user_id = $1', [req.user.id]);
+    const s = await store.current(req);
+    res.json({
+      user: { name: req.user.name, email: req.user.email, isAdmin: req.user.is_admin },
+      access: Boolean(active),
+      subscription: subscriptionView(active ?? await billing.latestSubscription(req.user.id)),
+      pendingCheckout: active ? null : await billing.pendingCheckout(req.user.id),
+      onboardingCompleted: Boolean(onboarded?.onboarded_at),
+      hasResult: Boolean(s?.completed_at),
+    });
+  }));
+
+  // ---------------------------------------------------------------- checkout y suscripción
+  r.post('/checkout', requireUser, wrap(async (req, res) => {
+    const s = await store.current(req);
+    const assessment = s?.completed_at ? await store.assessmentFor(s.id) : null;
+    if (!assessment) throw new HttpError(409, 'Completa el cuestionario antes de suscribirte.', 'NO_RESULT');
+    if (!s.claimed_user_id) await store.claim(req, req.user.id);
+    const { url, reused } = await billing.startCheckout({
+      user: req.user, plan: req.body?.plan, assessment, useExitOffer: req.body?.exitOffer === true,
+    });
+    res.json({ url, reused });
+  }));
+
+  r.get('/checkout/status', requireUser, wrap(async (req, res) => {
+    res.json(await billing.checkoutState(req.user.id, String(req.query.session_id ?? '')));
+  }));
+
+  r.post('/billing/portal', requireUser, wrap(async (req, res) => {
+    res.json({ url: await billing.portalUrl(req.user) });
+  }));
+
+  r.get('/subscription', requireUser, wrap(async (req, res) => {
+    const active = await billing.activeSubscription(req.user.id);
+    res.json({
+      access: Boolean(active),
+      subscription: subscriptionView(active ?? await billing.latestSubscription(req.user.id)),
+      hasBilling: Boolean(await billing.customerIdOf(req.user.id)),
+      pendingCheckout: active ? null : await billing.pendingCheckout(req.user.id),
+      hasResult: Boolean((await store.current(req))?.completed_at),
+    });
+  }));
+
+  // ---------------------------------------------------------------- perfil
+  r.get('/profile', requireUser, wrap(async (req, res) => {
+    res.json({ name: req.user.name, email: req.user.email, timezone: req.user.timezone, locale: 'es', createdAt: req.user.created_at });
+  }));
+
+  r.patch('/profile', requireUser, wrap(async (req, res) => {
+    const name = String(req.body?.name ?? req.user.name).trim();
+    const timezone = req.body?.timezone ?? req.user.timezone;
+    if (!name || name.length > 80) throw new HttpError(422, 'Escribe tu nombre.', 'INVALID', { field: 'name' });
+    if (!isValidTimezone(timezone)) throw new HttpError(422, 'Zona horaria no válida.', 'INVALID', { field: 'timezone' });
+    // Con el rol del usuario: RLS + permisos de columna (solo nombre y zona horaria).
+    await db.asUser(req.user.id, (q) => q.exec('update public.profiles set name = $1, timezone = $2 where user_id = $3', [name, timezone, req.user.id]));
+    res.json({ ok: true });
+  }));
+
+  r.post('/profile/password', requireUser, wrap(async (req, res) => {
+    if (!authLimiter(`p:${req.user.id}`)) throw new HttpError(429, 'Demasiados intentos. Espera unos minutos.');
+    if (!(await auth.verifyPassword(req.user.email, String(req.body?.current ?? '')))) {
+      throw new HttpError(422, 'La contraseña actual no es correcta.', 'INVALID', { field: 'current' });
+    }
+    await auth.setPassword(req.user.id, password(req.body?.next, 'next'));
+    const session = await auth.signIn({ email: req.user.email, password: req.body.next });
+    setSessionCookies(res, config, session);
+    res.json({ ok: true });
+  }));
+
+  r.get('/account/export', requireUser, wrap(async (req, res) => {
+    const data = await db.asUser(req.user.id, async (q) => {
+      const id = req.user.id;
+      const all = (sql) => q.rows(sql, [id]);
+      return {
+        exportedAt: new Date().toISOString(),
+        profile: await q.one('select name, timezone, created_at from public.profiles where user_id = $1', [id]),
+        email: req.user.email,
+        assessments: await q.rows(`select a.result, a.created_at from public.user_assessments a`),
+        goals: await all('select strategy, start_date, quit_date, max_daily, exercise_per_week, money_goal, money_goal_label, created_at, superseded_at from public.user_goals where user_id = $1 order by created_at'),
+        weeklyGoals: await all('select week, title, done_at from public.daily_goals where user_id = $1'),
+        smoking: await all('select smoked_at, quantity, trigger, mood, note from public.smoking_entries where user_id = $1 order by smoked_at'),
+        smokeFreeDays: await all('select day from public.daily_checkins where user_id = $1 order by day'),
+        cravings: await all('select felt_at, feeling, trigger, intensity, outcome, strategy from public.craving_entries where user_id = $1 order by felt_at'),
+        moods: await all('select day, mood, note from public.mood_entries where user_id = $1 order by day'),
+        breathing: await all('select exercise_slug, planned_seconds, started_at, completed_at from public.breathing_sessions where user_id = $1 order by started_at'),
+        lessons: await all(`select l.title, p.status, p.completed_at from public.user_lesson_progress p
+          join public.journey_lessons l on l.id = p.lesson_id where p.user_id = $1`),
+        lessonResponses: await all('select lesson_id, block_key, response, responded_at from public.lesson_responses where user_id = $1'),
+        achievements: await all('select achievement_slug, unlocked_at from public.user_achievements where user_id = $1'),
+        notifications: await q.one('select * from public.notification_preferences where user_id = $1', [id]),
+        subscriptions: await all('select plan, status, current_period_end, cancel_at_period_end, created_at from public.subscriptions where user_id = $1'),
+      };
+    });
+    res.set('Content-Disposition', 'attachment; filename="aliento-mis-datos.json"');
+    res.json(data);
+  }));
+
+  /**
+   * Baja de la cuenta. Requiere la contraseña y que no quede una renovación pendiente
+   * (la suscripción se cancela antes desde el portal, para no cobrar a una cuenta borrada).
+   */
+  r.delete('/account', requireUser, wrap(async (req, res) => {
+    if (req.body?.confirm !== 'ELIMINAR') throw new HttpError(422, 'Escribe ELIMINAR para confirmar.', 'INVALID', { field: 'confirm' });
+    if (!(await auth.verifyPassword(req.user.email, String(req.body?.password ?? '')))) {
+      throw new HttpError(422, 'La contraseña no es correcta.', 'INVALID', { field: 'password' });
+    }
+    const active = await billing.activeSubscription(req.user.id);
+    if (active && !active.cancel_at_period_end) {
+      throw new HttpError(409, 'Antes de eliminar tu cuenta, cancela tu suscripción desde «Mi suscripción».', 'ACTIVE_SUBSCRIPTION');
+    }
+    await db.tx(async (q) => {
+      await q.exec('delete from public.questionnaire_sessions where user_id = $1 or claimed_user_id = $1', [req.user.id]);
+      await q.exec(`insert into public.admin_audit_logs (action, entity, entity_id, details)
+        values ('account.deleted', 'user', $1, '{}')`, [req.user.id]);
+    });
+    await auth.signOut(req.cookies[ACCESS_COOKIE]);
+    await auth.deleteUser(req.user.id); // en cascada: perfil, registros, progreso, respuestas
+    clearSessionCookies(res);
+    log.info?.(`[cuenta] Usuario ${req.user.id} eliminado a petición propia.`);
+    res.json({ ok: true });
+  }));
+
+  return r;
+}
+
+export function subscriptionView(sub) {
+  return sub && {
+    plan: sub.plan,
+    status: sub.status,
+    amount: sub.amount,
+    currency: sub.currency,
+    interval: sub.interval,
+    intervalCount: sub.interval_count,
+    currentPeriodEnd: sub.current_period_end ? new Date(sub.current_period_end).toISOString() : null,
+    cancelAtPeriodEnd: Boolean(sub.cancel_at_period_end),
+  };
+}
+

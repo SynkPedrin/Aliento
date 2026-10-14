@@ -1,0 +1,32 @@
+{
+  "name": "folego",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fôlego — programa para dejar de fumar: cuestionario, resultados, suscripción Stripe y panel.",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --watch --env-file-if-exists=.env server/index.js",
+    "stripe:setup": "node --env-file-if-exists=.env scripts/stripe-setup.js",
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.js\"",
+    "demo": "node scripts/demo.js",
+    "content:seed": "node --env-file-if-exists=.env scripts/seed-content.js",
+    "db:migrate": "supabase db push --db-url \"$SUPABASE_DB_URL\"",
+    "db:migrate:local": "supabase migration up --local",
+    "billing:reconcile": "node --env-file-if-exists=.env scripts/reconcile.js",
+    "admin:grant": "node --env-file-if-exists=.env scripts/admin-grant.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "express": "^5.3.0",
+    "pg": "^8.23.1",
+    "stripe": "^23.0.0",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "supabase": "^2.121.0"
+  }
+}

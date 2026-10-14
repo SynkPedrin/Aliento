@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F3D3A">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/icono-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/css/app.css">
+<title>Test · Aliento</title>
+<meta name="robots" content="noindex">
+</head>
+<body>
+<div class="quiz">
+  <div class="container narrow">
+    <div class="quiz__bar">
+      <button type="button" class="quiz__back" data-back disabled></button>
+      <a class="brand" href="/" data-brand aria-label="Aliento, inicio"></a>
+      <span class="quiz__count" data-count aria-live="polite"></span>
+    </div>
+    <div class="progress" role="progressbar" aria-label="Progreso del test" aria-valuemin="0" aria-valuemax="100" data-progress><span></span></div>
+  </div>
+  <main class="quiz__main">
+    <div class="container narrow" data-screen>
+      <div class="loading"><div class="skeleton" aria-label="Cargando"></div></div>
+    </div>
+  </main>
+</div>
+<script type="module" src="/js/pages/test.js"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F3D3A">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/icono-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/css/app.css">
+<title>Acceso · Aliento</title>
+<meta name="robots" content="noindex">
+</head>
+<body>
+<div data-header></div>
+<main class="auth-wrap">
+  <div class="container narrow">
+    <div class="card">
+      <div class="u-text-center u-mb-24">
+        <h1 class="title-md" data-title>Crea tu cuenta</h1>
+        <p class="muted small u-mt-8" data-subtitle>Guardaremos tu plan y tus resultados en tu cuenta.</p>
+      </div>
+      <div data-plan-summary hidden class="plan-pick"></div>
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="true" data-tab="register">Soy nuevo</button>
+        <button type="button" role="tab" aria-selected="false" data-tab="login">Ya tengo cuenta</button>
+      </div>
+      <form data-form novalidate class="stack">
+        <div class="field" data-only="register">
+          <label for="name">Nombre</label>
+          <input class="input" id="name" name="name" autocomplete="given-name" maxlength="80">
+        </div>
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input class="input" id="email" name="email" type="email" inputmode="email" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="8">
+          <span class="tiny muted" data-only="register">Mínimo 8 caracteres.</span>
+          <a class="tiny" href="/olvide" data-only="login">¿Olvidaste tu contraseña?</a>
+        </div>
+        <label class="check" data-only="register">
+          <input type="checkbox" name="acceptTerms">
+          <span>Acepto los <a href="/terminos" target="_blank">Términos de servicio</a> y la <a href="/privacidad" target="_blank">Política de privacidad</a>.</span>
+        </label>
+        <p class="form-error" role="alert" data-error></p>
+        <button type="submit" class="btn btn--lg btn--block" data-submit>Continuar</button>
+      </form>
+    </div>
+    <p class="tiny muted u-text-center u-mt-16">Tus datos se tratan de forma confidencial. El pago se procesa de forma segura con Stripe.</p>
+  </div>
+</main>
+<script type="module" src="/js/pages/acceso.js"></script>
+</body>
+</html>
