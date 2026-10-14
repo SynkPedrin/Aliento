@@ -41,11 +41,11 @@ Além dos testes automatizados:
 - **Pagamento real no Stripe (modo teste):** checkout hospedado, cartão 4242, 3 webhooks reais, ativação confirmada no banco.
 - **Navegador:** do questionário ao painel, lição, jornada, registro, respiração, progresso, perfil, diário, conquistas, ajuda, notificações, assinatura e admin, em desktop e em 390 px. Sem erros de console nem da API.
 
-## O que NÃO foi feito, e por quê
-1. **Conexão ao projeto Supabase de produção (`gbryzdyawsiaezqysexq`)**: não recebi credenciais (corretamente, já que não devem vir pelo chat). Está tudo pronto para `npm run db:migrate` + `npm run content:seed`.
-2. **Deploy**: não existe hospedagem configurada.
-3. **Envio de e-mails e notificações**: não há provedor. A recuperação de senha usa o e-mail do próprio Supabase Auth, cujo SMTP precisa ser configurado no projeto para volume real.
-4. **Revisão editorial e jurídica**: as lições foram escritas com base em diretrizes públicas, mas devem passar por um profissional de saúde. Termos e privacidade são modelos.
+## Estado atual (atualizado)
+1. **Banco de produção:** um Supabase novo, dedicado, criado pela integração da Vercel. Falta só o responsável aceitar os termos da integração; depois disso, `npm run prod:finish` termina tudo. Veja `PRODUCTION_CHECKLIST.md`.
+2. **Deploy:** feito na Vercel (https://aliento-alpha.vercel.app), com deploy automático a partir do GitHub.
+3. **Notificações:** canal Web Push implementado e testado. A recuperação de senha usa o e-mail do Supabase Auth; para volume real, configure SMTP próprio.
+4. **Revisões:** conteúdo e documentos legais revisados e completos. Os pontos que exigem um profissional de saúde e um advogado estão listados abaixo.
 
 ---
 
