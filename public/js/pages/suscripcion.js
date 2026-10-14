@@ -5,7 +5,7 @@ import { errorState, initApp, loading, page } from '../shell.js';
 await initApp({ active: '/perfil', access: 'account' });
 const root = $('[data-root]');
 
-const PLAN_NAMES = { semanal: 'Plan de 1 semana', mensual: 'Plan de 1 mes', trimestral: 'Plan de 3 meses' };
+const PLAN_NAMES = { semanal: 'Plan de 1 semana', mensual: 'Plan de 1 mes', trimestral: 'Plan de 3 meses', cortesia: 'Acceso de cortesía' };
 const STATUS = {
   active: ['Activa', 'pill--ok'], trialing: ['Activa', 'pill--ok'], past_due: ['Pago pendiente', 'pill--warn'],
   canceled: ['Cancelada', ''], unpaid: ['Impagada', 'pill--warn'], incomplete: ['Incompleta', 'pill--warn'],

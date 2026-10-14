@@ -109,9 +109,15 @@ export function createBilling({ db, stripe, config, log = console }) {
 
   // ------------------------------------------------------------ estado de suscripción
   async function activeSubscription(userId, q = db.service) {
-    return q.one(`
+    const sub = await q.one(`
       select * from public.subscriptions where user_id = $1 and status = any($2)
       order by created_at desc limit 1`, [userId, ACCESS_STATUSES]);
+    if (sub) return sub;
+    // Acceso de cortesía: da acceso premium sin suscripción de pago.
+    const grant = await q.one(`select * from public.access_grants where user_id = $1 and revoked_at is null
+      and (expires_at is null or expires_at > now()) order by created_at desc limit 1`, [userId]);
+    return grant && { id: `grant_${grant.id}`, plan: 'cortesia', status: 'active', amount: null, currency: null, interval: null,
+      interval_count: null, current_period_end: grant.expires_at, cancel_at_period_end: false, created_at: grant.created_at };
   }
 
   async function latestSubscription(userId) {

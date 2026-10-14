@@ -17,7 +17,9 @@
     "db:migrate": "supabase db push --db-url \"$SUPABASE_DB_URL\"",
     "db:migrate:local": "supabase migration up --local",
     "billing:reconcile": "node --env-file-if-exists=.env scripts/reconcile.js",
-    "admin:grant": "node --env-file-if-exists=.env scripts/admin-grant.js"
+    "admin:grant": "node --env-file-if-exists=.env scripts/admin-grant.js",
+    "prod:finish": "node scripts/finish-production.js",
+    "access:grant": "node --env-file-if-exists=.env scripts/create-comp-account.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
