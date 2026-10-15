@@ -1,0 +1,41 @@
+/* Alento · design tokens (CSS custom properties) */
+:root {
+  /* Marca */
+  --alento-folego: #1E3FFF;
+  --alento-noite: #0A0F3C;
+  --alento-menta: #3EE0B5;
+  --alento-nevoa: #B9C8FF;
+  --alento-ar: #EEF3FF;
+  --alento-branco: #FFFFFF;
+  /* Apoio */
+  --alento-respiracao: #8E9DFF;
+  --alento-respiracao-noite: #4A5BC4;
+  --alento-texto-apoio: #4A5185;
+  --alento-linha: #D5DCF5;
+  /* Programas (só o sol muda de cor) */
+  --alento-prog-sem-fumo: #3EE0B5;
+  --alento-prog-alcool: #9B8CFF;
+  --alento-prog-acucar: #FF7A59;
+  --alento-prog-ansiedade-sono: #FFC857;
+  /* Semânticos */
+  --color-bg: var(--alento-branco);
+  --color-surface: var(--alento-ar);
+  --color-text: var(--alento-noite);
+  --color-text-2: var(--alento-texto-apoio);
+  --color-primary: var(--alento-folego);
+  --color-accent: var(--alento-menta);
+  --color-border: var(--alento-linha);
+  /* Tipografia */
+  --font-display: 'Varela', system-ui, sans-serif;   /* só 400 */
+  --font-text: 'Figtree', system-ui, sans-serif;     /* 300 400 500 600 */
+  --fs-display: 66px; --fs-h1: 38px; --fs-h2: 28px; --fs-h3: 19px;
+  --fs-body: 15px; --fs-button: 16px; --fs-caption: 12px; --fs-overline: 11px;
+  /* Forma */
+  --radius-chip: 20px; --radius-option: 16px; --radius-card: 22px; --radius-button: 30px; --radius-sheet: 28px;
+  --space-screen-x: 22px; --space-stack: 14px; --space-card: 18px;
+  --shadow-floating: 0 30px 60px -20px rgba(10, 15, 60, .35);
+  /* Movimento */
+  --ease-out: cubic-bezier(.22, .7, .12, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --breath-cycle: 8s;
+}
