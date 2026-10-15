@@ -48,7 +48,7 @@ export function appRoutes({ db, billing, config, notifier }) {
     return asUser(req, async (q) => {
       const goal = await q.one('select * from public.user_goals where user_id = $1 and superseded_at is null', [req.user.id]);
       const prefs = await q.one('select * from public.notification_preferences where user_id = $1', [req.user.id]);
-      const prof = await db.service.one('select onboarded_at from public.profiles where user_id = $1', [req.user.id]);
+      const prof = await q.sudo.one('select onboarded_at from public.profiles where user_id = $1', [req.user.id]);
       return {
         goal: goal?.strategy ?? null,
         startDate: goal?.start_date ?? null,
@@ -125,7 +125,7 @@ export function appRoutes({ db, billing, config, notifier }) {
     const data = await asUser(req, async (q) => {
       const ctx = await planContext(q, userId);
       if (!ctx) throw new HttpError(409, 'Estamos preparando tu plan.', 'PLAN_PENDING');
-      const prof = await db.service.one('select onboarded_at from public.profiles where user_id = $1', [userId]);
+      const prof = await q.sudo.one('select onboarded_at from public.profiles where user_id = $1', [userId]);
       if (!prof?.onboarded_at) throw new HttpError(409, 'Completa la configuración inicial.', 'ONBOARDING_REQUIRED');
       const week = await dailySeries(q, userId, tz(req), addDays(today, -6), today);
       const since = await dailySeries(q, userId, tz(req), ctx.goal.start_date < today ? ctx.goal.start_date : today, today);
@@ -179,12 +179,12 @@ export function appRoutes({ db, billing, config, notifier }) {
 
   r.post('/journey/lessons/:slug/responses', wrap(async (req, res) => {
     const blockKey = String(req.body?.blockId ?? '');
-    const out = await asUser(req, (q) => saveResponse(q, db.service, req.user.id, String(req.params.slug), blockKey, req.body?.response));
+    const out = await asUser(req, (q) => saveResponse(q, q.sudo, req.user.id, String(req.params.slug), blockKey, req.body?.response));
     res.json(out);
   }));
 
   r.post('/journey/lessons/:slug/complete', wrap(async (req, res) => {
-    const out = await asUser(req, (q) => completeLesson(q, db.service, req.user.id, String(req.params.slug)));
+    const out = await asUser(req, (q) => completeLesson(q, q.sudo, req.user.id, String(req.params.slug)));
     res.json({ ...out, achievements: await achievementsAfter(req) });
   }));
 

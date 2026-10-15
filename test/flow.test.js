@@ -479,3 +479,13 @@ test('notificaciones push: consentimiento, hora local, sin duplicados y cron pro
   assert.equal((await fetch(`${base}/api/cron/notifications`, { headers: { authorization: 'Bearer cron-test' } })).status, 200);
   void user;
 });
+
+test('carga: más peticiones simultáneas que conexiones del pool no bloquean el panel', async () => {
+  const { c } = await payingUser();
+  const started = Date.now();
+  const results = await Promise.all(Array.from({ length: 25 }, () => c('/api/app/dashboard')));
+  assert.ok(results.every((r) => r.status === 200), JSON.stringify(results.map((r) => r.status)));
+  const lessons = await Promise.all(Array.from({ length: 15 }, () => c('/api/app/journey')));
+  assert.ok(lessons.every((r) => r.status === 200));
+  assert.ok(Date.now() - started < 15000, 'sin bloqueo mutuo');
+});

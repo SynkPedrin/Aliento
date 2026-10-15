@@ -36,12 +36,22 @@ export function createDb(connectionString, { max = 10 } = {}) {
   });
   pool.on('error', (err) => console.error('[db] Error en conexión inactiva:', err.message));
 
-  async function transaction(setup, fn) {
+  async function transaction(setup, fn, { userScoped = false } = {}) {
     const client = await pool.connect();
     try {
       await client.query('begin');
       if (setup) await setup(client);
-      const out = await fn(wrap(client));
+      const q = wrap(client);
+      if (userScoped) {
+        // Consultas privilegiadas dentro de una transacción de usuario: SIEMPRE en la misma conexión.
+        // Pedir otra conexión al pool mientras se retiene esta provoca un bloqueo mutuo bajo carga.
+        const sudo = async (method, text, params) => {
+          await client.query('reset role');
+          try { return await wrap(client)[method](text, params); } finally { await client.query('set local role authenticated'); }
+        };
+        q.sudo = { rows: (t, p) => sudo('rows', t, p), one: (t, p) => sudo('one', t, p), exec: (t, p) => sudo('exec', t, p) };
+      }
+      const out = await fn(q);
       await client.query('commit');
       return out;
     } catch (err) {
@@ -61,7 +71,7 @@ export function createDb(connectionString, { max = 10 } = {}) {
       await client.query('set local role authenticated');
       await client.query("select set_config('request.jwt.claims', $1, true)",
         [JSON.stringify({ sub: userId, role: 'authenticated' })]);
-    }, fn),
+    }, fn, { userScoped: true }),
     end: () => pool.end(),
   };
 }
