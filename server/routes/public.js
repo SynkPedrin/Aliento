@@ -1,12 +1,13 @@
 // Embudo público: configuración, cuestionario, resultados, planes y oferta de salida.
 import { Router } from 'express';
-import { ASSESSMENT_COOKIE, cookieOptions } from '../auth.js';
+import { ASSESSMENT_COOKIE, cookieOptions, sharedRateLimiter } from '../auth.js';
 import { QUIZ_VERSION, STEPS, missingAnswers, publicQuiz, validateAnswer } from '../quiz.js';
 import { computeResult } from '../results.js';
 import { wrap } from './util.js';
 
 /** Sesión de cuestionario del navegador o, si no hay, la última completada de la cuenta. */
 export function createAssessmentStore({ db, config }) {
+  const createLimiter = sharedRateLimiter(db, { windowSeconds: 10 * 60, max: 60 });
   async function cookieSession(req) {
     const id = req.cookies[ASSESSMENT_COOKIE];
     if (!/^[0-9a-f-]{36}$/i.test(id ?? '')) return null;
@@ -31,7 +32,11 @@ export function createAssessmentStore({ db, config }) {
     return db.service.one('select * from public.user_assessments where session_id = $1', [sessionId]);
   }
 
-  async function create(res) {
+  async function create(res, req) {
+    // Límite por IP: evita que bots llenen la base de cuestionarios vacíos.
+    if (req && !(await createLimiter(`quiz:${req.ip}`))) {
+      throw Object.assign(new Error('Demasiadas solicitudes. Espera un momento.'), { status: 429 });
+    }
     const s = await db.service.one('insert into public.questionnaire_sessions (quiz_version) values ($1) returning *', [QUIZ_VERSION]);
     res.cookie(ASSESSMENT_COOKIE, s.id, cookieOptions(config, 180 * 86400));
     return s;
@@ -72,14 +77,14 @@ export function publicRoutes({ db, billing, config, store }) {
   }));
 
   r.post('/assessment/reset', wrap(async (req, res) => {
-    res.json({ assessment: await view(await store.create(res)) });
+    res.json({ assessment: await view(await store.create(res, req)) });
   }));
 
   r.put('/assessment/answers', wrap(async (req, res) => {
     const { questionId, value, step } = req.body ?? {};
     let s = await store.cookieSession(req);
     // Una evaluación ya vinculada a una suscripción no se modifica: se empieza otra.
-    if (!s || s.user_id || (s.claimed_user_id && s.claimed_user_id !== req.user?.id)) s = await store.create(res);
+    if (!s || s.user_id || (s.claimed_user_id && s.claimed_user_id !== req.user?.id)) s = await store.create(res, req);
     const currentStep = STEPS.some((x) => x.id === step) ? step : s.current_step;
     await db.tx(async (q) => {
       if (questionId !== undefined) {
@@ -89,6 +94,9 @@ export function publicRoutes({ db, billing, config, store }) {
           insert into public.questionnaire_answers (session_id, question_id, value) values ($1, $2, $3)
           on conflict (session_id, question_id) do update set value = excluded.value, answered_at = now()`,
         [s.id, questionId, JSON.stringify(check.value)]);
+        // Consentimiento (datos relacionados con la salud): se registra con la primera respuesta,
+        // tras el aviso visible en el cuestionario.
+        if (req.body?.consent === true) await q.exec('update public.questionnaire_sessions set consent_at = coalesce(consent_at, now()) where id = $1', [s.id]);
         // Cambiar una respuesta invalida el resultado anterior.
         await q.exec('delete from public.user_assessments where session_id = $1', [s.id]);
         await q.exec('update public.questionnaire_sessions set completed_at = null, current_step = $2 where id = $1', [s.id, currentStep]);
@@ -140,7 +148,7 @@ export function publicRoutes({ db, billing, config, store }) {
     const s = await store.current(req);
     if (!s?.completed_at || s.user_id) return res.json({ offer: null });
     if (req.user && await billing.activeSubscription(req.user.id)) return res.json({ offer: null });
-    res.json({ offer: await billing.claimExitOffer(s.id) });
+    res.json({ offer: await billing.claimExitOffer(s.id, req.user?.id ?? s.claimed_user_id) });
   }));
 
   return r;

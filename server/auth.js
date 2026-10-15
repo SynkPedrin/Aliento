@@ -24,10 +24,24 @@ export function createAuth({ config, db }) {
   if (!url || !publishableKey || !secretKey) {
     throw new Error('Faltan SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY o SUPABASE_SECRET_KEY.');
   }
-  const opts = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
+  // Timeout en todas las llamadas a Supabase Auth: nunca más que el límite de la función.
+  const fetchWithTimeout = (input, init = {}) => fetch(input, { ...init, signal: init.signal ?? AbortSignal.timeout(8000) });
+  const opts = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, global: { fetch: fetchWithTimeout } };
   const pub = createClient(url, publishableKey, opts);
   const admin = createClient(url, secretKey, opts);
   const cache = new Map();
+
+  /** Distingue errores del servicio (429 / 5xx / red) de credenciales inválidas. */
+  function serviceError(error) {
+    const status = error?.status ?? 0;
+    if (status === 429 || error?.code === 'over_request_rate_limit') {
+      return new AuthError('RATE_LIMITED', 'Demasiados intentos en este momento. Espera un minuto y vuelve a intentarlo.', 429);
+    }
+    if (!status || status >= 500 || error?.name === 'AuthRetryableFetchError' || error?.name === 'TimeoutError') {
+      return new AuthError('AUTH_UNAVAILABLE', 'No podemos verificar tu sesión ahora mismo. Inténtalo de nuevo en unos instantes.', 503);
+    }
+    return null;
+  }
 
   async function profile(userId) {
     return db.service.one(`
@@ -41,6 +55,8 @@ export function createAuth({ config, db }) {
       email, password, email_confirm: true, user_metadata: { name },
     });
     if (error) {
+      const svc = serviceError(error);
+      if (svc) throw svc;
       if (error.code === 'email_exists' || /already been registered/i.test(error.message)) {
         throw new AuthError('EMAIL_EXISTS', 'Ya existe una cuenta con este correo. Inicia sesión.', 409, 'email');
       }
@@ -61,7 +77,8 @@ export function createAuth({ config, db }) {
 
   async function signIn({ email, password }) {
     const { data, error } = await pub.auth.signInWithPassword({ email, password });
-    if (error || !data.session) throw new AuthError('INVALID_LOGIN', 'Correo o contraseña incorrectos.', 401);
+    if (error) throw serviceError(error) ?? new AuthError('INVALID_LOGIN', 'Correo o contraseña incorrectos.', 401);
+    if (!data.session) throw new AuthError('INVALID_LOGIN', 'Correo o contraseña incorrectos.', 401);
     return data.session;
   }
 
@@ -71,17 +88,42 @@ export function createAuth({ config, db }) {
     const hit = cache.get(token);
     if (hit && hit.at > Date.now() - USER_CACHE_MS) return hit.user;
     const { data, error } = await admin.auth.getUser(token);
-    if (error || !data?.user) return null;
+    if (error) {
+      const svc = serviceError(error);
+      if (svc) throw svc; // fallo del servicio: no es una sesión inválida
+      return null;
+    }
+    if (!data?.user) return null;
     const user = await profile(data.user.id);
     cache.set(token, { at: Date.now(), user });
     if (cache.size > 5000) cache.clear();
     return user;
   }
 
+  /**
+   * Renueva la sesión. Devuelve la sesión, o null si el token de refresco es inválido de verdad.
+   * Si el servicio falla (429 / 5xx / red) lanza un error: NO se cierra la sesión del usuario.
+   */
   async function refresh(refreshToken) {
     if (!refreshToken) return null;
     const { data, error } = await pub.auth.refreshSession({ refresh_token: refreshToken });
-    return error ? null : data.session;
+    if (error) {
+      const svc = serviceError(error);
+      if (svc) throw svc;
+      return null;
+    }
+    return data.session;
+  }
+
+  /** Claims del token (ya validado por userFromToken). */
+  function claimsOf(token) {
+    try { return JSON.parse(Buffer.from(String(token).split('.')[1], 'base64url').toString()); } catch { return null; }
+  }
+
+  /** Solo un token emitido por el enlace de recuperación (amr = otp/recovery, reciente) permite fijar contraseña. */
+  function isRecoveryToken(token) {
+    const amr = claimsOf(token)?.amr ?? [];
+    return amr.some((m) => ['otp', 'recovery'].includes(m.method) && Date.now() / 1000 - m.timestamp < 3600);
   }
 
   async function signOut(token) {
@@ -106,7 +148,12 @@ export function createAuth({ config, db }) {
 
   async function verifyPassword(email, password) {
     const { error } = await pub.auth.signInWithPassword({ email, password });
-    return !error;
+    if (error) {
+      const svc = serviceError(error);
+      if (svc) throw svc;
+      return false;
+    }
+    return true;
   }
 
   async function deleteUser(userId) {
@@ -115,7 +162,7 @@ export function createAuth({ config, db }) {
     cache.clear();
   }
 
-  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, setPassword, verifyPassword, deleteUser, profile };
+  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, setPassword, verifyPassword, deleteUser, profile, isRecoveryToken };
 }
 
 export function cookieOptions(config, maxAgeSeconds) {
@@ -149,7 +196,21 @@ export const newId = () => randomUUID();
 
 export const isValidEmail = (v) => typeof v === 'string' && v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim());
 
-/** Limitador simple en memoria para frenar fuerza bruta. */
+/**
+ * Limitador compartido entre instancias (Postgres). `limit(key)` devuelve true si se permite.
+ * Si la base falla, se permite (no bloquear a todos por un error de infraestructura).
+ */
+export function sharedRateLimiter(db, { windowSeconds, max }) {
+  return async (key) => {
+    try {
+      return (await db.service.one('select public.hit_rate_limit($1, $2, $3) as ok', [key, max, windowSeconds])).ok;
+    } catch {
+      return true;
+    }
+  };
+}
+
+/** Limitador simple en memoria (solo para scripts y pruebas). */
 export function rateLimiter({ windowMs, max }) {
   const hits = new Map();
   return (key) => {

@@ -9,6 +9,7 @@ import { completeLesson, getLesson, journeyState, saveResponse } from '../servic
 import { addDays, dailySeries, daysBetween, planContext, summarize, todayIn } from '../services/stats.js';
 import { SUPPORT_TOPICS } from '../services/support.js';
 import { DAY_RE, HttpError, int, oneOf, requireAccess, text, uuid, wrap } from './util.js';
+import { sharedRateLimiter } from '../auth.js';
 import { subscriptionView } from './account.js';
 
 export const MOODS = ['muy-bien', 'bien', 'regular', 'mal', 'muy-mal'];
@@ -16,8 +17,11 @@ export const FEELINGS = ['ansiedad', 'estres', 'aburrimiento', 'tristeza', 'enoj
 const TRIGGER_IDS = [...Object.keys(TRIGGERS), 'otro'];
 const RANGES = { 7: 7, 30: 30, 90: 90, 365: 365 };
 
+const PUSH_HOSTS = ['fcm.googleapis.com', 'android.googleapis.com', '.push.services.mozilla.com', '.notify.windows.com', 'web.push.apple.com', '.push.apple.com'];
+
 export function appRoutes({ db, billing, config, notifier }) {
   const r = Router();
+  const testLimiter = sharedRateLimiter(db, { windowSeconds: 60 * 60, max: 10 });
   r.use(requireAccess(billing));
 
   const tz = (req) => req.user.timezone || 'UTC';
@@ -155,8 +159,7 @@ export function appRoutes({ db, billing, config, notifier }) {
         tasks: tasks.map((t) => ({ ...t, done: Boolean(t.done_at) })),
       };
     });
-    const sub = await billing.activeSubscription(userId);
-    res.json({ ...data, currency: config.currency, locale: config.locale, subscription: subscriptionView(sub),
+    res.json({ ...data, currency: config.currency, locale: config.locale, subscription: subscriptionView(req.subscription),
       triggerOptions: Object.entries(TRIGGERS).map(([id, t]) => ({ id, label: t.label })) });
   }));
 
@@ -448,13 +451,23 @@ export function appRoutes({ db, billing, config, notifier }) {
     const { endpoint, keys } = req.body ?? {};
     let url;
     try { url = new URL(endpoint); } catch { throw new HttpError(422, 'Suscripción no válida.'); }
-    if (url.protocol !== 'https:' || !keys?.p256dh || !keys?.auth || endpoint.length > 1000) throw new HttpError(422, 'Suscripción no válida.');
-    // El mismo endpoint pasa a la cuenta actual (p. ej. un dispositivo compartido que cambia de usuario).
-    await db.service.exec(`
+    // Solo servicios push oficiales (evita usar el servidor para enviar peticiones a terceros).
+    const host = url.hostname.toLowerCase();
+    const allowed = PUSH_HOSTS.some((h) => (h.startsWith('.') ? host.endsWith(h) : host === h));
+    if (url.protocol !== 'https:' || !allowed || !keys?.p256dh || !keys?.auth || endpoint.length > 1000) throw new HttpError(422, 'Suscripción no válida.');
+    const count = await db.service.one('select count(*)::int as n from public.push_subscriptions where user_id = $1 and endpoint <> $2', [req.user.id, endpoint]);
+    if (count.n >= 5) throw new HttpError(409, 'Has alcanzado el máximo de 5 dispositivos. Desactiva alguno en otro dispositivo.', 'TOO_MANY_DEVICES');
+    // Un endpoint solo cambia de cuenta si quien lo envía tiene también sus claves (es el mismo navegador).
+    const p256dh = String(keys.p256dh).slice(0, 200);
+    const authKey = String(keys.auth).slice(0, 100);
+    const row = await db.service.one(`
       insert into public.push_subscriptions (user_id, endpoint, p256dh, auth, user_agent) values ($1, $2, $3, $4, $5)
-      on conflict (endpoint) do update set user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth,
-        user_agent = excluded.user_agent, failures = 0`,
-    [req.user.id, endpoint, String(keys.p256dh).slice(0, 200), String(keys.auth).slice(0, 100), String(req.get('user-agent') ?? '').slice(0, 300)]);
+      on conflict (endpoint) do update set user_id = excluded.user_id, user_agent = excluded.user_agent, failures = 0
+        where public.push_subscriptions.user_id = excluded.user_id
+           or (public.push_subscriptions.p256dh = excluded.p256dh and public.push_subscriptions.auth = excluded.auth)
+      returning id`,
+    [req.user.id, endpoint, p256dh, authKey, String(req.get('user-agent') ?? '').slice(0, 300)]);
+    if (!row) throw new HttpError(409, 'Suscripción no válida.');
     res.status(201).json({ ok: true });
   }));
 
@@ -464,6 +477,7 @@ export function appRoutes({ db, billing, config, notifier }) {
   }));
 
   r.post('/push/test', wrap(async (req, res) => {
+    if (!(await testLimiter(`pushtest:${req.user.id}`))) throw new HttpError(429, 'Espera un momento antes de enviar otra prueba.', 'RATE_LIMITED');
     const result = await notifier.test(req.user.id);
     if (result !== 'sent') throw new HttpError(409, result === 'no-devices' ? 'Activa primero las notificaciones en este dispositivo.' : 'No se pudo enviar la notificación de prueba.', 'PUSH_FAILED');
     res.json({ ok: true });
@@ -483,8 +497,8 @@ export function appRoutes({ db, billing, config, notifier }) {
     await asUser(req, async (q) => {
       let conv = await q.one('select id from public.support_conversations where user_id = $1 order by created_at desc limit 1', [req.user.id]);
       if (!conv) conv = await q.one('insert into public.support_conversations (user_id) values ($1) returning id', [req.user.id]);
-      await q.exec(`insert into public.support_messages (conversation_id, user_id, role, content) values ($1, $2, 'user', $3)`, [conv.id, req.user.id, topic.label]);
-      await q.exec(`insert into public.support_messages (conversation_id, user_id, role, content) values ($1, $2, 'guide', $3)`,
+      await q.sudo.exec(`insert into public.support_messages (conversation_id, user_id, role, content) values ($1, $2, 'user', $3)`, [conv.id, req.user.id, topic.label]);
+      await q.sudo.exec(`insert into public.support_messages (conversation_id, user_id, role, content) values ($1, $2, 'guide', $3)`,
         [conv.id, req.user.id, JSON.stringify({ topic: topic.id, text: topic.reply })]);
     });
     res.status(201).json({ reply: { text: topic.reply, links: topic.links } });

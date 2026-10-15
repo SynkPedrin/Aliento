@@ -44,22 +44,33 @@ export async function planContext(q, userId) {
   return { plan: plan.data, planCreatedAt: plan.created_at, goal, baseline, strategy, pricePerCig, targetFor };
 }
 
-/** Serie diaria entre dos fechas locales (inclusive). */
+/**
+ * Serie diaria entre dos fechas locales (inclusive). Una agregación por tabla sobre un rango
+ * de timestamps (usa los índices user_id + fecha) y luego unión con el calendario.
+ * Coste ~constante: no crece con días × registros.
+ */
 export async function dailySeries(q, userId, tz, from, to) {
   return q.rows(`
-    with days as (select generate_series($3::date, $4::date, interval '1 day')::date as d)
-    select to_char(d, 'YYYY-MM-DD') as day,
-      coalesce((select sum(quantity) from public.smoking_entries s where s.user_id = $1 and (s.smoked_at at time zone $2)::date = d), 0)::int as cigarettes,
-      exists (select 1 from public.smoking_entries s where s.user_id = $1 and (s.smoked_at at time zone $2)::date = d) as has_entries,
-      exists (select 1 from public.daily_checkins c where c.user_id = $1 and c.day = d) as checked_in,
-      (select count(*) from public.craving_entries c where c.user_id = $1 and (c.felt_at at time zone $2)::date = d)::int as cravings,
-      (select count(*) from public.craving_entries c where c.user_id = $1 and (c.felt_at at time zone $2)::date = d and c.outcome = 'resisted')::int as resisted,
-      (select mood from public.mood_entries m where m.user_id = $1 and m.day = d) as mood,
-      (select count(*) from public.breathing_sessions b where b.user_id = $1 and b.completed_at is not null
-         and (b.completed_at at time zone $2)::date = d)::int as breathing,
-      (select count(*) from public.user_lesson_progress p where p.user_id = $1 and p.status = 'completed'
-         and (p.completed_at at time zone $2)::date = d)::int as lessons
-    from days order by d`, [userId, tz, from, to]);
+    with days as (select generate_series($3::date, $4::date, interval '1 day')::date as d),
+    b as (select ($3::date)::timestamp at time zone $2 as lo, ($4::date + 1)::timestamp at time zone $2 as hi),
+    s as (select (smoked_at at time zone $2)::date as d, sum(quantity) as qty
+          from public.smoking_entries, b where user_id = $1 and smoked_at >= b.lo and smoked_at < b.hi group by 1),
+    c as (select (felt_at at time zone $2)::date as d, count(*) as n, count(*) filter (where outcome = 'resisted') as r
+          from public.craving_entries, b where user_id = $1 and felt_at >= b.lo and felt_at < b.hi group by 1),
+    k as (select day as d from public.daily_checkins where user_id = $1 and day between $3::date and $4::date),
+    m as (select day as d, mood from public.mood_entries where user_id = $1 and day between $3::date and $4::date),
+    br as (select (completed_at at time zone $2)::date as d, count(*) as n
+          from public.breathing_sessions, b where user_id = $1 and completed_at >= b.lo and completed_at < b.hi group by 1),
+    l as (select (completed_at at time zone $2)::date as d, count(*) as n
+          from public.user_lesson_progress, b where user_id = $1 and status = 'completed' and completed_at >= b.lo and completed_at < b.hi group by 1)
+    select to_char(days.d, 'YYYY-MM-DD') as day,
+      coalesce(s.qty, 0)::int as cigarettes, (s.d is not null) as has_entries, (k.d is not null) as checked_in,
+      coalesce(c.n, 0)::int as cravings, coalesce(c.r, 0)::int as resisted, m.mood,
+      coalesce(br.n, 0)::int as breathing, coalesce(l.n, 0)::int as lessons
+    from days
+    left join s on s.d = days.d left join c on c.d = days.d left join k on k.d = days.d
+    left join m on m.d = days.d left join br on br.d = days.d left join l on l.d = days.d
+    order by days.d`, [userId, tz, from, to]);
 }
 
 /** Resumen de un período: valores registrados y estimaciones, claramente separados. */

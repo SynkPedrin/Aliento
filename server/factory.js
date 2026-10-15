@@ -12,7 +12,8 @@ export function buildApp(env = process.env, { poolSize = 10 } = {}) {
   const config = loadConfig(env);
   const db = createDb(config.supabase.dbUrl, { max: poolSize });
   const auth = createAuth({ config, db });
-  const stripe = config.stripe.secretKey ? new Stripe(config.stripe.secretKey) : null;
+  // Timeout corto con reintentos: nunca más que el límite de la función serverless (30 s).
+  const stripe = config.stripe.secretKey ? new Stripe(config.stripe.secretKey, { timeout: 8000, maxNetworkRetries: 2 }) : null;
   if (!stripe) console.warn('[aliento] Sin STRIPE_SECRET_KEY: el pago queda desactivado.');
   else if (!config.stripe.webhookSecret) console.warn('[aliento] Falta STRIPE_WEBHOOK_SECRET: los pagos no se activarán.');
   const notifier = createNotifier({ db, config });

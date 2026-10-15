@@ -17,36 +17,37 @@ export const TRACKED_DAYS_SQL = `
     union select day from public.mood_entries where user_id = $1
   ) t`;
 
-const RULES = [
-  ['primera-leccion', `select count(*) >= 1 as ok from public.user_lesson_progress where user_id = $1 and status = 'completed'`],
-  ['primer-capitulo', `select count(*) >= 1 as ok from public.user_chapter_progress where user_id = $1 and status = 'completed'`],
-  ['primer-registro', `select (exists (select 1 from public.smoking_entries where user_id = $1)
-      or exists (select 1 from public.daily_checkins where user_id = $1)
-      or exists (select 1 from public.craving_entries where user_id = $1)
-      or exists (select 1 from public.mood_entries where user_id = $1)) as ok`],
-  ['semana-seguimiento', `select count(*) >= 7 as ok from (${TRACKED_DAYS_SQL}) x`],
-  ['ganas-superadas', `select exists (select 1 from public.craving_entries where user_id = $1 and outcome = 'resisted') as ok`],
-  ['respiracion-5', `select count(*) >= 5 as ok from public.breathing_sessions where user_id = $1 and completed_at is not null`],
-  ['primer-dia-sin-fumar', `select exists (
-      select 1 from public.daily_checkins c where c.user_id = $1
-      and not exists (select 1 from public.smoking_entries s where s.user_id = $1 and (s.smoked_at at time zone $2)::date = c.day)) as ok`],
-  ['un-mes', `select exists (select 1 from public.personalized_plans where user_id = $1 and created_at <= now() - interval '30 days') as ok`],
-];
+const TOTAL = 9;
 
 /**
- * Revisa todas las reglas y concede los logros nuevos. Se ejecuta con el rol de servicio
- * (los usuarios no pueden escribir en user_achievements). Devuelve los logros recién desbloqueados.
+ * Revisa todas las reglas en UNA consulta y concede los logros nuevos. Se ejecuta con el rol de
+ * servicio (los usuarios no pueden escribir en user_achievements). Devuelve los recién desbloqueados.
  */
 export async function checkAchievements(q, userId, timezone = 'UTC') {
-  const unlocked = [];
-  const have = new Set((await q.rows('select achievement_slug from public.user_achievements where user_id = $1', [userId]))
-    .map((r) => r.achievement_slug));
-  for (const [slug, sql] of RULES) {
-    if (have.has(slug)) continue;
-    const params = sql.includes('$2') ? [userId, timezone] : [userId];
-    const { ok } = await q.one(sql, params);
-    if (ok && await unlockAchievement(q, userId, slug)) unlocked.push(slug);
-  }
-  if (!unlocked.length) return [];
-  return q.rows('select slug, title, description, icon from public.achievements where slug = any($1) order by position', [unlocked]);
+  const have = await q.one('select count(*)::int as n from public.user_achievements where user_id = $1', [userId]);
+  if (have.n >= TOTAL) return [];
+  const rows = await q.rows(`
+    with rules(slug, ok) as (values
+      ('primera-leccion', exists (select 1 from public.user_lesson_progress where user_id = $1 and status = 'completed')),
+      ('primer-capitulo', exists (select 1 from public.user_chapter_progress where user_id = $1 and status = 'completed')),
+      ('primer-registro', exists (select 1 from public.smoking_entries where user_id = $1)
+         or exists (select 1 from public.daily_checkins where user_id = $1)
+         or exists (select 1 from public.craving_entries where user_id = $1)
+         or exists (select 1 from public.mood_entries where user_id = $1)),
+      ('semana-seguimiento', (select count(*) >= 7 from (${TRACKED_DAYS_SQL}) x)),
+      ('ganas-superadas', exists (select 1 from public.craving_entries where user_id = $1 and outcome = 'resisted')),
+      ('respiracion-5', (select count(*) >= 5 from public.breathing_sessions where user_id = $1 and completed_at is not null)),
+      ('primer-dia-sin-fumar', exists (select 1 from public.daily_checkins c where c.user_id = $1 and not exists (
+         select 1 from public.smoking_entries s where s.user_id = $1
+           and s.smoked_at >= c.day::timestamp at time zone $2 and s.smoked_at < (c.day + 1)::timestamp at time zone $2))),
+      ('un-mes', exists (select 1 from public.personalized_plans where user_id = $1 and created_at <= now() - interval '30 days'))
+    ),
+    granted as (
+      insert into public.user_achievements (user_id, achievement_slug)
+      select $1, slug from rules where ok
+      on conflict do nothing returning achievement_slug
+    )
+    select a.slug, a.title, a.description, a.icon from public.achievements a
+    join granted g on g.achievement_slug = a.slug order by a.position`, [userId, timezone]);
+  return rows;
 }

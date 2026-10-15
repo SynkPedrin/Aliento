@@ -1,6 +1,6 @@
 // Configuración centralizada a partir de variables de entorno (ver .env.example).
 
-export const PLAN_IDS = ['semanal', 'mensual', 'trimestral'];
+export const PLAN_IDS = ['semanal', 'mensual', 'trimestral', 'anual'];
 
 export const PLAN_META = {
   // unit: texto para "precio por …"; charge: periodicidad visible en la tarjeta;
@@ -9,6 +9,8 @@ export const PLAN_META = {
   semanal: { name: 'Semanal', title: 'Plan de 1 semana', interval: 'week', intervalCount: 1, periodLabel: 'cada semana', unit: 'semana', charge: 'Se cobra cada semana', months: null, days: 7 },
   mensual: { name: 'Mensual', title: 'Plan de 1 mes', interval: 'month', intervalCount: 1, periodLabel: 'cada mes', unit: 'mes', charge: 'Se cobra cada mes', months: null, days: 30 },
   trimestral: { name: 'Trimestral', title: 'Plan de 3 meses', interval: 'month', intervalCount: 3, periodLabel: 'cada 3 meses', unit: '3 meses', charge: 'Se cobra cada 3 meses', months: 3, days: 90 },
+  // Solo se muestra si existe un precio activo en Stripe (lookup folego_anual o STRIPE_PRICE_ANUAL).
+  anual: { name: 'Anual', title: 'Plan de 1 año', interval: 'year', intervalCount: 1, periodLabel: 'cada año', unit: 'año', charge: 'Se cobra una vez al año', months: 12, days: 365 },
 };
 
 export function loadConfig(env = process.env) {
@@ -55,6 +57,7 @@ export function loadConfig(env = process.env) {
         semanal: env.STRIPE_PRICE_SEMANAL || 'lookup:folego_semanal',
         mensual: env.STRIPE_PRICE_MENSUAL || 'lookup:folego_mensual',
         trimestral: env.STRIPE_PRICE_TRIMESTRAL || 'lookup:folego_trimestral',
+        anual: env.STRIPE_PRICE_ANUAL || 'lookup:folego_anual',
       },
       // Oferta de salida: cupón real de Stripe aplicado solo al primer pago de un plan.
       exitOffer: {

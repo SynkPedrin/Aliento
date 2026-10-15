@@ -1,4 +1,5 @@
 import express from 'express';
+import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { ACCESS_COOKIE, AuthError, REFRESH_COOKIE, clearSessionCookies, parseCookies, setSessionCookies } from './auth.js';
@@ -70,9 +71,17 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, l
 
   // ---------- Tarea programada: recordatorios (Vercel Cron o pg_cron de Supabase) ----------
   app.all('/api/cron/notifications', async (req, res) => {
-    if (!config.cronSecret || req.get('authorization') !== `Bearer ${config.cronSecret}`) return res.status(401).end();
+    const given = Buffer.from(String(req.get('authorization') ?? ''));
+    const expected = Buffer.from(`Bearer ${config.cronSecret}`);
+    if (!config.cronSecret || given.length !== expected.length || !timingSafeEqual(given, expected)) return res.status(401).end();
     try {
-      res.json(await notifier.runDue());
+      const out = await notifier.runDue();
+      // Retención de datos (LGPD): se ejecuta como mucho una vez por hora.
+      out.purged = await db.service.one(`select public.purge_stale_data() as r
+        where not exists (select 1 from public.rate_limits where key = 'cron:purge' and window_start > now() - interval '1 hour')`)
+        .then(async (r) => { await db.service.exec(`select public.hit_rate_limit('cron:purge', 1000000, 3600)`); return r?.r ?? null; })
+        .catch(() => null);
+      res.json(out);
     } catch (err) {
       log.error('[cron] notificaciones:', err.message);
       res.status(500).json({ error: 'Error' });
@@ -89,12 +98,13 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, l
     try {
       req.user = await auth.userFromToken(req.cookies[ACCESS_COOKIE]);
       if (!req.user && req.cookies[REFRESH_COOKIE]) {
+        // refresh() lanza si el servicio falla (429/5xx): la sesión se conserva y se responde 503.
         const session = await auth.refresh(req.cookies[REFRESH_COOKIE]);
         if (session) {
           setSessionCookies(res, config, session);
           req.user = await auth.userFromToken(session.access_token);
         } else {
-          clearSessionCookies(res);
+          clearSessionCookies(res); // token de refresco inválido de verdad
         }
       }
       next();

@@ -21,7 +21,8 @@ export const requireUser = (req, res, next) => (req.user
 /** Exige sesión y suscripción con acceso premium. */
 export const requireAccess = (billing) => wrap(async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Inicia sesión para continuar.', code: 'AUTH_REQUIRED' });
-  if (!(await billing.activeSubscription(req.user.id))) {
+  req.subscription = await billing.activeSubscription(req.user.id);
+  if (!req.subscription) {
     return res.status(402).json({ error: 'Necesitas una suscripción activa.', code: 'SUBSCRIPTION_REQUIRED' });
   }
   next();

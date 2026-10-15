@@ -40,6 +40,7 @@ export function createDb(connectionString, { max = 10 } = {}) {
     const client = await pool.connect();
     try {
       await client.query('begin');
+      await client.query("set local statement_timeout = '8s'"); // ninguna consulta bloquea la función
       if (setup) await setup(client);
       const q = wrap(client);
       if (userScoped) {

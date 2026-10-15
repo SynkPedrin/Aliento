@@ -9,18 +9,23 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
   };
   const sessions = new Map();
   const subs = new Map();
+  const invoiceSubs = new Map();
   let n = 0;
   // Prefijo aleatorio por ejecución: IDs únicos aunque varios procesos compartan la base local.
   const run = Math.random().toString(36).slice(2, 8);
   const calls = { sessionsCreated: 0, expired: 0 };
   return {
-    calls, sessions, subs,
+    calls, sessions, subs, invoiceSubs,
     webhooks,
     prices: {
       list: async ({ lookup_keys }) => ({ data: lookup_keys.map((k) => prices[k]).filter(Boolean) }),
       retrieve: async (id) => Object.values(prices).find((p) => p.id === id),
     },
-    customers: { create: async () => ({ id: `cus_${run}${++n}` }) },
+    customers: {
+      create: async () => ({ id: `cus_${run}${++n}` }),
+      del: async (id) => { for (const sub of subs.values()) if (sub.customer === id) sub.status = 'canceled'; calls.deletedCustomers = (calls.deletedCustomers ?? 0) + 1; return { id, deleted: true }; },
+    },
+    invoices: { retrieve: async (id) => ({ id, parent: { subscription_details: { subscription: invoiceSubs.get(id) } } }) },
     coupons: { retrieve: async (id) => (id === 'aliento-salida-20' ? { id, valid: true, duration: 'once', percent_off: 20 } : Promise.reject(new Error('No such coupon'))) },
     subscriptions: {
       list: ({ customer } = {}) => {
@@ -28,7 +33,8 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
         // Igual que el SDK: se puede usar con await o con for await (paginación automática).
         return Object.assign(Promise.resolve({ data }), { [Symbol.asyncIterator]: async function* () { yield* data; } });
       },
-      retrieve: async (id) => subs.get(id),
+      retrieve: async (id) => structuredClone(subs.get(id)),
+      cancel: async (id) => { const sub = subs.get(id); sub.status = 'canceled'; return structuredClone(sub); },
     },
     checkout: {
       sessions: {

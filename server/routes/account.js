@@ -1,15 +1,18 @@
 // Cuenta: identificación, sesión, recuperación de contraseña, perfil, suscripción, exportación y baja.
 import { Router } from 'express';
 import {
-  AuthError, ACCESS_COOKIE, clearSessionCookies, isValidEmail, rateLimiter, setSessionCookies,
+  AuthError, ACCESS_COOKIE, clearSessionCookies, isValidEmail, setSessionCookies, sharedRateLimiter,
 } from '../auth.js';
 import { isValidTimezone } from '../services/stats.js';
 import { HttpError, requireUser, wrap } from './util.js';
 
 export function accountRoutes({ db, auth, billing, config, store, log = console }) {
   const r = Router();
-  const authLimiter = rateLimiter({ windowMs: 15 * 60_000, max: 20 });
-  const recoveryLimiter = rateLimiter({ windowMs: 60 * 60_000, max: 5 });
+  // Límites compartidos entre instancias (Postgres): por IP y por cuenta.
+  const ipLimiter = sharedRateLimiter(db, { windowSeconds: 15 * 60, max: 30 });
+  const accountLimiter = sharedRateLimiter(db, { windowSeconds: 15 * 60, max: 10 });
+  const recoveryLimiter = sharedRateLimiter(db, { windowSeconds: 60 * 60, max: 5 });
+  const tooMany = () => new HttpError(429, 'Demasiados intentos. Espera unos minutos.', 'RATE_LIMITED');
 
   const password = (v, field = 'password') => {
     if (typeof v !== 'string' || v.length < 8 || v.length > 72) {
@@ -19,11 +22,15 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
   };
 
   r.post('/auth/register', wrap(async (req, res) => {
-    if (!authLimiter(`r:${req.ip}`)) throw new HttpError(429, 'Demasiados intentos. Espera unos minutos.');
-    const { name, email, acceptTerms, healthConsent, timezone } = req.body ?? {};
+    if (!(await ipLimiter(`register:${req.ip}`))) throw tooMany();
+    const { name, email, emailConfirm, acceptTerms, healthConsent, timezone } = req.body ?? {};
     const cleanName = String(name ?? '').trim();
     if (!cleanName || cleanName.length > 80) throw new HttpError(422, 'Escribe tu nombre.', 'INVALID', { field: 'name' });
     if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
+    // Evita cuentas con un correo mal escrito (sin correo no hay recibos ni recuperación).
+    if (emailConfirm !== undefined && String(emailConfirm).trim().toLowerCase() !== email.trim().toLowerCase()) {
+      throw new HttpError(422, 'Los correos no coinciden.', 'INVALID', { field: 'emailConfirm' });
+    }
     password(req.body?.password);
     if (acceptTerms !== true) throw new HttpError(422, 'Debes aceptar los términos y la política de privacidad.', 'INVALID', { field: 'acceptTerms' });
     if (healthConsent !== true) throw new HttpError(422, 'Necesitamos tu consentimiento para tratar los datos sobre tu consumo de tabaco.', 'INVALID', { field: 'healthConsent' });
@@ -37,8 +44,9 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
   }));
 
   r.post('/auth/login', wrap(async (req, res) => {
-    if (!authLimiter(`l:${req.ip}`)) throw new HttpError(429, 'Demasiados intentos. Espera unos minutos.');
     const { email } = req.body ?? {};
+    if (!(await ipLimiter(`login:${req.ip}`))) throw tooMany();
+    if (isValidEmail(email) && !(await accountLimiter(`login:${email.trim().toLowerCase()}`))) throw tooMany();
     if (!isValidEmail(email) || typeof req.body?.password !== 'string') throw new AuthError('INVALID_LOGIN', 'Correo o contraseña incorrectos.', 401);
     const session = await auth.signIn({ email: email.trim().toLowerCase(), password: req.body.password });
     await store.claim(req, session.user.id);
@@ -56,7 +64,7 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
   r.post('/auth/forgot', wrap(async (req, res) => {
     const { email } = req.body ?? {};
     if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
-    if (recoveryLimiter(`f:${req.ip}`) && recoveryLimiter(`f:${email.toLowerCase()}`)) {
+    if (await recoveryLimiter(`forgot:${req.ip}`) && await recoveryLimiter(`forgot:${email.trim().toLowerCase()}`)) {
       await auth.sendRecovery(email.trim().toLowerCase());
     }
     res.json({ ok: true });
@@ -65,9 +73,11 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
   // El enlace del correo trae un token de acceso de recuperación; con él se fija la nueva contraseña.
   r.post('/auth/reset', wrap(async (req, res) => {
     const { accessToken, refreshToken } = req.body ?? {};
+    if (!(await ipLimiter(`reset:${req.ip}`))) throw tooMany();
     password(req.body?.password);
     const user = await auth.userFromToken(accessToken);
-    if (!user) throw new HttpError(400, 'El enlace no es válido o ha caducado. Solicita uno nuevo.', 'INVALID_LINK');
+    // Solo un token del enlace de recuperación (no un token de sesión cualquiera).
+    if (!user || !auth.isRecoveryToken(accessToken)) throw new HttpError(400, 'El enlace no es válido o ha caducado. Solicita uno nuevo.', 'INVALID_LINK');
     await auth.setPassword(user.id, req.body.password);
     const session = await auth.signIn({ email: user.email, password: req.body.password });
     if (refreshToken) await auth.signOut(accessToken);
@@ -137,7 +147,7 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
   }));
 
   r.post('/profile/password', requireUser, wrap(async (req, res) => {
-    if (!authLimiter(`p:${req.user.id}`)) throw new HttpError(429, 'Demasiados intentos. Espera unos minutos.');
+    if (!(await accountLimiter(`password:${req.user.id}`))) throw tooMany();
     if (!(await auth.verifyPassword(req.user.email, String(req.body?.current ?? '')))) {
       throw new HttpError(422, 'La contraseña actual no es correcta.', 'INVALID', { field: 'current' });
     }
@@ -167,6 +177,16 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
           join public.journey_lessons l on l.id = p.lesson_id where p.user_id = $1`),
         lessonResponses: await all('select lesson_id, block_key, response, responded_at from public.lesson_responses where user_id = $1'),
         achievements: await all('select achievement_slug, unlocked_at from public.user_achievements where user_id = $1'),
+        consents: await q.one('select terms_accepted_at, health_consent_at from public.profiles where user_id = $1', [id]),
+        questionnaireAnswers: await q.rows(`select a.question_id, a.value, a.answered_at from public.questionnaire_answers a
+          join public.questionnaire_sessions s on s.id = a.session_id where s.user_id = $1 or s.claimed_user_id = $1`, [id]),
+        planVersions: await q.rows(`select v.version, v.data, v.reason, v.created_at from public.plan_versions v
+          join public.personalized_plans p on p.id = v.plan_id where p.user_id = $1 order by v.version`, [id]),
+        chapters: await all('select chapter_id, status, completed_at from public.user_chapter_progress where user_id = $1'),
+        supportMessages: await all('select role, content, created_at from public.support_messages where user_id = $1 order by id'),
+        pushDevices: await all('select user_agent, created_at, last_success_at from public.push_subscriptions where user_id = $1'),
+        notificationsSent: await all('select category, status, title, scheduled_for, sent_at from public.notification_deliveries where user_id = $1 order by scheduled_for desc limit 500'),
+        accessGrants: await all('select reason, expires_at, revoked_at, created_at from public.access_grants where user_id = $1'),
         notifications: await q.one('select * from public.notification_preferences where user_id = $1', [id]),
         subscriptions: await all('select plan, status, current_period_end, cancel_at_period_end, created_at from public.subscriptions where user_id = $1'),
       };
@@ -193,6 +213,7 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
       await q.exec(`insert into public.admin_audit_logs (action, entity, entity_id, details)
         values ('account.deleted', 'user', $1, '{}')`, [req.user.id]);
     });
+    await billing.deleteCustomer(req.user.id); // cancela lo que quede y borra el cliente de Stripe
     await auth.signOut(req.cookies[ACCESS_COOKIE]);
     await auth.deleteUser(req.user.id); // en cascada: perfil, registros, progreso, respuestas
     clearSessionCookies(res);

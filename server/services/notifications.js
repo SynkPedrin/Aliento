@@ -1,17 +1,8 @@
 // Canal de notificaciones Web Push (VAPID). Solo envía a quien dio su consentimiento,
 // en las categorías elegidas y una sola vez por recordatorio (clave de deduplicación).
 import webpush from 'web-push';
-import { addDays, todayIn } from './stats.js';
 
 const WINDOW_MIN = 30; // el recordatorio sale si la tarea programada pasa dentro de esta ventana
-
-function localClock(tz, date = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', weekday: 'short', hourCycle: 'h23' }).formatToParts(date);
-  const get = (t) => parts.find((p) => p.type === t)?.value;
-  return { minutes: Number(get('hour')) * 60 + Number(get('minute')), weekday: get('weekday'), day: todayIn(tz, date) };
-}
-
-const toMinutes = (time) => { const [h, m] = String(time).slice(0, 5).split(':').map(Number); return h * 60 + m; };
 
 export function createNotifier({ db, config, log = console, sender = (sub, body, opts) => webpush.sendNotification(sub, body, opts) }) {
   const { publicKey, privateKey, subject } = config.push;
@@ -37,11 +28,11 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
     for (const s of subs) {
       try {
         await sender({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
-          JSON.stringify(payload), { TTL: 6 * 3600, urgency: 'normal' });
+          JSON.stringify(payload), { TTL: 6 * 3600, urgency: 'normal', timeout: 5000 });
         ok += 1;
         await db.service.exec('update public.push_subscriptions set last_success_at = now(), failures = 0 where id = $1', [s.id]);
       } catch (err) {
-        lastError = `${err.statusCode ?? ''} ${err.body ?? err.message}`.trim().slice(0, 300);
+        lastError = err.statusCode ? `HTTP ${err.statusCode}` : 'error de red'; // sin guardar el cuerpo remoto
         // 404/410: el navegador anuló la suscripción → se elimina.
         if (err.statusCode === 404 || err.statusCode === 410) await db.service.exec('delete from public.push_subscriptions where id = $1', [s.id]);
         else await db.service.exec('update public.push_subscriptions set failures = failures + 1 where id = $1', [s.id]);
@@ -52,13 +43,24 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
     return ok ? 'sent' : 'failed';
   }
 
-  /** Destinatarios: consentimiento activo, acceso premium y al menos un dispositivo. */
-  async function recipients() {
+  /**
+   * Destinatarios a los que les toca AHORA (hora local dentro de la ventana) y que aún no
+   * recibieron el recordatorio de hoy. Selección en SQL, por lotes.
+   */
+  async function dueRecipients(limit) {
     return db.service.rows(`
-      select n.*, p.name from public.notification_preferences n
+      select n.*, p.name, (now() at time zone n.timezone)::date::text as local_day,
+             trim(to_char(now() at time zone n.timezone, 'Dy')) as local_weekday
+      from public.notification_preferences n
       join public.profiles p on p.user_id = n.user_id
-      where n.enabled and n.consent_at is not null and public.has_premium(n.user_id)
-        and exists (select 1 from public.push_subscriptions s where s.user_id = n.user_id)`);
+      where n.enabled and n.consent_at is not null
+        and (extract(epoch from ((now() at time zone n.timezone)::time - n.reminder_time))::int + 86400) % 86400 < $1
+        and exists (select 1 from public.push_subscriptions s where s.user_id = n.user_id)
+        and not exists (select 1 from public.notification_deliveries d where d.user_id = n.user_id and d.category = 'daily'
+                        and d.dedupe_key = 'daily:' || (now() at time zone n.timezone)::date::text)
+        and public.has_premium(n.user_id)
+      order by n.user_id
+      limit $2`, [WINDOW_MIN * 60, limit]);
   }
 
   async function dailyMessage(r, day) {
@@ -79,43 +81,68 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
     return parts.length ? { title: `Hola, ${r.name.split(' ')[0]}`, body: parts.join(' '), url: '/dashboard', tag: 'daily' } : null;
   }
 
-  /** Ejecutar periódicamente (cada 5–15 min). Envía lo que toque según la hora local de cada usuario. */
-  async function runDue(now = new Date()) {
-    const out = { checked: 0, sent: 0, skipped: 0 };
-    if (!enabled) return { ...out, disabled: true };
-    for (const r of await recipients()) {
-      out.checked += 1;
-      const clock = localClock(r.timezone, now);
-      const due = clock.minutes >= toMinutes(r.reminder_time) && clock.minutes < toMinutes(r.reminder_time) + WINDOW_MIN;
-      if (!due) continue;
-      const results = [];
-      const daily = await dailyMessage(r, clock.day);
-      if (daily) results.push(await send(r.user_id, 'daily', `daily:${clock.day}`, daily));
-      if (r.weekly_summary && clock.weekday === 'Mon') {
-        const s = await db.service.one(`
-          select coalesce(sum(quantity), 0)::int as cigs,
-            (select count(*) from public.daily_checkins where user_id = $1 and day between $3::date and $4::date)::int as free_days
-          from public.smoking_entries where user_id = $1 and (smoked_at at time zone $2)::date between $3::date and $4::date`,
-        [r.user_id, r.timezone, addDays(clock.day, -7), addDays(clock.day, -1)]);
-        results.push(await send(r.user_id, 'weekly_summary', `weekly:${clock.day}`, {
-          title: 'Tu resumen semanal', url: '/progreso', tag: 'weekly',
-          body: `La semana pasada registraste ${s.cigs} ${s.cigs === 1 ? 'cigarrillo' : 'cigarrillos'} y ${s.free_days} ${s.free_days === 1 ? 'día' : 'días'} sin fumar. Mira tu evolución.`,
+  async function processRecipient(r) {
+    const results = [];
+    const day = r.local_day;
+    const daily = await dailyMessage(r, day);
+    // Siempre se marca el día (aunque no haya nada que decir) para no volver a evaluarlo.
+    results.push(daily ? await send(r.user_id, 'daily', `daily:${day}`, daily)
+      : await markSkipped(r.user_id, 'daily', `daily:${day}`));
+    if (r.weekly_summary && r.local_weekday === 'Mon') {
+      results.push(await send(r.user_id, 'weekly_summary', `weekly:${day}`, {
+        // Sin cifras de salud en la pantalla de bloqueo.
+        title: 'Tu resumen semanal está listo', url: '/progreso', tag: 'weekly',
+        body: 'Mira cómo fue tu semana y qué puedes ajustar en la próxima.',
+      }));
+    }
+    if (r.exercises && r.local_weekday === 'Thu') {
+      const g = await db.service.one(`select g.exercise_per_week as goal,
+        (select count(*) from public.breathing_sessions b where b.user_id = $1 and b.completed_at > now() - interval '7 days')::int as done
+        from public.user_goals g where g.user_id = $1 and g.superseded_at is null`, [r.user_id]);
+      if (g && g.done < g.goal) {
+        results.push(await send(r.user_id, 'exercises', `exercises:${day}`, {
+          title: 'Un minuto para ti', url: '/respirar', tag: 'exercise',
+          body: 'Un ejercicio de respiración corto puede ayudarte hoy. ¿Lo hacemos?',
         }));
       }
-      if (r.exercises && clock.weekday === 'Thu') {
-        const g = await db.service.one(`select g.exercise_per_week as goal,
-          (select count(*) from public.breathing_sessions b where b.user_id = $1 and b.completed_at > now() - interval '7 days')::int as done
-          from public.user_goals g where g.user_id = $1 and g.superseded_at is null`, [r.user_id]);
-        if (g && g.done < g.goal) {
-          results.push(await send(r.user_id, 'exercises', `exercises:${clock.day}`, {
-            title: 'Un minuto para ti', url: '/respirar', tag: 'exercise',
-            body: `Llevas ${g.done} de ${g.goal} ejercicios de respiración esta semana. ¿Hacemos uno ahora?`,
-          }));
-        }
-      }
-      out.sent += results.filter((x) => x === 'sent').length;
-      out.skipped += results.filter((x) => x !== 'sent').length;
     }
+    return results;
+  }
+
+  async function markSkipped(userId, category, dedupeKey) {
+    await db.service.exec(`insert into public.notification_deliveries (user_id, category, channel, status, scheduled_for, dedupe_key)
+      values ($1, $2, 'push', 'skipped', now(), $3) on conflict (user_id, category, dedupe_key) where dedupe_key is not null do nothing`,
+    [userId, category, dedupeKey]);
+    return 'skipped';
+  }
+
+  /**
+   * Ejecutar periódicamente (cada 5–15 min). Procesa por lotes, con envíos en paralelo y un
+   * presupuesto de tiempo dentro del límite de la función; si no termina, `more: true` y la
+   * siguiente ejecución continúa (los ya enviados no se repiten).
+   */
+  async function runDue({ budgetMs = 22_000, batch = 200, concurrency = 20 } = {}) {
+    const out = { checked: 0, sent: 0, skipped: 0, more: false };
+    if (!enabled) return { ...out, disabled: true };
+    const started = Date.now();
+    // Envíos que quedaron "pending" (la función se cortó a medias): se liberan para reintentar.
+    await db.service.exec(`delete from public.notification_deliveries where status = 'pending' and scheduled_for < now() - interval '15 minutes'`);
+    while (Date.now() - started < budgetMs) {
+      const list = await dueRecipients(batch);
+      if (!list.length) return out;
+      for (let i = 0; i < list.length; i += concurrency) {
+        const results = await Promise.allSettled(list.slice(i, i + concurrency).map(processRecipient));
+        for (const r of results) {
+          out.checked += 1;
+          const vals = r.status === 'fulfilled' ? r.value : ['failed'];
+          out.sent += vals.filter((x) => x === 'sent').length;
+          out.skipped += vals.filter((x) => x !== 'sent').length;
+        }
+        if (Date.now() - started >= budgetMs) { out.more = true; return out; }
+      }
+      if (list.length < batch) return out;
+    }
+    out.more = true;
     return out;
   }
 

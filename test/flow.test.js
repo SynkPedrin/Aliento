@@ -34,6 +34,8 @@ before(async () => {
   });
   db = createDb(config.supabase.dbUrl, { max: 5 });
   await seedJourney(db, JOURNEY);
+  // Los límites de intentos son reales (Postgres); en pruebas se parte de cero en cada ejecución.
+  await db.service.exec('delete from public.rate_limits');
   auth = createAuth({ config, db });
   stripe = fakeStripe({ webhooks: real.webhooks });
   const billing = createBilling({ db, stripe, config, log: silent });
@@ -450,7 +452,7 @@ test('notificaciones push: consentimiento, hora local, sin duplicados y cron pro
   assert.equal((await c('/api/app/push')).body.available, true);
   // Sin dispositivo no se envía nada.
   assert.equal((await c('/api/app/push/test', { method: 'POST' })).body.code, 'PUSH_FAILED');
-  const endpoint = `https://push.example.com/${randomUUID()}`;
+  const endpoint = `https://fcm.googleapis.com/fcm/send/${randomUUID()}`;
   assert.equal((await c('/api/app/push/subscriptions', { method: 'POST', body: { endpoint, keys: { p256dh: 'p', auth: 'a' } } })).status, 201);
   assert.equal((await c('/api/app/push/test', { method: 'POST' })).status, 200);
   assert.ok(pushed.some((p) => p.endpoint === endpoint && p.body.tag === 'test'));
@@ -466,6 +468,8 @@ test('notificaciones push: consentimiento, hora local, sin duplicados y cron pro
   const daily = pushed.filter((p) => p.endpoint === endpoint && p.body.tag === 'daily');
   assert.equal(daily.length, 1);
   assert.match(daily[0].body.body, /lección|Registra/);
+  // Un endpoint fuera de los servicios push oficiales se rechaza (anti-SSRF).
+  assert.equal((await c('/api/app/push/subscriptions', { method: 'POST', body: { endpoint: 'https://169.254.169.254/x', keys: { p256dh: 'p', auth: 'a' } } })).status, 422);
   await notifier.runDue();
   assert.equal(pushed.filter((p) => p.endpoint === endpoint && p.body.tag === 'daily').length, 1, 'no se repite el mismo día');
 
@@ -488,4 +492,60 @@ test('carga: más peticiones simultáneas que conexiones del pool no bloquean el
   const lessons = await Promise.all(Array.from({ length: 15 }, () => c('/api/app/journey')));
   assert.ok(lessons.every((r) => r.status === 200));
   assert.ok(Date.now() - started < 15000, 'sin bloqueo mutuo');
+});
+
+test('pagos: reembolso y disputa cortan el acceso; webhooks desordenados no reactivan', async () => {
+  const { c, sub } = await payingUser();
+  // Webhook antiguo (activo) que llega DESPUÉS de la cancelación: se relee Stripe y sigue cancelada.
+  const stale = structuredClone(sub);
+  stripe.subs.get(sub.id).status = 'canceled';
+  assert.equal(await sendEvent('customer.subscription.deleted', stripe.subs.get(sub.id)), 200);
+  assert.equal(await sendEvent('customer.subscription.updated', stale), 200);
+  assert.equal((await c('/api/app/dashboard')).body.code, 'SUBSCRIPTION_REQUIRED');
+
+  const B = await payingUser();
+  stripe.invoiceSubs.set('in_test_1', B.sub.id);
+  assert.equal(await sendEvent('charge.refunded', { id: 'ch_1', amount: 3499, amount_refunded: 3499, invoice: 'in_test_1', customer: B.sub.customer }), 200);
+  assert.equal((await B.c('/api/app/dashboard')).body.code, 'SUBSCRIPTION_REQUIRED');
+  assert.equal(stripe.subs.get(B.sub.id).status, 'canceled');
+  const review = await db.service.one('select reason from public.billing_reconciliation_reviews where stripe_subscription_id = $1', [B.sub.id]);
+  assert.match(review.reason, /Reembolso/);
+});
+
+test('pagos: evento colgado en "processing" se reprocesa; en curso devuelve error para reintento', async () => {
+  const { user, session } = await payingUser();
+  const id = `evt_${randomUUID()}`;
+  await db.service.exec(`insert into public.billing_events (id, type, status, received_at) values ($1, 'checkout.session.completed', 'processing', now())`, [id]);
+  assert.equal(await sendEvent('checkout.session.completed', session, id), 500, 'en curso: Stripe debe reintentar');
+  await db.service.exec(`update public.billing_events set received_at = now() - interval '5 minutes' where id = $1`, [id]);
+  assert.equal(await sendEvent('checkout.session.completed', session, id), 200);
+  assert.equal((await db.service.one('select status from public.billing_events where id = $1', [id])).status, 'processed');
+  void user;
+});
+
+test('seguridad: token de sesión normal no sirve para /auth/reset; checkout simultáneo no se duplica', async () => {
+  const c = client();
+  await completeQuiz(c);
+  const u = await register(c);
+  const session = await auth.signIn({ email: u.email, password: 'secreta123' });
+  const r = await client()('/api/auth/reset', { method: 'POST', body: { accessToken: session.access_token, password: 'otra-clave-99' } });
+  assert.equal(r.body.code, 'INVALID_LINK');
+  const [a, b] = await Promise.all([
+    c('/api/checkout', { method: 'POST', body: { plan: 'mensual' } }),
+    c('/api/checkout', { method: 'POST', body: { plan: 'mensual' } }),
+  ]);
+  assert.equal(a.body.url, b.body.url);
+  const open = await db.service.rows(`select id from public.checkout_sessions where user_id = $1 and status = 'open'`, [u.id]);
+  assert.equal(open.length, 1);
+});
+
+test('oferta de salida: no se reutiliza tras haber sido cliente', async () => {
+  const { c, sub } = await payingUser();
+  sub.status = 'canceled';
+  await sendEvent('customer.subscription.deleted', sub);
+  await c('/api/assessment/reset', { method: 'POST' });
+  for (const [questionId, value] of Object.entries(ANSWERS)) await c('/api/assessment/answers', { method: 'PUT', body: { questionId, value } });
+  await c('/api/assessment/complete', { method: 'POST' });
+  assert.equal((await c('/api/exit-offer', { method: 'POST' })).body.offer, null);
+  assert.equal((await c('/api/checkout', { method: 'POST', body: { plan: 'semanal', exitOffer: true } })).body.code, 'OFFER_UNAVAILABLE');
 });
