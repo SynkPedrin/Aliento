@@ -23,7 +23,13 @@ setMode(mode);
 
 async function afterAuth() {
   if (plan) return goToCheckout(plan, submit, { exitOffer: params.has('oferta') });
-  if (next && next.startsWith('/') && !next.startsWith('//')) return window.location.assign(next);
+  // Solo rutas de este mismo sitio (evita redirecciones abiertas como /\\evil.com).
+  if (next) {
+    try {
+      const target = new URL(next, location.origin);
+      if (target.origin === location.origin) return window.location.assign(target.pathname + target.search + target.hash);
+    } catch { /* destino no válido: se ignora */ }
+  }
   const me = await api('/api/me');
   window.location.assign(me.access ? (me.onboardingCompleted ? '/dashboard' : '/configuracion') : me.hasResult ? '/planes' : '/perfil');
 }
@@ -33,7 +39,7 @@ form.addEventListener('submit', async (e) => {
   errorEl.textContent = '';
   form.querySelectorAll('[aria-invalid]').forEach((el) => el.removeAttribute('aria-invalid'));
   const body = mode === 'register'
-    ? { name: form.name.value, email: form.email.value, password: form.password.value, acceptTerms: form.acceptTerms.checked, healthConsent: form.healthConsent.checked, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+    ? { name: form.name.value, email: form.email.value, password: form.password.value, acceptTerms: form.acceptTerms.checked, emailConfirm: form.emailConfirm.value, healthConsent: form.healthConsent.checked, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }
     : { email: form.email.value, password: form.password.value };
   setBusy(submit, true);
   try {

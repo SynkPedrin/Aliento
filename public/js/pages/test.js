@@ -20,7 +20,7 @@ function currencySymbol() {
 
 async function save(questionId, value, nextStepId) {
   const body = { step: nextStepId };
-  if (questionId) Object.assign(body, { questionId, value });
+  if (questionId) Object.assign(body, { questionId, value, consent: true }); // tras el aviso visible en la primera pregunta
   const { assessment } = await api('/api/assessment/answers', { method: 'PUT', body });
   answers = assessment.answers;
 }
@@ -73,7 +73,9 @@ function renderSingle(step) {
         e.currentTarget.classList.add('is-selected');
         answerAndNext(step, o.id);
       },
-    }))));
+    }))),
+    index === 0 ? h('p', { class: 'help u-mt-16' }, 'Al responder, aceptas que tratemos tus respuestas —incluidas las relativas a tu consumo de tabaco y tu bienestar— solo para calcular tus resultados. Si no creas una cuenta, se eliminan en 30 días. ',
+      h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.') : null);
 }
 
 function renderMulti(step) {

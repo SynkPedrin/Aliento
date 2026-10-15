@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Manrope:wght@300;400;500;600;700&display=swap');
 
 /* ---------- Tokens de marca ---------- */
 :root {
@@ -58,7 +57,7 @@
   --brand: var(--marfil); --brand-hover: #FFFFFF; --brand-ink: var(--verde); --focus: var(--salvia);
   --chart-1: #8FC7B4; --chart-2: #E8B18B; --grid: rgba(246, 244, 236, .12);
   color: var(--ink);
-  background: #0B2523 url('/assets/fondo.jpg') center / cover no-repeat;
+  background: #0B2523 image-set(url('/assets/fondo-1280.webp') type('image/webp') 1x, url('/assets/fondo-1920.webp') type('image/webp') 2x, url('/assets/fondo.jpg') type('image/jpeg') 1x) center / cover no-repeat;
 }
 
 /* ---------- Base ---------- */
@@ -660,3 +659,23 @@ textarea.input { min-height: 96px; resize: vertical; line-height: 1.5; }
 .segmented { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .segmented::-webkit-scrollbar { display: none; }
 .segmented button { white-space: nowrap; flex: none; }
+
+/* ---------- App instalable (PWA) ---------- */
+.install-steps { list-style: none; padding: 0; margin: 20px 0 12px; display: grid; gap: 12px; }
+.install-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); text-align: left; }
+.install-step__n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--brand); color: var(--brand-ink); font: 600 14px/1 var(--font-title); }
+.install-step__text { flex: 1; font-size: 15px; }
+.install-step__icon { flex: none; color: #2E7AF6; display: inline-grid; place-items: center; }
+.install-step__icon--inline { display: inline-grid; vertical-align: middle; margin-left: 6px; }
+.install-card { text-align: left; margin-top: 20px; }
+.install-actions { max-width: 420px; margin-left: auto; margin-right: auto; }
+.install-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+.offline-bar { position: sticky; top: 0; z-index: 60; padding: 8px 16px; text-align: center; font-size: 14px; background: var(--melocoton); color: #4A230C; }
+.offline-page { padding-top: 12vh; }
+.offline-page__icon { margin: 0 auto 20px; border-radius: 16px; }
+.container { padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+@media (display-mode: standalone) {
+  .site-header--clear { padding-top: env(safe-area-inset-top); }
+}
+
+@media (max-width: 760px) { .theme-deep { background-image: image-set(url('/assets/fondo-768.webp') type('image/webp') 1x, url('/assets/fondo-1280.webp') type('image/webp') 2x, url('/assets/fondo.jpg') type('image/jpeg') 1x); } }

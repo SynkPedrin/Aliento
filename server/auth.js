@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 export const ACCESS_COOKIE = 'al_at';
 export const REFRESH_COOKIE = 'al_rt';
 export const ASSESSMENT_COOKIE = 'fg_aid';
+export const HINT_COOKIE = 'al_s';
 const USER_CACHE_MS = 30_000;
 
 export class AuthError extends Error {
@@ -166,17 +167,20 @@ export function createAuth({ config, db }) {
 }
 
 export function cookieOptions(config, maxAgeSeconds) {
-  return { httpOnly: true, sameSite: 'lax', secure: config.isProduction, path: '/', maxAge: maxAgeSeconds * 1000 };
+  return { httpOnly: true, sameSite: 'lax', secure: config.isProduction || config.appUrl.startsWith('https://'), path: '/', maxAge: maxAgeSeconds * 1000 };
 }
 
 export function setSessionCookies(res, config, session) {
   res.cookie(ACCESS_COOKIE, session.access_token, cookieOptions(config, session.expires_in ?? 3600));
   res.cookie(REFRESH_COOKIE, session.refresh_token, cookieOptions(config, 60 * 60 * 24 * 30));
+  // Indicador sin datos (no es la sesión): permite a la landing saber si consultar /api/me.
+  res.cookie(HINT_COOKIE, '1', { ...cookieOptions(config, 60 * 60 * 24 * 30), httpOnly: false });
 }
 
 export function clearSessionCookies(res) {
   res.clearCookie(ACCESS_COOKIE, { path: '/' });
   res.clearCookie(REFRESH_COOKIE, { path: '/' });
+  res.clearCookie(HINT_COOKIE, { path: '/' });
 }
 
 export function parseCookies(header) {

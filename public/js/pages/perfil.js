@@ -1,6 +1,7 @@
 // Mi perfil: accesible con o sin suscripción activa.
 import { $, api, h, longDate, setBusy, toast } from '../ui.js';
 import { MORE, errorState, initApp, loading, modal, page, userTimezone } from '../shell.js';
+import { installAction, installState } from '../install.js';
 
 const me = await initApp({ active: '/perfil', access: 'account' });
 const root = $('[data-root]');
@@ -70,7 +71,12 @@ async function load() {
       h('button', { class: 'btn btn--ghost btn--sm', onclick: deleteAccount }, 'Eliminar mi cuenta')),
     h('button', { class: 'link', onclick: async () => { await api('/api/auth/logout', { method: 'POST' }); location.assign('/'); } }, 'Cerrar sesión'));
 
-  root.append(h('div', { class: 'stack' }, personal, password, links, data));
+  const app = installState() === 'installed'
+    ? h('section', { class: 'card' }, h('h2', { class: 'title-md' }, 'App instalada'), h('p', { class: 'muted small u-mt-8' }, 'Estás usando Aliento como app en este dispositivo.'))
+    : h('section', { class: 'card stack' }, h('h2', { class: 'title-md' }, 'Instalar la app'),
+      h('p', { class: 'muted small' }, 'Añade Aliento a tu pantalla de inicio para abrirlo como una app y recibir recordatorios.'),
+      h('div', {}, h('button', { class: 'btn btn--sm', onclick: () => installAction((content) => modal((close) => [...content, h('button', { class: 'btn btn--block u-mt-16', onclick: close }, 'Entendido')], { label: 'Instalar Aliento' })) }, 'Instalar Aliento')));
+  root.append(h('div', { class: 'stack' }, personal, password, app, links, data));
 }
 
 function deleteAccount() {

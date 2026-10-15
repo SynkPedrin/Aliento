@@ -4,9 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0F3D3A">
-<link rel="icon" type="image/png" href="/assets/favicon.png">
-<link rel="apple-touch-icon" href="/assets/icono-180.png">
+<link rel="icon" type="image/png" href="/assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Aliento">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" href="/fonts/Manrope-latin-xn7gYHE41n.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/DMSans-latin-rP2Hp2ywxg.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/fonts.css">
 <link rel="stylesheet" href="/css/app.css">
 <title>Acceso · Aliento</title>
 <meta name="robots" content="noindex">
@@ -34,6 +41,11 @@
           <label for="email">Correo electrónico</label>
           <input class="input" id="email" name="email" type="email" inputmode="email" autocomplete="email">
         </div>
+        <div class="field" data-only="register">
+          <label for="emailConfirm">Repite tu correo</label>
+          <input class="input" id="emailConfirm" name="emailConfirm" type="email" inputmode="email" autocomplete="off">
+          <span class="tiny muted">Así nos aseguramos de que te lleguen los recibos y el enlace para recuperar tu contraseña.</span>
+        </div>
         <div class="field">
           <label for="password">Contraseña</label>
           <input class="input" id="password" name="password" type="password" autocomplete="new-password" minlength="8">
@@ -42,7 +54,7 @@
         </div>
         <label class="check" data-only="register">
           <input type="checkbox" name="acceptTerms">
-          <span>Acepto los <a href="/terminos" target="_blank">Términos de servicio</a> y la <a href="/privacidad" target="_blank">Política de privacidad</a>.</span>
+          <span>Declaro tener 18 años o más y acepto los <a href="/terminos" target="_blank">Términos de servicio</a> y la <a href="/privacidad" target="_blank">Política de privacidad</a>.</span>
         </label>
         <label class="check" data-only="register">
           <input type="checkbox" name="healthConsent">

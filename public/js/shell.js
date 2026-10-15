@@ -49,7 +49,17 @@ export async function initApp({ active, access = 'premium' } = {}) {
   return me;
 }
 
+/** Aviso visible mientras no hay conexión (nada se guarda en ese tiempo). */
+function offlineBanner() {
+  const bar = h('div', { class: 'offline-bar', role: 'status', hidden: navigator.onLine !== false },
+    'Sin conexión. Los cambios no se guardarán hasta que vuelvas a tener internet.');
+  window.addEventListener('offline', () => { bar.hidden = false; });
+  window.addEventListener('online', () => { bar.hidden = true; });
+  document.body.prepend(bar);
+}
+
 function renderShell(me, active) {
+  offlineBanner();
   const header = h('header', { class: 'site-header app-header' },
     h('div', { class: 'container site-header__inner' },
       h('a', { class: 'brand', href: me.access ? '/dashboard' : '/perfil', 'aria-label': 'Aliento, inicio', html: `${MARK_SVG}<span class="brand__name">Aliento</span>` }),

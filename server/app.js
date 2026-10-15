@@ -35,8 +35,8 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, l
       'Content-Security-Policy': [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self' https://fonts.googleapis.com",
-        "font-src https://fonts.gstatic.com",
+        "style-src 'self'",
+        "font-src 'self'",
         "img-src 'self' data:",
         "media-src 'self' data:",
         "connect-src 'self'",
@@ -112,6 +112,9 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, l
       next(err);
     }
   });
+
+  // Por defecto, ninguna respuesta de la API se guarda en cachés (datos personales).
+  app.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
   // Protección CSRF: las peticiones que modifican estado deben venir de nuestro origen.
   app.use('/api', (req, res, next) => {

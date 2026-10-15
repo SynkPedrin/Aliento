@@ -64,13 +64,17 @@ export function publicRoutes({ db, billing, config, store }) {
     paid: Boolean(s.user_id),
   });
 
+  // Respuestas públicas, iguales para todos (sin datos personales): caché en la CDN.
+  const publicCache = (res) => res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
+
   r.get('/config', (req, res) => {
+    publicCache(res);
     res.json({ currency: config.currency, locale: config.locale, paymentsEnabled: billing.enabled });
   });
 
-  r.get('/quiz', (req, res) => res.json(publicQuiz()));
+  r.get('/quiz', (req, res) => { publicCache(res); res.json(publicQuiz()); });
 
-  r.get('/legal', (req, res) => res.json(config.legal));
+  r.get('/legal', (req, res) => { publicCache(res); res.json(config.legal); });
 
   r.get('/assessment', wrap(async (req, res) => {
     res.json({ assessment: await view(await store.current(req)) });
@@ -134,6 +138,7 @@ export function publicRoutes({ db, billing, config, store }) {
 
   r.get('/plans', wrap(async (req, res) => {
     const plans = await billing.getPlans();
+    publicCache(res);
     res.json({
       plans: plans.map(({ priceId, ...p }) => p),
       paymentsEnabled: billing.enabled && plans.some((p) => p.available),

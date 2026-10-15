@@ -1,5 +1,6 @@
 import { $, api, h, icon, money, num, toast } from '../ui.js';
-import { celebrate, cravingFlow, emptyState, errorState, greeting, initApp, loading } from '../shell.js';
+import { celebrate, cravingFlow, emptyState, errorState, greeting, initApp, loading, modal } from '../shell.js';
+import { installAction, installState } from '../install.js';
 import { xyChart } from '../charts.js';
 
 const me = await initApp({ active: '/dashboard' });
@@ -121,7 +122,20 @@ async function render() {
     ? h('div', { class: 'notice notice--warn' }, icon('info', 'notice__icon'), h('div', {}, h('strong', {}, 'No pudimos renovar tu suscripción. '), 'Actualiza tu método de pago en ', h('a', { href: '/suscripcion' }, 'Mi suscripción'), '.'))
     : null;
 
+  // Sugerencia de instalación (solo si no está instalada y no se descartó).
+  let dismissed = false;
+  try { dismissed = localStorage.getItem('al_install_dismissed') === '1'; } catch { /* sin almacenamiento */ }
+  const installCard = installState() !== 'installed' && !dismissed ? h('section', { class: 'card install-banner' },
+    h('div', {}, h('strong', {}, 'Ten Aliento siempre contigo'), h('p', { class: 'muted small' }, 'Instálalo en tu pantalla de inicio y ábrelo como una app.')),
+    h('div', { class: 'actions-row', style: 'margin:0' },
+      h('button', { class: 'btn btn--sm', onclick: async () => {
+        const r = await installAction((content) => modal((close) => [...content, h('button', { class: 'btn btn--block u-mt-16', onclick: close }, 'Entendido')], { label: 'Instalar Aliento' }));
+        if (r === 'accepted') installCard.remove();
+      } }, 'Instalar Aliento'),
+      h('button', { class: 'link', onclick: () => { try { localStorage.setItem('al_install_dismissed', '1'); } catch { /* */ } installCard.remove(); } }, 'Ahora no'))) : null;
+
   root.replaceChildren(...[
+    installCard,
     h('div', { class: 'page-head' },
       h('div', {},
         h('p', { class: 'eyebrow' }, started ? `Día ${d.dayNumber} · ${d.strategy.name}` : `Empiezas el ${new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long' }).format(new Date(`${d.startDate}T12:00:00`))}`),

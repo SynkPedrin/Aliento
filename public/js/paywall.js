@@ -3,13 +3,13 @@
 import { api, h, icon, moneyCents, setBusy, toast } from './ui.js';
 
 export const FEATURES = [
+  'Jornada de 10 capítulos y 30 lecciones con ejercicios prácticos',
   'Plan personalizado según tu estrategia y tus gatillos',
-  'Objetivo diario de cigarrillos adaptado semana a semana',
-  'Registro diario y gráficos de evolución',
-  'Botón SOS y respiración guiada para los antojos',
-  'Diario de gatillos para descubrir tus patrones',
-  'Contador de dinero ahorrado y cigarrillos evitados',
-  'Metas semanales y recordatorios configurables',
+  'Registro de cigarrillos y del botón «Tengo ganas de fumar»',
+  'Ejercicios de respiración guiada',
+  'Mis objetivos, Mi diario de ánimo y Mis logros',
+  'Gráficos de progreso y estimación del dinero ahorrado',
+  'Recordatorios opcionales en tu dispositivo',
 ];
 
 const PLAN_KEY = 'fg_plan';
@@ -34,7 +34,9 @@ export async function goToCheckout(plan, btn, { exitOffer = false } = {}) {
 }
 
 /** Recomendado en el centro, como en una lista de precios clásica. */
-export function displayOrder(plans) {
+export function displayOrder(allPlans) {
+  // Solo se muestran los planes realmente configurados en Stripe.
+  const plans = allPlans.some((p) => p.available) ? allPlans.filter((p) => p.available) : allPlans;
   const rec = plans.find((p) => p.recommended);
   if (!rec || plans.length !== 3) return plans;
   const rest = plans.filter((p) => p !== rec);
@@ -75,13 +77,8 @@ function armExitOffer() {
     if (offer) showExitOffer(offer);
   };
   const onMouseOut = (e) => { if (!e.relatedTarget && e.clientY <= 0) trigger(); };
+  // Solo intención de salida en escritorio. No se intercepta el botón «atrás» del móvil.
   document.addEventListener('mouseout', onMouseOut);
-  // Móvil: el primer «atrás» abre la oferta en lugar de salir.
-  history.pushState({ paywall: true }, '');
-  window.addEventListener('popstate', function onPop() {
-    window.removeEventListener('popstate', onPop);
-    if (armed) trigger(); else history.back();
-  });
 }
 
 function showExitOffer(offer) {
@@ -102,6 +99,14 @@ function showExitOffer(offer) {
     h('p', { class: 'help' }, 'Esta oferta solo se muestra una vez.'),
     h('div', { class: 'stack u-mt-16' }, accept, h('button', { class: 'link', onclick: close }, 'No, gracias')));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+    if (e.key === 'Tab') { // mantiene el foco dentro del diálogo
+      const f = [...card.querySelectorAll('button, a[href]')];
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f.at(-1).focus(); }
+      else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
+    }
+  });
   document.body.append(overlay);
   accept.focus();
 }

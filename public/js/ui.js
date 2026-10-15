@@ -1,5 +1,18 @@
 // Utilidades compartidas: API, formato, marca e iconos.
 
+// ---- App instalable (PWA): service worker y diálogo de instalación (se captura lo antes posible).
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.__alientoInstallPrompt = e;
+    document.dispatchEvent(new Event('aliento:installable'));
+  });
+  window.addEventListener('appinstalled', () => { window.__alientoInstallPrompt = null; });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+  }
+}
+
 export class ApiError extends Error {
   constructor(message, status, data) {
     super(message);
@@ -10,12 +23,20 @@ export class ApiError extends Error {
 }
 
 export async function api(path, { method = 'GET', body } = {}) {
-  const res = await fetch(path, {
-    method,
-    credentials: 'same-origin',
-    headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(path, {
+      method,
+      credentials: 'same-origin',
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    // Sin conexión: se avisa claramente y no se simula ningún guardado.
+    throw new ApiError(navigator.onLine === false
+      ? 'Sin conexión. No se ha guardado nada; inténtalo de nuevo cuando vuelvas a tener internet.'
+      : 'No hemos podido conectar con Aliento. No se ha guardado nada; inténtalo de nuevo.', 0, { code: 'OFFLINE' });
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(data.error ?? 'No hemos podido conectar. Revisa tu conexión.', res.status, data);
   return data;
