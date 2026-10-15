@@ -40,7 +40,8 @@ before(async () => {
   stripe = fakeStripe({ webhooks: real.webhooks });
   const billing = createBilling({ db, stripe, config, log: silent });
   notifier = createNotifier({ db, config, log: silent, sender: async (sub, body) => { pushed.push({ endpoint: sub.endpoint, body: JSON.parse(body) }); } });
-  server = createApp({ db, auth, billing, config, notifier, log: silent }).listen(0);
+  const { createPrograms } = await import('../server/programs.js');
+  server = createApp({ db, auth, billing, config, notifier, programs: createPrograms({ db, billing }), log: silent }).listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
 });

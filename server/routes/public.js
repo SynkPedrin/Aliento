@@ -53,7 +53,7 @@ export function createAssessmentStore({ db, config }) {
   return { cookieSession, answersOf, current, assessmentFor, create, claim };
 }
 
-export function publicRoutes({ db, billing, config, store }) {
+export function publicRoutes({ db, billing, config, store, programs }) {
   const r = Router();
 
   const view = async (s) => s && ({
@@ -136,8 +136,13 @@ export function publicRoutes({ db, billing, config, store }) {
     res.json({ result: a.result, completedAt: s.completed_at, currency: config.currency, locale: config.locale });
   }));
 
+  r.get('/catalog', wrap(async (req, res) => {
+    publicCache(res);
+    res.json({ programs: await programs.publicCatalog() });
+  }));
+
   r.get('/plans', wrap(async (req, res) => {
-    const plans = await billing.getPlans();
+    const plans = await billing.getPlans(String(req.query.program ?? 'sem-fumo'));
     publicCache(res);
     res.json({
       plans: plans.map(({ priceId, ...p }) => p),

@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import { createApp } from './app.js';
 import { createAuth } from './auth.js';
 import { createBilling } from './billing.js';
+import { createPrograms } from './programs.js';
 import { loadConfig } from './config.js';
 import { createDb } from './db.js';
 import { createNotifier } from './services/notifications.js';
@@ -18,6 +19,7 @@ export function buildApp(env = process.env, { poolSize = 10 } = {}) {
   else if (!config.stripe.webhookSecret) console.warn('[aliento] Falta STRIPE_WEBHOOK_SECRET: los pagos no se activarán.');
   const notifier = createNotifier({ db, config });
   const billing = createBilling({ db, stripe, config });
-  const app = createApp({ db, auth, billing, config, notifier });
+  const programs = createPrograms({ db, billing });
+  const app = createApp({ db, auth, billing, config, notifier, programs });
   return { app, config, db, notifier };
 }

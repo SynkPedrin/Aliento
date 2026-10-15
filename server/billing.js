@@ -20,7 +20,7 @@ export class BillingError extends Error {
 const toDate = (unix) => (unix ? new Date(unix * 1000).toISOString() : null);
 
 export function createBilling({ db, stripe, config, log = console }) {
-  let priceCache = null;
+  const priceCaches = new Map(); // por programa
   let couponCache = null;
   const userLocks = new Map();
 
@@ -41,16 +41,17 @@ export function createBilling({ db, stripe, config, log = console }) {
     return stripe.prices.retrieve(ref);
   }
 
-  /** Planes con el precio real de Stripe. Nunca se muestran importes que no vengan de Stripe. */
-  async function getPlans() {
+  /** Planes de un programa con el precio real de Stripe. Nunca se muestran importes que no vengan de Stripe. */
+  async function getPlans(program = 'sem-fumo') {
+    const refs = config.stripe.prices[program] ?? config.stripe.prices['sem-fumo'];
     if (!stripe) return PLAN_IDS.map((id) => ({ id, ...PLAN_META[id], available: false, recommended: id === config.recommendedPlan }));
-    if (priceCache && priceCache.at > Date.now() - PRICE_CACHE_MS) return priceCache.plans;
-    if (priceCache && priceCache.at > Date.now() - PRICE_CACHE_MS) return priceCache.plans;
+    const cache = priceCaches.get(program);
+    if (cache && cache.at > Date.now() - PRICE_CACHE_MS) return cache.plans;
     const plans = await Promise.all(PLAN_IDS.map(async (id) => {
       const meta = PLAN_META[id];
       const base = { id, ...meta, recommended: id === config.recommendedPlan, available: false };
       try {
-        const price = await resolvePrice(config.stripe.prices[id]);
+        const price = await resolvePrice(refs[id]);
         const rec = price?.recurring;
         if (!price || !price.active || price.unit_amount == null || !rec
           || rec.interval !== meta.interval || rec.interval_count !== meta.intervalCount) {
@@ -59,15 +60,15 @@ export function createBilling({ db, stripe, config, log = console }) {
         }
         return { ...base, available: true, priceId: price.id, amount: price.unit_amount, currency: price.currency.toUpperCase() };
       } catch (err) {
-        log.error(`[billing] No se pudo cargar el precio del plan "${id}": ${err.message}`);
+        log.error(`[billing] No se pudo cargar el precio "${program}/${id}": ${err.message}`);
         return base;
       }
     }));
-    // Se cachea siempre (planes no configurados, como el anual, son normales). Si Stripe falla
-    // por completo, se usa el último resultado válido en vez de consultar en cada petición.
-    if (plans.some((p) => p.available)) priceCache = { at: Date.now(), plans };
-    else if (priceCache) return priceCache.plans;
-    else priceCache = { at: Date.now() - PRICE_CACHE_MS + 60_000, plans };
+    // Se cachea siempre (planes no configurados son normales). Si Stripe falla por completo,
+    // se usa el último resultado válido en vez de consultar en cada petición.
+    if (plans.some((p) => p.available)) priceCaches.set(program, { at: Date.now(), plans });
+    else if (cache) return cache.plans;
+    else priceCaches.set(program, { at: Date.now() - PRICE_CACHE_MS + 60_000, plans });
     return plans;
   }
 
@@ -81,7 +82,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         couponCache = { at: Date.now(), coupon: await stripe.coupons.retrieve(couponId) };
       }
       const { coupon } = couponCache;
-      const planInfo = (await getPlans()).find((p) => p.id === plan);
+      const planInfo = (await getPlans('sem-fumo')).find((p) => p.id === plan);
       if (!coupon?.valid || coupon.duration !== 'once' || !planInfo?.available) return null;
       const discounted = coupon.percent_off
         ? Math.round(planInfo.amount * (100 - coupon.percent_off) / 100)
@@ -122,20 +123,33 @@ export function createBilling({ db, stripe, config, log = console }) {
   }
 
   // ------------------------------------------------------------ estado de suscripción
-  async function activeSubscription(userId, q = db.service) {
-    const sub = await q.one(`
-      select * from public.subscriptions where user_id = $1 and status = any($2)
-      order by created_at desc limit 1`, [userId, ACCESS_STATUSES]);
+  async function activeSubscription(userId, program = null, q = db.service) {
+    const sub = program
+      ? await q.one(`select * from public.subscriptions where user_id = $1 and program_slug = $3 and status = any($2)
+          order by created_at desc limit 1`, [userId, ACCESS_STATUSES, program])
+      : await q.one(`select * from public.subscriptions where user_id = $1 and status = any($2)
+          order by created_at desc limit 1`, [userId, ACCESS_STATUSES]);
     if (sub) return sub;
-    // Acceso de cortesía: da acceso premium sin suscripción de pago.
-    const grant = await q.one(`select * from public.access_grants where user_id = $1 and revoked_at is null
-      and (expires_at is null or expires_at > now()) order by created_at desc limit 1`, [userId]);
+    // Acceso de cortesía: da acceso sin suscripción de pago (por programa si se indica).
+    const grant = program
+      ? await q.one(`select * from public.access_grants where user_id = $1 and program_slug = $2 and revoked_at is null
+          and (expires_at is null or expires_at > now()) order by created_at desc limit 1`, [userId, program])
+      : await q.one(`select * from public.access_grants where user_id = $1 and revoked_at is null
+          and (expires_at is null or expires_at > now()) order by created_at desc limit 1`, [userId]);
     return grant && { id: `grant_${grant.id}`, plan: 'cortesia', status: 'active', amount: null, currency: null, interval: null,
       interval_count: null, current_period_end: grant.expires_at, cancel_at_period_end: false, created_at: grant.created_at };
   }
 
-  async function latestSubscription(userId) {
-    return db.service.one('select * from public.subscriptions where user_id = $1 order by updated_at desc limit 1', [userId]);
+  async function latestSubscription(userId, program = null) {
+    return program
+      ? db.service.one('select * from public.subscriptions where user_id = $1 and program_slug = $2 order by updated_at desc limit 1', [userId, program])
+      : db.service.one('select * from public.subscriptions where user_id = $1 order by updated_at desc limit 1', [userId]);
+  }
+
+  /** Suscripciones del usuario agrupadas por programa (para «Mis suscripciones»). */
+  async function subscriptionsByProgram(userId) {
+    return db.service.rows(`select * from public.subscriptions where user_id = $1
+      order by program_slug, updated_at desc`, [userId]);
   }
 
   async function customerIdOf(userId) {
@@ -159,24 +173,27 @@ export function createBilling({ db, stripe, config, log = console }) {
    * Garantías: no se crea si hay suscripción activa; una sesión abierta del mismo plan,
    * evaluación y descuento se reutiliza; cualquier otra sesión abierta se expira.
    */
-  function startCheckout({ user, plan, assessment, useExitOffer = false }) {
+  function startCheckout({ user, program = 'sem-fumo', plan, assessment = null, useExitOffer = false }) {
     // Candado en memoria (misma instancia). Entre instancias protege el índice único
-    // checkout_sessions_one_open: solo puede existir un checkout abierto por usuario.
-    return withUserLock(user.id, () => startCheckoutLocked({ user, plan, assessment, useExitOffer }));
+    // checkout_sessions_one_open: solo puede existir un checkout abierto por usuario y programa.
+    return withUserLock(user.id, () => startCheckoutLocked({ user, program, plan, assessment, useExitOffer }));
   }
 
-  async function startCheckoutLocked({ user, plan, assessment, useExitOffer }) {
+  async function startCheckoutLocked({ user, program, plan, assessment, useExitOffer }) {
     {
       if (!stripe) throw new BillingError('PAYMENTS_DISABLED', 'Los pagos no están configurados todavía.', 503);
       if (!PLAN_IDS.includes(plan)) throw new BillingError('INVALID_PLAN', 'Plan no válido.');
-      if (await activeSubscription(user.id)) throw new BillingError('ALREADY_SUBSCRIBED', 'Ya tienes una suscripción activa.', 409);
+      if (await activeSubscription(user.id, program)) {
+        throw new BillingError('ALREADY_SUBSCRIBED', 'Ya tienes este programa activo.', 409);
+      }
 
-      const planInfo = (await getPlans()).find((p) => p.id === plan);
+      const planInfo = (await getPlans(program)).find((p) => p.id === plan);
       if (!planInfo?.available) throw new BillingError('PLAN_UNAVAILABLE', 'Este plan no está disponible en este momento.', 503);
 
       let couponId = null;
       if (useExitOffer) {
-        const offer = await getExitOffer();
+        // La oferta de salida solo existe en el embudo del cuestionario de Sem Fumo.
+        const offer = program === 'sem-fumo' && assessment ? await getExitOffer() : null;
         if (!offer || offer.plan !== plan || !(await exitOfferUsable(assessment.session_id)) || await offerBlockedFor(user.id)) {
           throw new BillingError('OFFER_UNAVAILABLE', 'Esta oferta ya no está disponible.', 409);
         }
@@ -184,14 +201,15 @@ export function createBilling({ db, stripe, config, log = console }) {
       }
 
       const open = await db.service.rows(
-        `select * from public.checkout_sessions where user_id = $1 and status = 'open' order by created_at desc`, [user.id]);
+        `select * from public.checkout_sessions where user_id = $1 and program_slug = $2 and status = 'open' order by created_at desc`,
+      [user.id, program]);
       for (const row of open) {
         const remote = await stripe.checkout.sessions.retrieve(row.id);
         if (remote.status === 'complete') {
           throw new BillingError('PAYMENT_PROCESSING', 'Tu pago se está confirmando. En unos instantes tendrás acceso.', 409);
         }
         const reusable = remote.status === 'open' && remote.expires_at > Date.now() / 1000 + REUSE_MARGIN_S;
-        if (reusable && row.plan === plan && row.assessment_id === assessment.id
+        if (reusable && row.plan === plan && (row.assessment_id ?? null) === (assessment?.id ?? null)
           && row.price_id === planInfo.priceId && (row.coupon_id ?? null) === couponId) {
           return { url: remote.url, reused: true };
         }
@@ -201,18 +219,20 @@ export function createBilling({ db, stripe, config, log = console }) {
 
       const hadCustomer = Boolean(await customerIdOf(user.id));
       const customer = await ensureCustomer(user);
-      // Defensa adicional: si Stripe ya tiene una suscripción viva (p. ej. webhook pendiente), no crear otra.
-      // (Un cliente recién creado no puede tener suscripciones: se evita la llamada.)
+      // Defensa adicional: si Stripe ya tiene una suscripción viva de ESTE programa (p. ej.
+      // webhook pendiente), no crear otra. Suscripciones de otros programas son independientes.
       if (hadCustomer) {
-        const remoteSubs = await stripe.subscriptions.list({ customer, status: 'all', limit: 10 });
-        const live = remoteSubs.data.find((s) => ACCESS_STATUSES.includes(s.status));
-        if (live) {
+        const remoteSubs = await stripe.subscriptions.list({ customer, status: 'all', limit: 20 });
+        for (const live of remoteSubs.data.filter((s) => ACCESS_STATUSES.includes(s.status))) {
           await syncSubscriptionRow(db.service, live, user.id);
-          throw new BillingError('ALREADY_SUBSCRIBED', 'Ya tienes una suscripción activa.', 409);
+          if ((await programFromSubscription(live)) === program) {
+            throw new BillingError('ALREADY_SUBSCRIBED', 'Ya tienes este programa activo.', 409);
+          }
         }
       }
 
-      const metadata = { user_id: user.id, assessment_id: assessment.id, plan };
+      const metadata = { user_id: user.id, plan, program };
+      if (assessment) metadata.assessment_id = assessment.id;
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         customer,
@@ -226,21 +246,21 @@ export function createBilling({ db, stripe, config, log = console }) {
           submit: { message: 'El acceso a Aliento empieza de inmediato. La suscripción se renueva automáticamente al mismo precio hasta que la canceles desde «Mi suscripción».' },
         },
         success_url: `${config.appUrl}/bienvenida?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${config.appUrl}/planes?pago=cancelado`,
+        cancel_url: `${config.appUrl}/programas?pago=cancelado`,
       }, {
         // Misma petición repetida (reintento de red) → misma sesión. Ventana de 10 min.
-        idempotencyKey: `checkout-${user.id}-${plan}-${assessment.id}-${couponId ?? 'none'}-${Math.floor(Date.now() / 600_000)}`,
+        idempotencyKey: `checkout-${user.id}-${program}-${plan}-${assessment?.id ?? 'catalogo'}-${couponId ?? 'none'}-${Math.floor(Date.now() / 600_000)}`,
       });
       try {
         await db.service.exec(`
-          insert into public.checkout_sessions (id, user_id, assessment_id, plan, price_id, coupon_id, url, status, expires_at)
-          values ($1, $2, $3, $4, $5, $6, $7, 'open', to_timestamp($8))`,
-        [session.id, user.id, assessment.id, plan, planInfo.priceId, couponId, session.url, session.expires_at]);
+          insert into public.checkout_sessions (id, user_id, assessment_id, program_slug, plan, price_id, coupon_id, url, status, expires_at)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, 'open', to_timestamp($9))`,
+        [session.id, user.id, assessment?.id ?? null, program, plan, planInfo.priceId, couponId, session.url, session.expires_at]);
       } catch (err) {
         if (err.code !== '23505') throw err;
         // Otra instancia creó un checkout a la vez: se anula este y se devuelve el existente.
         await stripe.checkout.sessions.expire(session.id).catch(() => {});
-        const existing = await db.service.one(`select url from public.checkout_sessions where user_id = $1 and status = 'open'`, [user.id]);
+        const existing = await db.service.one(`select url from public.checkout_sessions where user_id = $1 and program_slug = $2 and status = 'open'`, [user.id, program]);
         if (existing?.url) return { url: existing.url, reused: true };
         throw err;
       }
@@ -253,8 +273,30 @@ export function createBilling({ db, stripe, config, log = console }) {
     const priceId = sub.items?.data?.[0]?.price?.id;
     const row = await db.service.one('select plan from public.checkout_sessions where price_id = $1 limit 1', [priceId]);
     if (row) return row.plan;
-    const plans = await getPlans();
-    return plans.find((p) => p.priceId === priceId)?.id ?? 'mensual';
+    for (const program of Object.keys(config.stripe.prices)) {
+      const found = (await getPlans(program)).find((p) => p.priceId === priceId);
+      if (found) return found.id;
+    }
+    return 'mensual';
+  }
+
+  /** Programa al que pertenece una suscripción: metadata → fila de checkout → lookup_key → sem-fumo. */
+  async function programFromSubscription(sub) {
+    const meta = sub.metadata?.program;
+    if (meta && config.stripe.prices[meta]) return meta;
+    const priceId = sub.items?.data?.[0]?.price?.id;
+    if (priceId) {
+      const row = await db.service.one('select program_slug from public.checkout_sessions where price_id = $1 limit 1', [priceId]);
+      if (row) return row.program_slug;
+      try {
+        const price = await stripe.prices.retrieve(priceId);
+        const key = price.lookup_key ?? '';
+        const m = key.match(/^alento_([a-z-]+)_(semanal|mensual|trimestral|anual)$/);
+        if (m && config.stripe.prices[m[1]]) return m[1];
+        if (key.startsWith('folego_')) return 'sem-fumo';
+      } catch { /* precio inaccesible: se usa el valor por defecto */ }
+    }
+    return 'sem-fumo';
   }
 
   async function userIdForSubscription(sub) {
@@ -271,16 +313,16 @@ export function createBilling({ db, stripe, config, log = console }) {
     const periodEnd = item?.current_period_end ?? sub.current_period_end ?? null;
     const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
     await q.exec(`
-      insert into public.subscriptions (id, user_id, stripe_customer_id, plan, price_id, amount, currency, interval,
-        interval_count, status, current_period_end, cancel_at_period_end)
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, to_timestamp($11), $12)
+      insert into public.subscriptions (id, user_id, stripe_customer_id, program_slug, plan, price_id, amount, currency,
+        interval, interval_count, status, current_period_end, cancel_at_period_end)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, to_timestamp($12), $13)
       on conflict (id) do update set
         status = excluded.status, plan = excluded.plan, price_id = excluded.price_id, amount = excluded.amount,
         currency = excluded.currency, interval = excluded.interval, interval_count = excluded.interval_count,
         current_period_end = excluded.current_period_end, cancel_at_period_end = excluded.cancel_at_period_end`,
-    [sub.id, userId, customerId, await planFromSubscription(sub), price?.id ?? '', price?.unit_amount ?? null,
-      price?.currency?.toUpperCase() ?? null, price?.recurring?.interval ?? null, price?.recurring?.interval_count ?? null,
-      sub.status, periodEnd, Boolean(sub.cancel_at_period_end || sub.cancel_at)]);
+    [sub.id, userId, customerId, await programFromSubscription(sub), await planFromSubscription(sub), price?.id ?? '',
+      price?.unit_amount ?? null, price?.currency?.toUpperCase() ?? null, price?.recurring?.interval ?? null,
+      price?.recurring?.interval_count ?? null, sub.status, periodEnd, Boolean(sub.cancel_at_period_end || sub.cancel_at)]);
     if (customerId) {
       await q.exec('update public.profiles set stripe_customer_id = $1 where user_id = $2 and stripe_customer_id is null', [customerId, userId]);
     }
@@ -290,20 +332,19 @@ export function createBilling({ db, stripe, config, log = console }) {
    * Activación (idempotente): vincula la evaluación a la cuenta, crea el plan personalizado,
    * los objetivos y metas iniciales y concede el primer logro.
    */
-  async function ensureActivated(q, userId, assessmentId) {
+  async function ensureActivated(q, userId, assessmentId, program = 'sem-fumo') {
     const assessment = assessmentId
       ? await q.one('select * from public.user_assessments where id = $1', [assessmentId])
       : null;
     if (assessment) {
       await q.exec('update public.user_assessments set user_id = $1 where id = $2', [userId, assessment.id]);
       await q.exec('update public.questionnaire_sessions set user_id = $1, claimed_user_id = $1 where id = $2', [userId, assessment.session_id]);
-    } else {
-      log.error(`[billing] Activación sin evaluación (usuario ${userId}, evaluación ${assessmentId}).`);
     }
-    if (!(await q.one('select 1 from public.personalized_plans where user_id = $1', [userId])) && assessment) {
+    // Compra desde el catálogo (sin cuestionario): el plan se crea en el onboarding del programa.
+    if (!(await q.one('select 1 from public.personalized_plans where user_id = $1 and program_slug = $2', [userId, program])) && assessment) {
       await buildPersonalPlan(q, userId, assessment, { reason: 'Activación de la suscripción' });
     }
-    await q.exec('insert into public.notification_preferences (user_id) values ($1) on conflict do nothing', [userId]);
+    await q.exec('insert into public.notification_preferences (user_id, program_slug) values ($1, $2) on conflict do nothing', [userId, program]);
     await unlockAchievement(q, userId, 'primer-paso');
   }
 
@@ -314,12 +355,15 @@ export function createBilling({ db, stripe, config, log = console }) {
     }
     const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
     const sub = await stripe.subscriptions.retrieve(subId);
-    const other = await activeSubscription(userId);
-    if (other && other.id !== sub.id) {
-      log.warn(`[billing] REVISAR: el usuario ${userId} tiene dos suscripciones activas (${other.id}, ${sub.id}).`);
+    const program = session.metadata?.program
+      ?? (await db.service.one('select program_slug from public.checkout_sessions where id = $1', [session.id]))?.program_slug
+      ?? 'sem-fumo';
+    const other = await activeSubscription(userId, program);
+    if (other && other.id !== sub.id && !String(other.id).startsWith('grant_')) {
+      log.warn(`[billing] REVISAR: el usuario ${userId} tiene dos suscripciones activas de ${program} (${other.id}, ${sub.id}).`);
       await db.service.exec(`
         insert into public.billing_reconciliation_reviews (stripe_subscription_id, stripe_customer_id, reason)
-        values ($1, $2, 'Segunda suscripción activa para el mismo usuario') on conflict do nothing`,
+        values ($1, $2, 'Segunda suscripción activa del mismo programa') on conflict do nothing`,
       [sub.id, typeof sub.customer === 'string' ? sub.customer : sub.customer?.id]);
     }
     await db.tx(async (q) => {
@@ -328,7 +372,7 @@ export function createBilling({ db, stripe, config, log = console }) {
       if (session.discounts?.length || session.total_details?.amount_discount > 0) {
         await q.exec('update public.profiles set exit_offer_used_at = coalesce(exit_offer_used_at, now()) where user_id = $1', [userId]);
       }
-      if (ACCESS_STATUSES.includes(sub.status)) await ensureActivated(q, userId, session.metadata?.assessment_id);
+      if (ACCESS_STATUSES.includes(sub.status)) await ensureActivated(q, userId, session.metadata?.assessment_id, program);
     });
   }
 
@@ -344,7 +388,9 @@ export function createBilling({ db, stripe, config, log = console }) {
     }
     await db.tx(async (q) => {
       await syncSubscriptionRow(q, sub, userId);
-      if (ACCESS_STATUSES.includes(sub.status) && sub.metadata?.assessment_id) await ensureActivated(q, userId, sub.metadata.assessment_id);
+      if (ACCESS_STATUSES.includes(sub.status) && sub.metadata?.assessment_id) {
+        await ensureActivated(q, userId, sub.metadata.assessment_id, await programFromSubscription(sub));
+      }
     });
   }
 
@@ -514,7 +560,7 @@ export function createBilling({ db, stripe, config, log = console }) {
 
   return {
     getPlans, getExitOffer, claimExitOffer, startCheckout, handleEvent, constructEvent, portalUrl, checkoutState,
-    activeSubscription, latestSubscription, pendingCheckout, reconcile, ensureActivated, customerIdOf, deleteCustomer, offerBlockedFor,
+    activeSubscription, latestSubscription, subscriptionsByProgram, pendingCheckout, reconcile, ensureActivated, customerIdOf, deleteCustomer, offerBlockedFor, programFromSubscription,
     enabled: Boolean(stripe),
   };
 }

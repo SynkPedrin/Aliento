@@ -1,6 +1,22 @@
 // Configuración centralizada a partir de variables de entorno (ver .env.example).
 
 export const PLAN_IDS = ['semanal', 'mensual', 'trimestral', 'anual'];
+export const PROGRAM_IDS = ['sem-fumo', 'alcohol', 'azucar', 'ansiedad', 'sueno'];
+
+/** Lookup keys de Stripe por programa y plan. Sem Fumo conserva sus claves originales. */
+export function priceRefFor(env, program, plan) {
+  if (program === 'sem-fumo') {
+    const legacy = {
+      semanal: env.STRIPE_PRICE_SEMANAL || 'lookup:folego_semanal',
+      mensual: env.STRIPE_PRICE_MENSUAL || 'lookup:folego_mensual',
+      trimestral: env.STRIPE_PRICE_TRIMESTRAL || 'lookup:folego_trimestral',
+      anual: env.STRIPE_PRICE_ANUAL || 'lookup:folego_anual',
+    };
+    return legacy[plan];
+  }
+  const envKey = `STRIPE_PRICE_${program.replace(/-/g, '_').toUpperCase()}_${plan.toUpperCase()}`;
+  return env[envKey] || `lookup:alento_${program}_${plan}`;
+}
 
 export const PLAN_META = {
   // unit: texto para "precio por …"; charge: periodicidad visible en la tarjeta;
@@ -53,12 +69,9 @@ export function loadConfig(env = process.env) {
       secretKey: env.STRIPE_SECRET_KEY ?? '',
       webhookSecret: env.STRIPE_WEBHOOK_SECRET ?? '',
       // Precios por lookup_key (creados con `npm run stripe:setup`) o por ID explícito.
-      prices: {
-        semanal: env.STRIPE_PRICE_SEMANAL || 'lookup:folego_semanal',
-        mensual: env.STRIPE_PRICE_MENSUAL || 'lookup:folego_mensual',
-        trimestral: env.STRIPE_PRICE_TRIMESTRAL || 'lookup:folego_trimestral',
-        anual: env.STRIPE_PRICE_ANUAL || 'lookup:folego_anual',
-      },
+      prices: Object.fromEntries(
+        PROGRAM_IDS.map((p) => [p, Object.fromEntries(PLAN_IDS.map((pl) => [pl, priceRefFor(env, p, pl)]))]),
+      ),
       // Oferta de salida: cupón real de Stripe aplicado solo al primer pago de un plan.
       exitOffer: {
         couponId: env.STRIPE_EXIT_COUPON || '',

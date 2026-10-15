@@ -5,7 +5,7 @@ import { TRIGGERS } from '../quiz.js';
 import { STRATEGIES } from '../results.js';
 import { buildPersonalPlan } from '../billing.js';
 import { checkAchievements } from '../services/achievements.js';
-import { completeLesson, getLesson, journeyState, saveResponse } from '../services/journey.js';
+import { completeLesson, getLesson, journeyState, programOfLesson, saveResponse } from '../services/journey.js';
 import { addDays, dailySeries, daysBetween, planContext, summarize, todayIn } from '../services/stats.js';
 import { SUPPORT_TOPICS } from '../services/support.js';
 import { DAY_RE, HttpError, int, oneOf, requireAccess, text, uuid, wrap } from './util.js';
@@ -19,10 +19,19 @@ const RANGES = { 7: 7, 30: 30, 90: 90, 365: 365 };
 
 const PUSH_HOSTS = ['fcm.googleapis.com', 'android.googleapis.com', '.push.services.mozilla.com', '.notify.windows.com', 'web.push.apple.com', '.push.apple.com'];
 
-export function appRoutes({ db, billing, config, notifier }) {
+export function appRoutes({ db, billing, config, notifier, programs }) {
   const r = Router();
   const testLimiter = sharedRateLimiter(db, { windowSeconds: 60 * 60, max: 10 });
+  // Base: algún programa activo (funciones transversales). Los datos de un programa
+  // concreto exigen acceso a ESE programa con requireProgram.
   r.use(requireAccess(billing));
+
+  async function requireProgram(req, slug) {
+    const sub = await billing.activeSubscription(req.user.id, slug);
+    if (!sub) throw new HttpError(402, 'Necesitas una suscripción activa de este programa.', 'SUBSCRIPTION_REQUIRED');
+    return sub;
+  }
+  const semFumo = wrap(async (req, res, next) => { await requireProgram(req, 'sem-fumo'); next(); });
 
   const tz = (req) => req.user.timezone || 'UTC';
   const asUser = (req, fn) => db.asUser(req.user.id, fn);
@@ -65,9 +74,9 @@ export function appRoutes({ db, billing, config, notifier }) {
     });
   }
 
-  r.get('/onboarding', wrap(async (req, res) => res.json(await onboardingView(req))));
+  r.get('/onboarding', semFumo, wrap(async (req, res) => res.json(await onboardingView(req))));
 
-  r.put('/onboarding', wrap(async (req, res) => {
+  r.put('/onboarding', semFumo, wrap(async (req, res) => {
     const { goal, startDate, notifications, complete } = req.body ?? {};
     const userId = req.user.id;
     if (goal !== undefined) {
@@ -85,9 +94,9 @@ export function appRoutes({ db, billing, config, notifier }) {
       const time = notifications?.time ?? '09:00';
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new HttpError(422, 'Hora no válida.');
       await asUser(req, (q) => q.exec(`
-        insert into public.notification_preferences (user_id, enabled, consent_at, timezone, reminder_time)
-        values ($1, $2, case when $2 then now() end, $3, $4)
-        on conflict (user_id) do update set enabled = excluded.enabled, reminder_time = excluded.reminder_time,
+        insert into public.notification_preferences (user_id, program_slug, enabled, consent_at, timezone, reminder_time)
+        values ($1, 'sem-fumo', $2, case when $2 then now() end, $3, $4)
+        on conflict (user_id, program_slug) do update set enabled = excluded.enabled, reminder_time = excluded.reminder_time,
           timezone = excluded.timezone, consent_at = case when excluded.enabled then coalesce(public.notification_preferences.consent_at, now()) else public.notification_preferences.consent_at end`,
       [userId, Boolean(notifications?.enabled), tz(req), time]));
     }
@@ -123,7 +132,7 @@ export function appRoutes({ db, billing, config, notifier }) {
   }
 
   // ---------------------------------------------------------------- panel
-  r.get('/dashboard', wrap(async (req, res) => {
+  r.get('/dashboard', semFumo, wrap(async (req, res) => {
     const userId = req.user.id;
     const today = todayIn(tz(req));
     const data = await asUser(req, async (q) => {
@@ -163,7 +172,7 @@ export function appRoutes({ db, billing, config, notifier }) {
       triggerOptions: Object.entries(TRIGGERS).map(([id, t]) => ({ id, label: t.label })) });
   }));
 
-  r.patch('/tasks/:id', wrap(async (req, res) => {
+  r.patch('/tasks/:id', semFumo, wrap(async (req, res) => {
     const id = uuid(req.params.id);
     const n = await asUser(req, (q) => q.exec('update public.daily_goals set done_at = $1 where id = $2 and user_id = $3',
       [req.body?.done ? new Date().toISOString() : null, id, req.user.id]));
@@ -173,20 +182,27 @@ export function appRoutes({ db, billing, config, notifier }) {
 
   // ---------------------------------------------------------------- jornada
   r.get('/journey', wrap(async (req, res) => {
-    res.json(await asUser(req, (q) => journeyState(q, req.user.id)));
+    const program = String(req.query.program ?? 'sem-fumo');
+    if (!(await programs.get(program))) throw new HttpError(404, 'Programa no encontrado.');
+    await requireProgram(req, program);
+    await programs.setLastProgram(req.user.id, program);
+    res.json(await asUser(req, (q) => journeyState(q, req.user.id, program)));
   }));
 
   r.get('/journey/lessons/:slug', wrap(async (req, res) => {
+    await requireProgram(req, await programOfLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
     res.json(await asUser(req, (q) => getLesson(q, req.user.id, String(req.params.slug))));
   }));
 
   r.post('/journey/lessons/:slug/responses', wrap(async (req, res) => {
+    await requireProgram(req, await programOfLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
     const blockKey = String(req.body?.blockId ?? '');
     const out = await asUser(req, (q) => saveResponse(q, q.sudo, req.user.id, String(req.params.slug), blockKey, req.body?.response));
     res.json(out);
   }));
 
   r.post('/journey/lessons/:slug/complete', wrap(async (req, res) => {
+    await requireProgram(req, await programOfLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
     const out = await asUser(req, (q) => completeLesson(q, q.sudo, req.user.id, String(req.params.slug)));
     res.json({ ...out, achievements: await achievementsAfter(req) });
   }));
@@ -194,7 +210,46 @@ export function appRoutes({ db, billing, config, notifier }) {
   // ---------------------------------------------------------------- consumo
   const entryView = (e) => ({ id: e.id, at: e.smoked_at, quantity: e.quantity, trigger: e.trigger, mood: e.mood, note: e.note });
 
-  r.get('/smoking', wrap(async (req, res) => {
+  // -------------------------------------------------- registros genéricos por programa
+  // (alcohol, azucar, ansiedad, sueno). Sem Fumo usa sus tablas especializadas.
+  const ACTIVITY_KINDS = ['consumo', 'contexto', 'habito', 'emocion', 'sueno', 'nota'];
+
+  r.get('/programs/:slug/activity', wrap(async (req, res) => {
+    const slug = String(req.params.slug);
+    await requireProgram(req, slug);
+    const kind = req.query.kind ? String(req.query.kind) : null;
+    const rows = await db.asUser(req.user.id, (q) => q.rows(`
+      select id, kind, value, occurred_at from public.program_activity_entries
+      where user_id = $1 and program_slug = $2 and ($3::text is null or kind = $3)
+      order by occurred_at desc limit 200`, [req.user.id, slug, kind]));
+    res.json({ entries: rows });
+  }));
+
+  r.post('/programs/:slug/activity', wrap(async (req, res) => {
+    const slug = String(req.params.slug);
+    if (slug === 'sem-fumo') throw new HttpError(422, 'Sem Fumo tiene sus propios registros.', 'INVALID');
+    await requireProgram(req, slug);
+    const kind = text(req.body?.kind, { max: 40, required: true, field: 'kind' });
+    if (!ACTIVITY_KINDS.includes(kind)) throw new HttpError(422, 'Tipo de registro no válido.', 'INVALID', { field: 'kind' });
+    const value = req.body?.value && typeof req.body.value === 'object' && !Array.isArray(req.body.value)
+      ? JSON.parse(JSON.stringify(req.body.value).slice(0, 4000)) : {};
+    const row = await db.asUser(req.user.id, (q) => q.one(`
+      insert into public.program_activity_entries (user_id, program_slug, kind, value)
+      values ($1, $2, $3, $4) returning id, kind, value, occurred_at`, [req.user.id, slug, kind, value]));
+    res.status(201).json({ entry: row });
+  }));
+
+  r.delete('/programs/:slug/activity/:id', wrap(async (req, res) => {
+    const slug = String(req.params.slug);
+    await requireProgram(req, slug);
+    const n = await db.asUser(req.user.id, (q) => q.exec(
+      'delete from public.program_activity_entries where id = $1 and user_id = $2 and program_slug = $3',
+      [uuid(req.params.id), req.user.id, slug]));
+    if (!n) throw new HttpError(404, 'Registro no encontrado.');
+    res.json({ ok: true });
+  }));
+
+  r.get('/smoking', semFumo, wrap(async (req, res) => {
     const days = RANGES[req.query.days] ?? 7;
     const from = addDays(todayIn(tz(req)), -(days - 1));
     const rows = await asUser(req, (q) => q.rows(`
@@ -215,7 +270,7 @@ export function appRoutes({ db, billing, config, notifier }) {
     };
   }
 
-  r.post('/smoking', wrap(async (req, res) => {
+  r.post('/smoking', semFumo, wrap(async (req, res) => {
     const e = entryInput(req.body, req);
     const requestId = uuid(req.body?.clientRequestId, 'clientRequestId');
     // Idempotente: el mismo clientRequestId (doble clic o reintento) no crea otra entrada.
@@ -227,7 +282,7 @@ export function appRoutes({ db, billing, config, notifier }) {
     res.status(201).json({ entry: entryView(row), achievements: await achievementsAfter(req) });
   }));
 
-  r.patch('/smoking/:id', wrap(async (req, res) => {
+  r.patch('/smoking/:id', semFumo, wrap(async (req, res) => {
     const e = entryInput(req.body, req);
     const row = await asUser(req, (q) => q.one(`
       update public.smoking_entries set smoked_at = $1, quantity = $2, trigger = $3, mood = $4, note = $5
@@ -236,14 +291,14 @@ export function appRoutes({ db, billing, config, notifier }) {
     res.json({ entry: entryView(row) });
   }));
 
-  r.delete('/smoking/:id', wrap(async (req, res) => {
+  r.delete('/smoking/:id', semFumo, wrap(async (req, res) => {
     const n = await asUser(req, (q) => q.exec('delete from public.smoking_entries where id = $1 and user_id = $2', [uuid(req.params.id), req.user.id]));
     if (!n) throw new HttpError(404, 'Registro no encontrado.');
     res.json({ ok: true });
   }));
 
   // "Hoy no he fumado"
-  r.post('/checkins', wrap(async (req, res) => {
+  r.post('/checkins', semFumo, wrap(async (req, res) => {
     const day = localDay(req.body?.day ?? todayIn(tz(req)), req);
     await asUser(req, async (q) => {
       const smoked = await q.one(`select 1 from public.smoking_entries where user_id = $1 and (smoked_at at time zone $2)::date = $3::date limit 1`, [req.user.id, tz(req), day]);
@@ -253,19 +308,19 @@ export function appRoutes({ db, billing, config, notifier }) {
     res.status(201).json({ ok: true, achievements: await achievementsAfter(req) });
   }));
 
-  r.delete('/checkins/:day', wrap(async (req, res) => {
+  r.delete('/checkins/:day', semFumo, wrap(async (req, res) => {
     await asUser(req, (q) => q.exec('delete from public.daily_checkins where user_id = $1 and day = $2', [req.user.id, localDay(req.params.day, req)]));
     res.json({ ok: true });
   }));
 
   // ---------------------------------------------------------------- ganas de fumar
-  r.get('/cravings', wrap(async (req, res) => {
+  r.get('/cravings', semFumo, wrap(async (req, res) => {
     const rows = await asUser(req, (q) => q.rows(`select id, felt_at, feeling, trigger, intensity, outcome, strategy
       from public.craving_entries where user_id = $1 order by felt_at desc limit 100`, [req.user.id]));
     res.json({ cravings: rows, feelings: FEELINGS, triggerOptions: Object.entries(TRIGGERS).map(([id, t]) => ({ id, label: t.label })) });
   }));
 
-  r.post('/cravings', wrap(async (req, res) => {
+  r.post('/cravings', semFumo, wrap(async (req, res) => {
     const b = req.body ?? {};
     const requestId = uuid(b.clientRequestId, 'clientRequestId');
     const values = [req.user.id, oneOf(b.feeling, FEELINGS, 'feeling'), oneOf(b.trigger, TRIGGER_IDS, 'trigger'),
@@ -278,7 +333,7 @@ export function appRoutes({ db, billing, config, notifier }) {
     res.status(201).json({ craving: row, achievements: await achievementsAfter(req) });
   }));
 
-  r.patch('/cravings/:id', wrap(async (req, res) => {
+  r.patch('/cravings/:id', semFumo, wrap(async (req, res) => {
     const row = await asUser(req, (q) => q.one(`update public.craving_entries set outcome = $1, strategy = coalesce($2, strategy)
       where id = $3 and user_id = $4 returning *`,
     [oneOf(req.body?.outcome, ['resisted', 'smoked'], 'outcome'), text(req.body?.strategy, { max: 60 }), uuid(req.params.id), req.user.id]));
@@ -287,12 +342,12 @@ export function appRoutes({ db, billing, config, notifier }) {
   }));
 
   // ---------------------------------------------------------------- objetivos
-  r.get('/goals', wrap(async (req, res) => {
+  r.get('/goals', semFumo, wrap(async (req, res) => {
     const rows = await asUser(req, (q) => q.rows('select * from public.user_goals where user_id = $1 order by created_at desc limit 50', [req.user.id]));
     res.json({ current: rows.find((g) => !g.superseded_at) ?? null, history: rows.filter((g) => g.superseded_at), strategies: Object.values(STRATEGIES), currency: config.currency });
   }));
 
-  r.put('/goals', wrap(async (req, res) => {
+  r.put('/goals', semFumo, wrap(async (req, res) => {
     const b = req.body ?? {};
     const strategy = oneOf(b.strategy, Object.keys(STRATEGIES), 'strategy');
     if (!strategy) throw new HttpError(422, 'Elige tu objetivo principal.', 'INVALID', { field: 'strategy' });
@@ -367,7 +422,7 @@ export function appRoutes({ db, billing, config, notifier }) {
   }));
 
   // ---------------------------------------------------------------- progreso
-  r.get('/progress', wrap(async (req, res) => {
+  r.get('/progress', semFumo, wrap(async (req, res) => {
     const days = RANGES[req.query.days] ?? 30;
     const today = todayIn(tz(req));
     const from = addDays(today, -(days - 1));
@@ -430,9 +485,9 @@ export function appRoutes({ db, billing, config, notifier }) {
     const zone = b.timezone ?? tz(req);
     try { new Intl.DateTimeFormat('en-US', { timeZone: zone }); } catch { throw new HttpError(422, 'Zona horaria no válida.', 'INVALID', { field: 'timezone' }); }
     const p = await asUser(req, (q) => q.one(`
-      insert into public.notification_preferences (user_id, enabled, consent_at, timezone, reminder_time, lessons, tracking, exercises, achievements, weekly_summary)
-      values ($1, $2, case when $2 then now() end, $3, $4, $5, $6, $7, $8, $9)
-      on conflict (user_id) do update set enabled = excluded.enabled, timezone = excluded.timezone, reminder_time = excluded.reminder_time,
+      insert into public.notification_preferences (user_id, program_slug, enabled, consent_at, timezone, reminder_time, lessons, tracking, exercises, achievements, weekly_summary)
+      values ($1, 'sem-fumo', $2, case when $2 then now() end, $3, $4, $5, $6, $7, $8, $9)
+      on conflict (user_id, program_slug) do update set enabled = excluded.enabled, timezone = excluded.timezone, reminder_time = excluded.reminder_time,
         lessons = excluded.lessons, tracking = excluded.tracking, exercises = excluded.exercises, achievements = excluded.achievements,
         weekly_summary = excluded.weekly_summary,
         consent_at = case when excluded.enabled then coalesce(public.notification_preferences.consent_at, now()) else public.notification_preferences.consent_at end

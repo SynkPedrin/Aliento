@@ -1,6 +1,6 @@
 // Contenido del programa Aliento. Original; revisar editorialmente antes de publicar.
 export const JOURNEY = {
-  program: { slug: 'aliento-base', title: 'Programa Aliento', version: 1 },
+  program: { slug: 'sem-fumo', title: 'Sem Fumo', version: 1 },
   chapters: [
     // ───────────────────────────── Capítulo 0 ─────────────────────────────
     {

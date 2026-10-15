@@ -6,7 +6,7 @@ import {
 import { isValidTimezone } from '../services/stats.js';
 import { HttpError, requireUser, wrap } from './util.js';
 
-export function accountRoutes({ db, auth, billing, config, store, log = console }) {
+export function accountRoutes({ db, auth, billing, config, store, programs, log = console }) {
   const r = Router();
   // Límites compartidos entre instancias (Postgres): por IP y por cuenta.
   const ipLimiter = sharedRateLimiter(db, { windowSeconds: 15 * 60, max: 30 });
@@ -88,11 +88,16 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
   r.get('/me', wrap(async (req, res) => {
     if (!req.user) return res.json({ user: null });
     const active = await billing.activeSubscription(req.user.id);
+    const programs = (await billing.subscriptionsByProgram(req.user.id))
+      .filter((x) => ['active', 'trialing', 'past_due'].includes(x.status)).map((x) => x.program_slug);
+    const grants = await db.service.rows(`select program_slug from public.access_grants where user_id = $1
+      and revoked_at is null and (expires_at is null or expires_at > now())`, [req.user.id]);
     const onboarded = await db.service.one('select onboarded_at from public.profiles where user_id = $1', [req.user.id]);
     const s = await store.current(req);
     res.json({
       user: { name: req.user.name, email: req.user.email, isAdmin: req.user.is_admin },
-      access: Boolean(active),
+      access: Boolean(active) || grants.length > 0,
+      programs: [...new Set([...programs, ...grants.map((g) => g.program_slug)])],
       subscription: subscriptionView(active ?? await billing.latestSubscription(req.user.id)),
       pendingCheckout: active ? null : await billing.pendingCheckout(req.user.id),
       onboardingCompleted: Boolean(onboarded?.onboarded_at),
@@ -100,14 +105,32 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
     });
   }));
 
+  // ---------------------------------------------------------------- programas (catálogo)
+  r.get('/programs', requireUser, wrap(async (req, res) => {
+    res.json(await programs.catalogFor(req.user.id));
+  }));
+
+  r.post('/programs/:slug/last', requireUser, wrap(async (req, res) => {
+    const p = await programs.get(String(req.params.slug));
+    if (!p) throw new HttpError(404, 'Programa no encontrado.');
+    await programs.setLastProgram(req.user.id, p.slug);
+    res.json({ ok: true });
+  }));
+
   // ---------------------------------------------------------------- checkout y suscripción
   r.post('/checkout', requireUser, wrap(async (req, res) => {
-    const s = await store.current(req);
-    const assessment = s?.completed_at ? await store.assessmentFor(s.id) : null;
-    if (!assessment) throw new HttpError(409, 'Completa el cuestionario antes de suscribirte.', 'NO_RESULT');
-    if (!s.claimed_user_id) await store.claim(req, req.user.id);
+    const program = String(req.body?.program ?? 'sem-fumo');
+    let assessment = null;
+    if (program === 'sem-fumo' && !req.body?.fromCatalog) {
+      // Embudo del cuestionario de Sem Fumo (con oferta de salida).
+      const s = await store.current(req);
+      assessment = s?.completed_at ? await store.assessmentFor(s.id) : null;
+      if (!assessment) throw new HttpError(409, 'Completa el cuestionario antes de suscribirte.', 'NO_RESULT');
+      if (!s.claimed_user_id) await store.claim(req, req.user.id);
+    }
+    await programs.assertPurchasable(program);
     const { url, reused } = await billing.startCheckout({
-      user: req.user, plan: req.body?.plan, assessment, useExitOffer: req.body?.exitOffer === true,
+      user: req.user, program, plan: req.body?.plan, assessment, useExitOffer: req.body?.exitOffer === true,
     });
     res.json({ url, reused });
   }));
@@ -121,10 +144,14 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
   }));
 
   r.get('/subscription', requireUser, wrap(async (req, res) => {
+    const all = await billing.subscriptionsByProgram(req.user.id);
+    const byProgram = {};
+    for (const s of all) if (!byProgram[s.program_slug]) byProgram[s.program_slug] = subscriptionView(s);
     const active = await billing.activeSubscription(req.user.id);
     res.json({
       access: Boolean(active),
       subscription: subscriptionView(active ?? await billing.latestSubscription(req.user.id)),
+      subscriptions: byProgram,
       hasBilling: Boolean(await billing.customerIdOf(req.user.id)),
       pendingCheckout: active ? null : await billing.pendingCheckout(req.user.id),
       hasResult: Boolean((await store.current(req))?.completed_at),
@@ -204,9 +231,10 @@ export function accountRoutes({ db, auth, billing, config, store, log = console 
     if (!(await auth.verifyPassword(req.user.email, String(req.body?.password ?? '')))) {
       throw new HttpError(422, 'La contraseña no es correcta.', 'INVALID', { field: 'password' });
     }
-    const active = await billing.activeSubscription(req.user.id);
-    if (active && !active.cancel_at_period_end) {
-      throw new HttpError(409, 'Antes de eliminar tu cuenta, cancela tu suscripción desde «Mi suscripción».', 'ACTIVE_SUBSCRIPTION');
+    const activeSubs = (await billing.subscriptionsByProgram(req.user.id))
+      .filter((x) => ['active', 'trialing', 'past_due'].includes(x.status) && !x.cancel_at_period_end);
+    if (activeSubs.length) {
+      throw new HttpError(409, 'Antes de eliminar tu cuenta, cancela tus suscripciones desde «Mis suscripciones».', 'ACTIVE_SUBSCRIPTION');
     }
     await db.tx(async (q) => {
       await q.exec('delete from public.questionnaire_sessions where user_id = $1 or claimed_user_id = $1', [req.user.id]);

@@ -21,7 +21,7 @@ const PAGE_ALIASES = {
 
 const NO_NOTIFIER = { enabled: false, publicKey: '', runDue: async () => ({ disabled: true }), notifyAchievements() {}, test: async () => 'disabled' };
 
-export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, log = console }) {
+export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, log = console }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -125,10 +125,10 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, l
   });
 
   const store = createAssessmentStore({ db, config });
-  app.use('/api', publicRoutes({ db, billing, config, store }));
-  app.use('/api', accountRoutes({ db, auth, billing, config, store, log }));
+  app.use('/api', publicRoutes({ db, billing, config, store, programs }));
+  app.use('/api', accountRoutes({ db, auth, billing, config, store, programs, log }));
   app.use('/api/admin', adminRoutes({ db }));
-  app.use('/api/app', appRoutes({ db, billing, config, notifier }));
+  app.use('/api/app', appRoutes({ db, billing, config, notifier, programs }));
 
   // ---------- Errores de API ----------
   app.use('/api', (req, res) => res.status(404).json({ error: 'No encontrado.' }));

@@ -131,7 +131,7 @@ export async function replaceBlocks(q, lessonId, blocks) {
  * Mapa completo de la jornada con estados. `q` debe ser una consulta con el rol del usuario
  * (RLS solo deja ver contenido publicado a quien tiene suscripción activa).
  */
-export async function journeyState(q, userId) {
+export async function journeyState(q, userId, programSlug = null) {
   const lessons = await q.rows(`
     select l.id, l.slug, l.title, l.description, l.minutes, l.position, l.version, l.clinical_review,
            c.id as chapter_id, c.slug as chapter_slug, c.number as chapter_number, c.title as chapter_title,
@@ -140,7 +140,8 @@ export async function journeyState(q, userId) {
     join public.journey_chapters c on c.id = l.chapter_id
     join public.journey_programs p on p.id = c.program_id
     where l.published and c.published and p.published
-    order by c.number, l.position`);
+      and ($1::text is null or p.slug = $1)
+    order by c.number, l.position`, [programSlug]);
   const progress = new Map((await q.rows(
     'select lesson_id, status, completed_at from public.user_lesson_progress where user_id = $1', [userId]))
     .map((r) => [r.lesson_id, r]));
@@ -178,11 +179,22 @@ export async function journeyState(q, userId) {
   };
 }
 
+/** Programa al que pertenece una lección (los slugs de lección son únicos). */
+export async function programOfLesson(q, slug) {
+  return (await q.one(`
+    select p.slug from public.journey_lessons l
+    join public.journey_chapters c on c.id = l.chapter_id
+    join public.journey_programs p on p.id = c.program_id
+    where l.slug = $1`, [slug]))?.slug ?? null;
+}
+
 async function lessonWithStatus(q, userId, slug) {
-  const state = await journeyState(q, userId);
+  // La cadena de desbloqueo es por programa: cada programa empieza en su capítulo 0.
+  const program = await programOfLesson(q, slug);
+  const state = await journeyState(q, userId, program);
   for (const ch of state.chapters) {
     const l = ch.lessons.find((x) => x.slug === slug);
-    if (l) return { lesson: l, chapter: ch, state };
+    if (l) return { lesson: l, chapter: ch, state, program };
   }
   throw new JourneyError('NOT_FOUND', 'Lección no encontrada.', 404);
 }
@@ -287,7 +299,7 @@ function pendingBlocks(blocks, responses) {
  * Devuelve la siguiente lección (si existe) y si el capítulo quedó completado.
  */
 export async function completeLesson(qUser, qService, userId, slug) {
-  const { lesson, chapter } = await lessonWithStatus(qUser, userId, slug);
+  const { lesson, chapter, program } = await lessonWithStatus(qUser, userId, slug);
   if (lesson.status === 'locked') throw new JourneyError('LOCKED', 'Esta lección todavía está bloqueada.', 403);
   const blocks = await qUser.rows('select block_key, type, content from public.lesson_blocks where lesson_id = $1 order by position', [lesson.id]);
   const responses = Object.fromEntries((await qUser.rows(
@@ -304,7 +316,7 @@ export async function completeLesson(qUser, qService, userId, slug) {
       completed_at = coalesce(public.user_lesson_progress.completed_at, now()), lesson_version = excluded.lesson_version`,
   [userId, lesson.id]);
 
-  const after = await journeyState(qUser, userId);
+  const after = await journeyState(qUser, userId, await programOfLesson(qUser, slug));
   const ch = after.chapters.find((c) => c.id === chapter.id);
   const chapterCompleted = ch.status === 'completed';
   await qService.exec(`
