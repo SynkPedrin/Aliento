@@ -7,3 +7,5 @@ data/
 !.env.example
 supabase/.temp/
 supabase/.branches/
+e2e-report/
+test-results/

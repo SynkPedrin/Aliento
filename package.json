@@ -19,7 +19,8 @@
     "billing:reconcile": "node --env-file-if-exists=.env scripts/reconcile.js",
     "admin:grant": "node --env-file-if-exists=.env scripts/admin-grant.js",
     "prod:finish": "node scripts/finish-production.js",
-    "access:grant": "node --env-file-if-exists=.env scripts/create-comp-account.js"
+    "access:grant": "node --env-file-if-exists=.env scripts/create-comp-account.js",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
@@ -29,6 +30,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "supabase": "^2.121.0"
   }
 }
