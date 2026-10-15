@@ -113,7 +113,7 @@ function render(prefs) {
     },
   },
   master.el,
-  h('p', { class: 'help' }, 'Al activarlo das tu consentimiento para recibir recordatorios de Aliento. Solo te avisaremos de las categorías que elijas y puedes desactivarlo cuando quieras.'),
+  h('p', { class: 'help' }, 'Al activarlo das tu consentimiento para recibir recordatorios de Alento. Solo te avisaremos de las categorías que elijas y puedes desactivarlo cuando quieras.'),
   prefs.enabled && prefs.consentAt ? h('p', { class: 'help u-mt-8' }, `Consentimiento registrado el ${new Intl.DateTimeFormat('es-US', { dateStyle: 'long' }).format(new Date(prefs.consentAt))}.`) : null,
   details,
   h('div', { class: 'u-mt-16' }, btn));
@@ -141,7 +141,7 @@ async function renderDevice(box, prefs) {
   const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
   if (!supported) {
     return card(h('p', { class: 'muted' }, ios && !standalone
-      ? 'En iPhone y iPad, primero añade Aliento a tu pantalla de inicio (botón Compartir › «Añadir a pantalla de inicio») y abre la app desde allí para activar las notificaciones.'
+      ? 'En iPhone y iPad, primero añade Alento a tu pantalla de inicio (botón Compartir › «Añadir a pantalla de inicio») y abre la app desde allí para activar las notificaciones.'
       : 'Este navegador no admite notificaciones push. Prueba con Chrome, Edge, Firefox o Safari actualizados.'));
   }
   const { publicKey } = await api('/api/app/push');
@@ -149,7 +149,7 @@ async function renderDevice(box, prefs) {
   const current = await reg.pushManager.getSubscription();
 
   if (Notification.permission === 'denied') {
-    return card(h('p', { class: 'muted' }, 'Las notificaciones están bloqueadas para Aliento en este navegador. Puedes permitirlas desde la configuración del sitio (icono del candado junto a la dirección).'));
+    return card(h('p', { class: 'muted' }, 'Las notificaciones están bloqueadas para Alento en este navegador. Puedes permitirlas desde la configuración del sitio (icono del candado junto a la dirección).'));
   }
 
   if (current) {

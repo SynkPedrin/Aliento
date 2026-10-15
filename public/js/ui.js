@@ -35,7 +35,7 @@ export async function api(path, { method = 'GET', body } = {}) {
     // Sin conexión: se avisa claramente y no se simula ningún guardado.
     throw new ApiError(navigator.onLine === false
       ? 'Sin conexión. No se ha guardado nada; inténtalo de nuevo cuando vuelvas a tener internet.'
-      : 'No hemos podido conectar con Aliento. No se ha guardado nada; inténtalo de nuevo.', 0, { code: 'OFFLINE' });
+      : 'No hemos podido conectar con Alento. No se ha guardado nada; inténtalo de nuevo.', 0, { code: 'OFFLINE' });
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ApiError(data.error ?? 'No hemos podido conectar. Revisa tu conexión.', res.status, data);
@@ -80,12 +80,35 @@ export function localDay(d = new Date()) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-export const MARK_SVG = `<svg class="brand__mark" viewBox="0 0 48 32" fill="currentColor" aria-hidden="true">
-<path d="M13 12.5C19.5 4.5 29 4 35.5 9.8c3.2 2.8 6.6 3.6 11 2.6-4 4.6-10.6 5.2-15.4 1.2C26 9.4 19.6 8.6 13 12.5Z"/>
-<path d="M2 25C9 15.4 21.4 14 29.6 20.6c3.4 2.7 7.2 3.3 11.6 1.8-4.6 5.3-12 5.9-17.2 1.8C18.2 19.6 10 19.4 2 25Z"/></svg>`;
+export const MARK_SVG = '<img class="brand__mark" src="/assets/brand/alento-simbolo.svg" alt="" aria-hidden="true">';
+export const LOGO_BRANCO_HTML = '<img class="brand__logo" src="/assets/brand/alento-logo-branco.svg" alt="Alento">';
 
-export function brandLink(href = '/') {
-  return h('a', { class: 'brand', href, 'aria-label': 'Aliento, inicio', html: `${MARK_SVG}<span class="brand__name">Aliento</span>` });
+export function brandLink(href = '/', { dark = false } = {}) {
+  if (dark) return h('a', { class: 'brand', href, 'aria-label': 'Alento, inicio', html: LOGO_BRANCO_HTML });
+  return h('a', { class: 'brand', href, 'aria-label': 'Alento, inicio', html: `${MARK_SVG}<span class="brand__name">Alento</span>` });
+}
+
+/* ---- Splash de entrada: fundo Azul Fôlego + logotipo oficial branco.
+   Some quando a página avisa (splashReady) ou em 1,1 s, o que vier primeiro. Nunca bloqueia. */
+let splashEl = null;
+let splashTimer = null;
+
+export function mountSplash() {
+  if (splashEl || typeof document === 'undefined' || !document.body) return;
+  splashEl = h('div', { class: 'splash', 'aria-hidden': 'true' },
+    h('img', { class: 'splash__logo', src: '/assets/brand/alento-logo-branco.svg', alt: '' }));
+  document.body.append(splashEl);
+  splashTimer = setTimeout(splashReady, 1100);
+}
+
+export function splashReady() {
+  if (!splashEl) return;
+  clearTimeout(splashTimer);
+  const el = splashEl;
+  splashEl = null;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { el.remove(); return; }
+  el.classList.add('is-done');
+  setTimeout(() => el.remove(), 260);
 }
 
 export const ICONS = {
@@ -134,7 +157,7 @@ export function renderFooter(target) {
   const year = new Date().getFullYear();
   target.replaceWith(h('footer', { class: 'site-footer' },
     h('div', { class: 'container site-footer__inner' },
-      h('span', {}, `© ${year} Aliento. Aliento no sustituye el consejo médico profesional.`),
+      h('span', {}, `© ${year} Alento. Alento no sustituye el consejo médico profesional.`),
       h('nav', { 'aria-label': 'Legal' },
         h('a', { href: '/terminos' }, 'Términos'),
         h('a', { href: '/privacidad' }, 'Privacidad'),

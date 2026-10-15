@@ -1,4 +1,4 @@
-// Instalación de Aliento como app (PWA).
+// Instalación de Alento como app (PWA).
 //  · Android / Chrome / Edge: diálogo nativo (beforeinstallprompt) cuando el navegador lo ofrece.
 //  · iPhone / iPad: la instalación la hace el usuario desde Safari → tutorial ilustrado.
 //  · Navegadores integrados (Instagram, Facebook, TikTok…): primero hay que abrir en el navegador.
@@ -46,31 +46,31 @@ const step = (n, text, iconHtml) => h('li', { class: 'install-step' },
 export function installHelp(state = installState()) {
   if (state === 'ios') {
     return [
-      h('h2', { class: 'title-md' }, 'Instala Aliento en tu iPhone'),
+      h('h2', { class: 'title-md' }, 'Instala Alento en tu iPhone'),
       h('p', { class: 'muted u-mt-8' }, 'Accede a tu espacio de bienestar directamente desde tu pantalla de inicio.'),
       h('ol', { class: 'install-steps' },
-        step(1, 'Abre Aliento en Safari.'),
+        step(1, 'Abre Alento en Safari.'),
         step(2, 'Toca el botón Compartir (abajo en el iPhone, arriba en el iPad).', SHARE_ICON),
         step(3, 'Selecciona «Añadir a pantalla de inicio».', ADD_ICON),
         step(4, 'Confirma tocando «Añadir».'),
-        step(5, 'Abre Aliento desde el icono de tu pantalla de inicio.')),
+        step(5, 'Abre Alento desde el icono de tu pantalla de inicio.')),
       h('p', { class: 'help' }, 'Si no ves el botón Compartir, toca el menú «…» de la barra de direcciones y busca «Compartir» o «Añadir a pantalla de inicio». La primera vez que abras la app instalada tendrás que iniciar sesión.', h('span', { class: 'install-step__icon install-step__icon--inline', html: DOTS_ICON })),
     ];
   }
   if (state === 'ios-other') {
-    return [h('h2', { class: 'title-md' }, 'Abre Aliento en Safari'),
+    return [h('h2', { class: 'title-md' }, 'Abre Alento en Safari'),
       h('p', { class: 'muted u-mt-8' }, 'En iPhone y iPad, la instalación se hace desde Safari. Copia la dirección de esta página, ábrela en Safari y sigue los pasos para «Añadir a pantalla de inicio».')];
   }
   if (state === 'in-app') {
     return [h('h2', { class: 'title-md' }, 'Ábrelo en tu navegador'),
-      h('p', { class: 'muted u-mt-8' }, 'Estás dentro de otra app. Toca el menú «…» o «⋮» y elige «Abrir en el navegador» (Safari o Chrome). Desde allí podrás instalar Aliento.')];
+      h('p', { class: 'muted u-mt-8' }, 'Estás dentro de otra app. Toca el menú «…» o «⋮» y elige «Abrir en el navegador» (Safari o Chrome). Desde allí podrás instalar Alento.')];
   }
-  return [h('h2', { class: 'title-md' }, 'Instala Aliento'),
-    h('p', { class: 'muted u-mt-8' }, 'Abre el menú de tu navegador (⋮ o ⋯) y elige «Instalar aplicación» o «Añadir a pantalla de inicio». Si tu navegador no ofrece esta opción, puedes seguir usando Aliento desde aquí sin ningún problema.')];
+  return [h('h2', { class: 'title-md' }, 'Instala Alento'),
+    h('p', { class: 'muted u-mt-8' }, 'Abre el menú de tu navegador (⋮ o ⋯) y elige «Instalar aplicación» o «Añadir a pantalla de inicio». Si tu navegador no ofrece esta opción, puedes seguir usando Alento desde aquí sin ningún problema.')];
 }
 
 /**
- * Acción del botón «Instalar Aliento». Devuelve el resultado para que la pantalla reaccione.
+ * Acción del botón «Instalar Alento». Devuelve el resultado para que la pantalla reaccione.
  * Si hay diálogo nativo lo abre; si no, muestra las instrucciones adecuadas en `showHelp`.
  */
 export async function installAction(showHelp) {

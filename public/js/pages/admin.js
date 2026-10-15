@@ -190,12 +190,56 @@ const BLOCK_HELP = [
   ['completion', '{ title, body } (obligatorio y siempre el último)'],
 ];
 
+const COMMERCIAL_LABEL = { coming_soon: 'Próximamente', ready_for_review: 'En revisión', active: 'Activo (a la venta)', paused: 'En pausa', archived: 'Archivado' };
+
+function programsBar(reloadAll) {
+  return guarded(document.createElement('div'), async (box) => {
+    const { programs } = await api('/api/admin/programs');
+    box.replaceChildren(h('section', { class: 'card stack' },
+      h('h2', { class: 'title-md' }, 'Programas'),
+      ...programs.map((p) => h('div', { class: 'admin-program-row' },
+        h('img', { src: p.icon, alt: '', width: 28, height: 28 }),
+        h('div', { class: 'list__main' },
+          h('strong', {}, p.name ?? p.title),
+          h('p', { class: 'list__meta' }, `${p.chapters} capítulos · ${p.lessons} lecciones · revisión clínica ${p.reviewed}/${p.lessons}`)),
+        h('select', {
+          class: 'input', 'aria-label': `Estado comercial de ${p.name}`,
+          onchange: async (e) => {
+            e.target.disabled = true;
+            try { await api(`/api/admin/programs/${p.slug}`, { method: 'PATCH', body: { commercial_status: e.target.value } }); toast('Estado actualizado.'); }
+            catch (err) { toast(err.message); }
+            reloadAll();
+          },
+        }, Object.entries(COMMERCIAL_LABEL).map(([v, l]) => h('option', { value: v, selected: v === p.commercial_status }, l))),
+        h('button', {
+          type: 'button', class: 'btn btn--sm btn--ghost',
+          onclick: async (e) => {
+            const publish = !p.published;
+            if (publish && p.reviewed === 0 && !confirm(`«${p.name}» no tiene lecciones con revisión clínica aprobada. ¿Publicar el contenido igualmente?`)) return;
+            e.target.disabled = true;
+            try {
+              await api(`/api/admin/programs/${p.slug}/publish-content`, { method: 'POST', body: { publish } });
+              toast(publish ? 'Contenido publicado.' : 'Contenido despublicado.');
+            } catch (err) { toast(err.message); }
+            reloadAll();
+          },
+        }, p.published ? 'Despublicar contenido' : 'Publicar contenido')))));
+  });
+}
+
+let currentProgram = 'sem-fumo';
+
 function content(target) {
   const reload = () => content(target);
   return guarded(target, async () => {
-    const { chapters = [] } = await api('/api/admin/content');
+    const [{ chapters = [] }, { programs }] = await Promise.all([
+      api(`/api/admin/content?program=${currentProgram}`), api('/api/admin/programs')]);
+    const selector = h('select', { class: 'input', 'aria-label': 'Programa', onchange: (e) => { currentProgram = e.target.value; reload(); } },
+      programs.map((p) => h('option', { value: p.slug, selected: p.slug === currentProgram }, p.name ?? p.title)));
     target.replaceChildren(
+      programsBar(reload),
       h('div', { class: 'admin-toolbar' },
+        selector,
         h('p', { class: 'muted small' }, `${chapters.length} capítulos · ${chapters.reduce((n, c) => n + (c.lessons?.length ?? 0), 0)} lecciones`),
         h('button', { type: 'button', class: 'btn btn--sm', onclick: () => chapterForm(null, reload) }, 'Nuevo capítulo')),
       chapters.length ? h('div', {}, chapters.map((c) => chapterCard(c, target, reload)))
@@ -458,7 +502,7 @@ function audit(target) {
 // ---------------------------------------------------------------- estructura
 if (!me.user?.isAdmin) {
   page(root, { eyebrow: 'Administración', title: 'Acceso restringido' });
-  root.append(emptyState('No tienes acceso a esta sección.', 'Si crees que es un error, contacta con el equipo de Aliento.',
+  root.append(emptyState('No tienes acceso a esta sección.', 'Si crees que es un error, contacta con el equipo de Alento.',
     h('a', { class: 'btn btn--ghost', href: me.access ? '/dashboard' : '/perfil' }, 'Volver')));
 } else {
   const panel = h('div', { id: 'admin-panel', role: 'tabpanel', tabindex: '-1' });

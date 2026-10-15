@@ -1,4 +1,4 @@
-// Crea en Stripe el producto Aliento y los tres precios recurrentes.
+// Crea en Stripe el producto Alento y los tres precios recurrentes.
 // Los importes los decides tú; este script no inventa precios.
 //
 //   npm run stripe:setup -- --currency usd --semanal 7.99 --mensual 19.99 --trimestral 34.99
@@ -39,7 +39,7 @@ const PLANS = [
 
 const existing = await stripe.products.search({ query: "metadata['app']:'folego'" });
 const product = existing.data[0] ?? await stripe.products.create({
-  name: 'Aliento Premium',
+  name: 'Alento Premium',
   description: 'Plan personalizado y herramientas de seguimiento para dejar de fumar.',
   metadata: { app: 'folego' },
 });

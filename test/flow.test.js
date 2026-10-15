@@ -36,6 +36,11 @@ before(async () => {
   await seedJourney(db, JOURNEY);
   // Los límites de intentos son reales (Postgres); en pruebas se parte de cero en cada ejecución.
   await db.service.exec('delete from public.rate_limits');
+  // Estado comercial determinista: solo Sem Fumo a la venta; contenido nuevo en borrador.
+  await db.service.exec(`update public.journey_programs set commercial_status = case when slug = 'sem-fumo' then 'active' else 'coming_soon' end,
+    published = slug = 'sem-fumo'`);
+  await db.service.exec(`update public.journey_chapters set published = (select p.slug = 'sem-fumo' from public.journey_programs p where p.id = program_id)`);
+  await db.service.exec(`update public.journey_lessons l set published = (select p.slug = 'sem-fumo' from public.journey_chapters c join public.journey_programs p on p.id = c.program_id where c.id = l.chapter_id)`);
   auth = createAuth({ config, db });
   stripe = fakeStripe({ webhooks: real.webhooks });
   const billing = createBilling({ db, stripe, config, log: silent });
@@ -585,4 +590,110 @@ test('jornada completa: las 30 lecciones en orden, bloqueos, persistencia tras n
   assert.ok(ach.find((a) => a.slug === 'primer-capitulo').unlocked_at);
   // Las lecciones completadas se pueden repasar.
   assert.equal((await d(`/api/app/journey/lessons/${all[0].l.slug}`)).body.lesson.status, 'completed');
+});
+
+// ---------------------------------------------------------------- multiprograma
+async function buyProgram(c, program, plan = 'mensual') {
+  const { body } = await c('/api/checkout', { method: 'POST', body: { program, plan, fromCatalog: true } });
+  assert.ok(body.url, `checkout ${program}: ${JSON.stringify(body)}`);
+  const sessionId = [...stripe.sessions.values()].find((s) => s.url === body.url).id;
+  const { session, sub } = stripe.pay(sessionId);
+  assert.equal(await sendEvent('checkout.session.completed', session), 200);
+  return { session, sub };
+}
+
+test('multiprograma: catálogo, compra de un segundo programa y accesos independientes', async () => {
+  // Publica alcohol en la base local para la prueba.
+  await db.service.exec(`update public.journey_programs set commercial_status = 'active', published = true where slug = 'alcohol'`);
+  await db.service.exec(`update public.journey_chapters set published = true where program_id = (select p.id from public.journey_programs p where p.slug = 'alcohol')`);
+  await db.service.exec(`update public.journey_lessons set published = true where chapter_id in (select c.id from public.journey_chapters c join public.journey_programs p on p.id = c.program_id where p.slug = 'alcohol')`);
+
+  const { c } = await payingUser();
+  let cat = (await c('/api/programs')).body;
+  assert.equal(cat.programs.length, 5);
+  assert.equal(cat.programs.find((p) => p.slug === 'sem-fumo').state, 'active');
+  assert.equal(cat.programs.find((p) => p.slug === 'alcohol').state, 'locked');
+  assert.equal(cat.programs.find((p) => p.slug === 'azucar').state, 'coming_soon');
+
+  // Sin acceso a alcohol: su jornada y sus registros responden 402.
+  assert.equal((await c('/api/app/journey?program=alcohol')).body.code, 'SUBSCRIPTION_REQUIRED');
+  assert.equal((await c('/api/app/programs/alcohol/activity', { method: 'POST', body: { kind: 'consumo', value: { nota: 'x' } } })).status, 402);
+
+  // Compra alcohol desde el catálogo (sin cuestionario).
+  const { sub } = await buyProgram(c, 'alcohol');
+  assert.equal(sub.metadata.program, 'alcohol');
+  cat = (await c('/api/programs')).body;
+  assert.equal(cat.programs.find((p) => p.slug === 'alcohol').state, 'active');
+  assert.equal(cat.programs.find((p) => p.slug === 'sem-fumo').state, 'active', 'sem-fumo sigue activo');
+
+  // Ahora sí: jornada de alcohol con su propia cadena de desbloqueo (empieza en el capítulo 0).
+  const j = (await c('/api/app/journey?program=alcohol')).body;
+  assert.equal(j.totals.lessons, 30);
+  assert.equal(j.chapters[0].lessons[0].status, 'available');
+  assert.equal(j.chapters[0].lessons[1].status, 'locked');
+
+  // Registro genérico de actividad: crear, listar, borrar.
+  const created = await c('/api/app/programs/alcohol/activity', { method: 'POST', body: { kind: 'consumo', value: { nota: 'una copa el sábado' } } });
+  assert.equal(created.status, 201);
+  const list = (await c('/api/app/programs/alcohol/activity')).body.entries;
+  assert.equal(list.length, 1);
+  assert.equal(list[0].value.nota, 'una copa el sábado');
+  assert.equal((await c(`/api/app/programs/alcohol/activity/${list[0].id}`, { method: 'DELETE' })).status, 200);
+
+  // Recompra del mismo programa: bloqueada.
+  assert.equal((await c('/api/checkout', { method: 'POST', body: { program: 'alcohol', plan: 'semanal', fromCatalog: true } })).body.code, 'ALREADY_SUBSCRIBED');
+
+  // Último programa usado se guarda.
+  await c('/api/programs/alcohol/last', { method: 'POST' });
+  assert.equal((await c('/api/programs')).body.lastProgram, 'alcohol');
+
+  // Programa no comercial: no se puede comprar.
+  assert.equal((await c('/api/checkout', { method: 'POST', body: { program: 'azucar', plan: 'mensual', fromCatalog: true } })).body.code, 'PROGRAM_NOT_AVAILABLE');
+});
+
+test('multiprograma: cancelar un programa no cancela los demás', async () => {
+  await db.service.exec(`update public.journey_programs set commercial_status = 'active', published = true where slug = 'sueno'`);
+  await db.service.exec(`update public.journey_chapters set published = true where program_id = (select p.id from public.journey_programs p where p.slug = 'sueno')`);
+  await db.service.exec(`update public.journey_lessons set published = true where chapter_id in (select c.id from public.journey_chapters c join public.journey_programs p on p.id = c.program_id where p.slug = 'sueno')`);
+  const { c, sub } = await payingUser();
+  await buyProgram(c, 'sueno', 'semanal');
+  // Cancela sem-fumo (webhook de Stripe).
+  sub.cancel_at_period_end = true;
+  assert.equal(await sendEvent('customer.subscription.updated', sub), 200);
+  const cat = (await c('/api/programs')).body;
+  assert.equal(cat.programs.find((p) => p.slug === 'sem-fumo').state, 'canceled_but_active');
+  assert.equal(cat.programs.find((p) => p.slug === 'sueno').state, 'active');
+  // Expira sem-fumo: pasa a expired; sueno sigue activo.
+  sub.status = 'canceled'; sub.cancel_at_period_end = false;
+  assert.equal(await sendEvent('customer.subscription.deleted', sub), 200);
+  const cat2 = (await c('/api/programs')).body;
+  assert.equal(cat2.programs.find((p) => p.slug === 'sem-fumo').state, 'expired');
+  assert.equal(cat2.programs.find((p) => p.slug === 'sueno').state, 'active');
+  // Sin acceso a sem-fumo: sus registros quedan bloqueados, la jornada de sueno no.
+  assert.equal((await c('/api/app/smoking')).body.code, 'SUBSCRIPTION_REQUIRED');
+  const js = (await c('/api/app/journey?program=sueno')).body;
+  assert.equal(js.totals.lessons, 30, 'la jornada de sueno sigue accesible');
+});
+
+test('multiprograma: admin gestiona estados comerciales y publicación', async () => {
+  const { user } = await payingUser();
+  await db.service.exec('insert into public.admin_users (user_id) values ($1) on conflict do nothing', [user.id]);
+  const c = client();
+  assert.equal((await c('/api/auth/login', { method: 'POST', body: { email: user.email, password: 'secreta123' } })).status, 200);
+  const programs = (await c('/api/admin/programs')).body.programs;
+  assert.equal(programs.length, 5);
+  assert.equal((await c('/api/admin/programs/azucar', { method: 'PATCH', body: { commercial_status: 'ready_for_review' } })).status, 200);
+  assert.equal((await c('/api/admin/programs/azucar', { method: 'PATCH', body: { commercial_status: 'invalid' } })).status, 422);
+  assert.equal((await c('/api/admin/programs/sem-fumo', { method: 'PATCH', body: { commercial_status: 'archived' } })).status, 409);
+  // Publicar contenido de azucar de una vez.
+  assert.equal((await c('/api/admin/programs/azucar/publish-content', { method: 'POST', body: { publish: true } })).status, 200);
+  const row = await db.service.one(`select p.published as prog,
+    (select count(*) from public.journey_lessons l join public.journey_chapters ch on ch.id = l.chapter_id
+     where ch.program_id = p.id and l.published)::int as pub
+    from public.journey_programs p where p.slug = 'azucar'`);
+  assert.equal(row.prog, true);
+  assert.equal(row.pub, 30);
+  // El contenido por programa se filtra.
+  const content = (await c('/api/admin/content?program=azucar')).body;
+  assert.equal(content.chapters.length, 10);
 });

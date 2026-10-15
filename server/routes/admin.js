@@ -73,17 +73,62 @@ export function adminRoutes({ db }) {
   }));
 
   // ---------------------------------------------------------------- contenido
+  // ------------------------------------------------------------- programas
+  r.get('/programs', wrap(async (req, res) => {
+    const rows = await q.rows(`
+      select p.slug, p.title, p.name, p.tagline, p.color, p.icon, p.position, p.theme, p.commercial_status, p.published,
+        (select count(*) from public.journey_chapters c where c.program_id = p.id)::int as chapters,
+        (select count(*) from public.journey_lessons l join public.journey_chapters c on c.id = l.chapter_id where c.program_id = p.id)::int as lessons,
+        (select count(*) from public.journey_lessons l join public.journey_chapters c on c.id = l.chapter_id
+          where c.program_id = p.id and l.clinical_review = 'approved')::int as reviewed
+      from public.journey_programs p order by p.position`);
+    res.json({ programs: rows });
+  }));
+
+  const COMMERCIAL = ['coming_soon', 'ready_for_review', 'active', 'paused', 'archived'];
+  r.patch('/programs/:slug', wrap(async (req, res) => {
+    const slug = String(req.params.slug);
+    const status = String(req.body?.commercial_status ?? '');
+    if (!COMMERCIAL.includes(status)) throw new HttpError(422, 'Estado no válido.', 'INVALID', { field: 'commercial_status' });
+    if (slug === 'sem-fumo' && status === 'archived') throw new HttpError(409, 'Sem Fumo no se puede archivar.');
+    await db.tx(async (qq) => {
+      const n = await qq.exec('update public.journey_programs set commercial_status = $1 where slug = $2', [status, slug]);
+      if (!n) throw new HttpError(404, 'Programa no encontrado.');
+      await audit(qq, req, 'program.commercial_status', 'program', slug, { status });
+    });
+    res.json({ ok: true });
+  }));
+
+  // Publica (o despublica) TODO el contenido de un programa de una vez.
+  r.post('/programs/:slug/publish-content', wrap(async (req, res) => {
+    const slug = String(req.params.slug);
+    const publish = req.body?.publish !== false;
+    await db.tx(async (qq) => {
+      const p = await qq.one('select id, commercial_status from public.journey_programs where slug = $1', [slug]);
+      if (!p) throw new HttpError(404, 'Programa no encontrado.');
+      await qq.exec('update public.journey_chapters set published = $2, updated_at = now() where program_id = $1', [p.id, publish]);
+      await qq.exec(`update public.journey_lessons set published = $2, updated_at = now()
+        where chapter_id in (select id from public.journey_chapters where program_id = $1)`, [p.id, publish]);
+      await qq.exec('update public.journey_programs set published = $2 where id = $1', [p.id, publish]);
+      await audit(qq, req, publish ? 'program.content_published' : 'program.content_unpublished', 'program', slug, {});
+    });
+    res.json({ ok: true });
+  }));
+
   r.get('/content', wrap(async (req, res) => {
+    const program = String(req.query.program ?? 'sem-fumo');
     const chapters = await q.rows(`select c.id, c.slug, c.number, c.title, c.description, c.published
-      from public.journey_chapters c order by c.number`);
+      from public.journey_chapters c join public.journey_programs p on p.id = c.program_id
+      where p.slug = $1 order by c.number`, [program]);
     const lessons = await q.rows(`select l.id, l.chapter_id, l.slug, l.position, l.title, l.minutes, l.published, l.version, l.clinical_review, l.clinical_reviewer,
       (select count(*) from public.user_lesson_progress p where p.lesson_id = l.id and p.status = 'completed')::int as completions
-      from public.journey_lessons l order by l.position`);
+      from public.journey_lessons l where l.chapter_id = any($1) order by l.position`,
+    [chapters.map((c) => c.id)]);
     res.json({ chapters: chapters.map((c) => ({ ...c, lessons: lessons.filter((l) => l.chapter_id === c.id) })) });
   }));
 
   r.post('/chapters', wrap(async (req, res) => {
-    const program = await q.one('select id from public.journey_programs order by created_at limit 1');
+    const program = await q.one('select id from public.journey_programs where slug = $1', [String(req.body?.program ?? 'sem-fumo')]);
     if (!program) throw new HttpError(409, 'Primero carga el programa (npm run content:seed).');
     const slug = slugify(req.body?.slug || req.body?.title);
     const row = await db.tx(async (qq) => {

@@ -126,12 +126,12 @@ async function render() {
   let dismissed = false;
   try { dismissed = localStorage.getItem('al_install_dismissed') === '1'; } catch { /* sin almacenamiento */ }
   const installCard = installState() !== 'installed' && !dismissed ? h('section', { class: 'card install-banner' },
-    h('div', {}, h('strong', {}, 'Ten Aliento siempre contigo'), h('p', { class: 'muted small' }, 'Instálalo en tu pantalla de inicio y ábrelo como una app.')),
+    h('div', {}, h('strong', {}, 'Ten Alento siempre contigo'), h('p', { class: 'muted small' }, 'Instálalo en tu pantalla de inicio y ábrelo como una app.')),
     h('div', { class: 'actions-row', style: 'margin:0' },
       h('button', { class: 'btn btn--sm', onclick: async () => {
-        const r = await installAction((content) => modal((close) => [...content, h('button', { class: 'btn btn--block u-mt-16', onclick: close }, 'Entendido')], { label: 'Instalar Aliento' }));
+        const r = await installAction((content) => modal((close) => [...content, h('button', { class: 'btn btn--block u-mt-16', onclick: close }, 'Entendido')], { label: 'Instalar Alento' }));
         if (r === 'accepted') installCard.remove();
-      } }, 'Instalar Aliento'),
+      } }, 'Instalar Alento'),
       h('button', { class: 'link', onclick: () => { try { localStorage.setItem('al_install_dismissed', '1'); } catch { /* */ } installCard.remove(); } }, 'Ahora no'))) : null;
 
   root.replaceChildren(...[

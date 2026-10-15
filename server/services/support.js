@@ -1,4 +1,4 @@
-// "Habla con Aliento": guía de apoyo con respuestas predefinidas y revisadas.
+// "Habla con Alento": guía de apoyo con respuestas predefinidas y revisadas.
 // No hay proveedor de IA configurado, así que NO se simula un chat inteligente:
 // el usuario elige un tema y recibe orientación fija con enlaces a las herramientas reales.
 
@@ -30,19 +30,19 @@ export const SUPPORT_TOPICS = [
   {
     id: 'ayuda-profesional',
     label: '¿Debería pedir ayuda profesional?',
-    reply: 'Hablar con un profesional sanitario suele ser una muy buena idea, sobre todo si fumas mucho, si ya lo has intentado varias veces, si estás embarazada o en periodo de lactancia, o si tienes alguna condición de salud física o mental. Pueden valorar contigo tratamientos de apoyo aprobados. Aliento te acompaña, pero no sustituye ese consejo.',
+    reply: 'Hablar con un profesional sanitario suele ser una muy buena idea, sobre todo si fumas mucho, si ya lo has intentado varias veces, si estás embarazada o en periodo de lactancia, o si tienes alguna condición de salud física o mental. Pueden valorar contigo tratamientos de apoyo aprobados. Alento te acompaña, pero no sustituye ese consejo.',
     links: [{ href: '/jornada', label: 'Lección: apoyo y ayuda profesional' }],
   },
   {
     id: 'como-funciona',
-    label: '¿Cómo funciona Aliento?',
-    reply: 'Aliento combina una jornada de lecciones cortas, el registro de cigarrillos y de ganas, ejercicios de respiración, un diario de ánimo y objetivos personalizados. Tu panel te muestra qué toca hoy. Todo lo que ves en tus gráficos sale de tus registros; lo que es una estimación (como el dinero ahorrado) aparece marcado como tal.',
+    label: '¿Cómo funciona Alento?',
+    reply: 'Alento combina una jornada de lecciones cortas, el registro de cigarrillos y de ganas, ejercicios de respiración, un diario de ánimo y objetivos personalizados. Tu panel te muestra qué toca hoy. Todo lo que ves en tus gráficos sale de tus registros; lo que es una estimación (como el dinero ahorrado) aparece marcado como tal.',
     links: [{ href: '/dashboard', label: 'Ir a mi panel' }],
   },
   {
     id: 'urgencia',
     label: 'Me siento muy mal / es una urgencia',
-    reply: 'Si sientes dolor en el pecho, dificultad para respirar o crees que tu vida o la de otra persona está en riesgo, llama ahora al número de emergencias de tu país. Si estás pasando por un momento emocional muy difícil, busca ayuda inmediata en los servicios de emergencia o de salud mental de tu zona. Aliento no puede atender urgencias.',
+    reply: 'Si sientes dolor en el pecho, dificultad para respirar o crees que tu vida o la de otra persona está en riesgo, llama ahora al número de emergencias de tu país. Si estás pasando por un momento emocional muy difícil, busca ayuda inmediata en los servicios de emergencia o de salud mental de tu zona. Alento no puede atender urgencias.',
     links: [],
   },
 ];

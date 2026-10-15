@@ -49,7 +49,7 @@ async function load() {
   h('div', { class: 'form-grid' },
     h('div', { class: 'field' }, h('label', { for: 'money' }, `Meta de ahorro (${g.currency})`), moneyGoal),
     h('div', { class: 'field' }, h('label', { for: 'mlabel' }, '¿Para qué ahorras?'), moneyLabel)),
-  h('p', { class: 'help' }, 'Los horarios de recordatorio se configuran en ', h('a', { href: '/notificaciones' }, 'Notificaciones'), '. Aliento no sustituye el consejo de un profesional sanitario.'),
+  h('p', { class: 'help' }, 'Los horarios de recordatorio se configuran en ', h('a', { href: '/notificaciones' }, 'Notificaciones'), '. Alento no sustituye el consejo de un profesional sanitario.'),
   err, h('div', {}, btn)));
 
   root.append(h('h2', { class: 'section-title' }, 'Historial de cambios'));

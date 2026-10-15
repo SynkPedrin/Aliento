@@ -243,7 +243,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         subscription_data: { metadata },
         locale: 'es',
         custom_text: {
-          submit: { message: 'El acceso a Aliento empieza de inmediato. La suscripción se renueva automáticamente al mismo precio hasta que la canceles desde «Mi suscripción».' },
+          submit: { message: 'El acceso a Alento empieza de inmediato. La suscripción se renueva automáticamente al mismo precio hasta que la canceles desde «Mi suscripción».' },
         },
         success_url: `${config.appUrl}/bienvenida?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${config.appUrl}/programas?pago=cancelado`,
@@ -510,9 +510,9 @@ export function createBilling({ db, stripe, config, log = console }) {
   async function checkoutState(userId, sessionId) {
     const row = await db.service.one('select * from public.checkout_sessions where id = $1 and user_id = $2', [sessionId, userId]);
     if (!row) return { state: 'unknown' };
-    if (await activeSubscription(userId)) return { state: 'active', plan: row.plan };
-    if (row.status === 'expired') return { state: 'failed' };
-    return { state: 'pending' };
+    if (await activeSubscription(userId, row.program_slug)) return { state: 'active', plan: row.plan, program: row.program_slug };
+    if (row.status === 'expired') return { state: 'failed', program: row.program_slug };
+    return { state: 'pending', program: row.program_slug };
   }
 
   async function pendingCheckout(userId) {
@@ -522,7 +522,7 @@ export function createBilling({ db, stripe, config, log = console }) {
   }
 
   /**
-   * Conciliación: busca suscripciones de Aliento en Stripe sin vínculo correcto en la base.
+   * Conciliación: busca suscripciones de Alento en Stripe sin vínculo correcto en la base.
    * Solo vincula por identificadores verificables (metadata.user_id que puso nuestro servidor
    * o el customer de Stripe guardado en el perfil). Nunca por nombre o correo.
    * No crea cobros ni modifica nada en Stripe. `apply=false` solo informa.

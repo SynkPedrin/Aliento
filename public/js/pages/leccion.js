@@ -4,6 +4,8 @@ import { celebrate, errorState, initApp, loading } from '../shell.js';
 await initApp({ active: '/jornada' });
 const root = $('[data-root]');
 const slug = new URLSearchParams(location.search).get('l') ?? '';
+const PROGRAM = new URLSearchParams(location.search).get('p') ?? 'sem-fumo';
+const journeyHref = PROGRAM === 'sem-fumo' ? '/jornada' : `/jornada?program=${PROGRAM}`;
 
 /** Texto con párrafos y **negritas**, sin HTML del contenido (se construye con nodos). */
 function richText(body, cls = 'lesson-text') {
@@ -124,7 +126,7 @@ async function render() {
   } catch (err) {
     if (err.code === 'LOCKED') {
       return root.replaceChildren(h('div', { class: 'empty-state' }, h('p', { class: 'empty-state__title' }, 'Esta lección todavía está bloqueada'),
-        h('p', { class: 'muted' }, err.message), h('a', { class: 'btn', href: '/jornada' }, 'Ir a mi jornada')));
+        h('p', { class: 'muted' }, err.message), h('a', { class: 'btn', href: journeyHref }, 'Ir a mi jornada')));
     }
     return errorState(root, err, render);
   }
@@ -141,7 +143,7 @@ async function render() {
   };
 
   article.append(
-    h('p', { class: 'eyebrow' }, h('a', { href: '/jornada' }, 'Mi jornada'), ` · Capítulo ${L.lesson.chapter.number} · ${L.lesson.chapter.title}`),
+    h('p', { class: 'eyebrow' }, h('a', { href: journeyHref }, 'Mi jornada'), ` · Capítulo ${L.lesson.chapter.number} · ${L.lesson.chapter.title}`),
     h('h1', { class: 'title-lg u-mt-8' }, L.lesson.title),
     h('p', { class: 'muted u-mt-8' }, `${L.lesson.description} · ${L.lesson.minutes} min`),
     L.lesson.clinicalReview !== 'approved' ? h('p', { class: 'help u-mt-8' }, 'Contenido educativo basado en guías de salud pública, pendiente de revisión por un profesional sanitario. No sustituye la atención médica.') : null,
@@ -163,7 +165,7 @@ async function render() {
         r.chapterCompleted ? h('p', { class: 'pill pill--ok u-mt-16' }, `Capítulo ${L.lesson.chapter.number} completado`) : null,
         h('p', { class: 'help u-mt-16' }, `${r.totals.completed} de ${r.totals.lessons} lecciones completadas`),
         h('div', { class: 'actions-row', style: 'justify-content:center' },
-          r.next ? h('a', { class: 'btn', href: `/leccion?l=${encodeURIComponent(r.next.slug)}` }, `Siguiente: ${r.next.title}`) : null,
+          r.next ? h('a', { class: 'btn', href: `/leccion?l=${encodeURIComponent(r.next.slug)}${PROGRAM === 'sem-fumo' ? '' : `&p=${PROGRAM}`}` }, `Siguiente: ${r.next.title}`) : null,
           h('a', { class: 'btn btn--ghost', href: '/dashboard' }, 'Volver al inicio'))));
       window.scrollTo({ top: 0 });
     } catch (err) {

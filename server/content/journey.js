@@ -1,4 +1,4 @@
-// Contenido del programa Aliento. Original; revisar editorialmente antes de publicar.
+// Contenido del programa Alento. Original; revisar editorialmente antes de publicar.
 export const JOURNEY = {
   program: { slug: 'sem-fumo', title: 'Sem Fumo', version: 1 },
   chapters: [
@@ -7,11 +7,11 @@ export const JOURNEY = {
       slug: 'tu-primer-paso',
       number: 0,
       title: 'Tu primer paso',
-      description: 'Conoce cómo funciona Aliento, aclara tus razones para cambiar y date permiso para avanzar a tu ritmo.',
+      description: 'Conoce cómo funciona Alento, aclara tus razones para cambiar y date permiso para avanzar a tu ritmo.',
       lessons: [
         {
           slug: 'bienvenida',
-          title: 'Bienvenida a Aliento',
+          title: 'Bienvenida a Alento',
           description: 'Descubre qué vas a encontrar en este programa y cómo sacarle provecho.',
           minutes: 4,
           blocks: [
@@ -19,13 +19,13 @@ export const JOURNEY = {
               type: 'educational_text',
               id: 'un-espacio-para-ti',
               title: 'Un espacio para ti',
-              body: 'Si estás aquí, es porque una parte de ti quiere cambiar tu relación con el cigarrillo o el vapeador. Eso ya es un paso valioso, aunque todavía tengas dudas.\n\nAliento no está pensado para regañarte ni para exigirte perfección. Es un acompañamiento práctico: lecciones breves, ejercicios sencillos y espacios para pensar en tu propia experiencia.\n\nMuchas personas que hoy no fuman pasaron por varios intentos antes de lograrlo. Cada intento enseña algo. Aquí vas a usar lo que ya sabes de ti para construir un plan que encaje con tu vida real.',
+              body: 'Si estás aquí, es porque una parte de ti quiere cambiar tu relación con el cigarrillo o el vapeador. Eso ya es un paso valioso, aunque todavía tengas dudas.\n\nAlento no está pensado para regañarte ni para exigirte perfección. Es un acompañamiento práctico: lecciones breves, ejercicios sencillos y espacios para pensar en tu propia experiencia.\n\nMuchas personas que hoy no fuman pasaron por varios intentos antes de lograrlo. Cada intento enseña algo. Aquí vas a usar lo que ya sabes de ti para construir un plan que encaje con tu vida real.',
             },
             {
               type: 'educational_text',
               id: 'como-funciona',
               title: 'Cómo funciona el programa',
-              body: 'El programa tiene **diez capítulos** con tres lecciones cada uno. Cada lección dura pocos minutos y combina lectura con alguna actividad: responder una pregunta, escribir una reflexión, elegir estrategias o practicar una respiración.\n\nLo ideal es avanzar una lección al día, pero puedes ir más lento si lo necesitas. Lo importante es la constancia, no la velocidad. Tus respuestas te sirven a ti: no hay calificaciones.\n\n**Aliento es un programa de apoyo conductual, no un tratamiento médico**, y no reemplaza la atención de un profesional de salud. Si tienes dudas sobre tu salud o sobre los medicamentos para dejar de fumar, consulta con tu médico o con otro profesional de salud.',
+              body: 'El programa tiene **diez capítulos** con tres lecciones cada uno. Cada lección dura pocos minutos y combina lectura con alguna actividad: responder una pregunta, escribir una reflexión, elegir estrategias o practicar una respiración.\n\nLo ideal es avanzar una lección al día, pero puedes ir más lento si lo necesitas. Lo importante es la constancia, no la velocidad. Tus respuestas te sirven a ti: no hay calificaciones.\n\n**Alento es un programa de apoyo conductual, no un tratamiento médico**, y no reemplaza la atención de un profesional de salud. Si tienes dudas sobre tu salud o sobre los medicamentos para dejar de fumar, consulta con tu médico o con otro profesional de salud.',
             },
             {
               type: 'multiple_choice',
@@ -54,7 +54,7 @@ export const JOURNEY = {
               type: 'completion',
               id: 'fin',
               title: '¡Primera lección lista!',
-              body: 'Ya conoces cómo funciona Aliento. En la próxima lección vas a poner en palabras tus razones para cambiar.',
+              body: 'Ya conoces cómo funciona Alento. En la próxima lección vas a poner en palabras tus razones para cambiar.',
             },
           ],
         },
@@ -457,7 +457,7 @@ export const JOURNEY = {
               type: 'educational_text',
               id: 'ayuda-profesional',
               title: 'La ayuda profesional suma',
-              body: 'Las principales organizaciones de salud coinciden en que el **acompañamiento profesional** y los **medicamentos aprobados**, como la terapia de reemplazo de nicotina u otros que solo puede indicar un profesional con receta, pueden aumentar de forma importante las probabilidades de dejar de fumar. Combinar ambos suele dar mejores resultados que usar solo uno de ellos.\n\nCada medicamento tiene indicaciones, precauciones y formas de uso distintas. Por eso, la decisión sobre si usarlos y cómo hacerlo debe tomarse **junto a un profesional de salud**, como tu médico o farmacéutico.\n\nSi estás pensando en usar cigarrillos electrónicos para dejar de fumar, coméntalo también con un profesional: este programa no los recomienda como método.\n\nAliento puede acompañarte en el día a día, pero no reemplaza esa consulta.',
+              body: 'Las principales organizaciones de salud coinciden en que el **acompañamiento profesional** y los **medicamentos aprobados**, como la terapia de reemplazo de nicotina u otros que solo puede indicar un profesional con receta, pueden aumentar de forma importante las probabilidades de dejar de fumar. Combinar ambos suele dar mejores resultados que usar solo uno de ellos.\n\nCada medicamento tiene indicaciones, precauciones y formas de uso distintas. Por eso, la decisión sobre si usarlos y cómo hacerlo debe tomarse **junto a un profesional de salud**, como tu médico o farmacéutico.\n\nSi estás pensando en usar cigarrillos electrónicos para dejar de fumar, coméntalo también con un profesional: este programa no los recomienda como método.\n\nAlento puede acompañarte en el día a día, pero no reemplaza esa consulta.',
             },
             {
               type: 'educational_text',
@@ -1625,7 +1625,7 @@ export const JOURNEY = {
               type: 'completion',
               id: 'fin',
               title: '¡Programa completado!',
-              body: 'Terminaste el Programa Aliento. Vuelve a cualquier lección cuando lo necesites: todo lo que construiste aquí sigue siendo tuyo. Y recuerda que un profesional de salud puede seguir acompañándote.',
+              body: 'Terminaste el Programa Alento. Vuelve a cualquier lección cuando lo necesites: todo lo que construiste aquí sigue siendo tuyo. Y recuerda que un profesional de salud puede seguir acompañándote.',
             },
           ],
         },

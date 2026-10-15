@@ -7,6 +7,12 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
     folego_mensual: { id: 'price_m', active: true, unit_amount: 1999, currency: 'usd', recurring: { interval: 'month', interval_count: 1 } },
     folego_trimestral: { id: 'price_t', active: true, unit_amount: 3499, currency: 'usd', recurring: { interval: 'month', interval_count: 3 } },
   };
+  // Programas adicionales (mismos importes que Sem Fumo).
+  for (const program of ['alcohol', 'azucar', 'ansiedad', 'sueno']) {
+    for (const [plan, base] of [['semanal', 'folego_semanal'], ['mensual', 'folego_mensual'], ['trimestral', 'folego_trimestral']]) {
+      prices[`alento_${program}_${plan}`] = { ...prices[base], id: `price_${program.slice(0, 3)}_${plan.slice(0, 1)}`, lookup_key: `alento_${program}_${plan}` };
+    }
+  }
   const sessions = new Map();
   const subs = new Map();
   const invoiceSubs = new Map();

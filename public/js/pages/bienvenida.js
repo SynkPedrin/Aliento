@@ -1,21 +1,26 @@
 // La activación la hace el webhook de Stripe. Esta página solo consulta el
 // estado guardado en el servidor: la redirección por sí sola no activa nada.
-import { $, api, brandLink, h, MARK_SVG } from '../ui.js';
+import { $, api, brandLink, h, LOGO_BRANCO_HTML } from '../ui.js';
 import { installAction, installState } from '../install.js';
 
-$('[data-brand-wrap]').append(brandLink('/'));
+$('[data-brand-wrap]').append(brandLink('/', { dark: true }));
 const root = $('[data-root]');
 const sessionId = new URLSearchParams(location.search).get('session_id') ?? '';
 const started = Date.now();
+let PROGRAM = 'sem-fumo';
+let PROGRAM_NAME = 'Sem Fumo';
+
+/** Destino tras la bienvenida: Sem Fumo va a su configuración; los demás, a su programa. */
+const destination = () => (PROGRAM === 'sem-fumo' ? '/configuracion' : `/programa?p=${PROGRAM}&nuevo=1`);
 
 function showWelcome() {
   // Si ya se abre como app instalada, no se vuelve a ofrecer la instalación.
-  const next = installState() === 'installed' ? () => location.assign('/configuracion') : showInstall;
+  const next = installState() === 'installed' ? () => location.assign(destination()) : showInstall;
   root.replaceChildren(
-    h('div', { class: 'hero__mark', html: MARK_SVG }),
-    h('h1', { class: 'title-xl' }, '¡Bienvenido a Aliento!'),
-    h('p', { class: 'lead' }, 'Tu camino comienza hoy.'),
-    h('p', { class: 'muted' }, 'Tu suscripción está activa y tu plan personalizado está listo.'),
+    h('div', { class: 'hero__mark', html: LOGO_BRANCO_HTML }),
+    h('h1', { class: 'title-xl' }, '¡Tu camino comienza aquí!'),
+    h('p', { class: 'lead' }, 'Gracias por dar este primer paso.'),
+    h('p', { class: 'welcome-program' }, h('strong', {}, PROGRAM_NAME), h('br'), h('span', { class: 'muted' }, 'Tu programa está listo.')),
     h('p', { class: 'u-mt-16' }, h('button', { class: 'btn btn--lg', onclick: next }, 'Continuar')),
   );
 }
@@ -23,19 +28,19 @@ function showWelcome() {
 /** Ofrece instalar la app. Nunca es obligatorio: siempre se puede seguir en el navegador. */
 function showInstall() {
   const help = h('div', { class: 'install-help', 'aria-live': 'polite' });
-  const installBtn = h('button', { class: 'btn btn--lg btn--block' }, 'Instalar Aliento');
+  const installBtn = h('button', { class: 'btn btn--lg btn--block' }, 'Instalar Alento');
   installBtn.addEventListener('click', async () => {
     const result = await installAction((content) => help.replaceChildren(h('div', { class: 'card install-card' }, ...content),
-      h('p', { class: 'u-mt-16' }, h('a', { class: 'btn btn--ghost', href: '/configuracion' }, 'Ya está, continuar'))));
-    if (result === 'accepted' || result === 'installed') location.assign('/configuracion');
-    if (result === 'dismissed') help.replaceChildren(h('p', { class: 'muted small' }, 'Sin problema: puedes instalar Aliento más tarde desde Mi perfil.'));
+      h('p', { class: 'u-mt-16' }, h('a', { class: 'btn btn--ghost', href: destination() }, 'Ya está, continuar'))));
+    if (result === 'accepted' || result === 'installed') location.assign(destination());
+    if (result === 'dismissed') help.replaceChildren(h('p', { class: 'muted small' }, 'Sin problema: puedes instalar Alento más tarde desde Mi perfil.'));
   });
   root.replaceChildren(
-    h('div', { class: 'hero__mark', html: MARK_SVG }),
-    h('h1', { class: 'title-lg' }, 'Ten Aliento siempre contigo.'),
-    h('p', { class: 'lead' }, 'Instala la app en tu pantalla de inicio para abrirla con un toque, sin barra del navegador, y recibir tus recordatorios.'),
+    h('div', { class: 'hero__mark', html: LOGO_BRANCO_HTML }),
+    h('h1', { class: 'title-lg' }, 'Lleva Alento contigo.'),
+    h('p', { class: 'lead' }, 'Un pequeño espacio para ti, siempre que lo necesites.'),
     h('div', { class: 'stack u-mt-16 install-actions' }, installBtn,
-      h('a', { class: 'btn btn--ghost btn--block', href: '/configuracion' }, 'Continuar en el navegador')),
+      h('a', { class: 'btn btn--ghost btn--block', href: destination() }, 'Continuar sin instalar')),
     help,
   );
 }
@@ -46,13 +51,18 @@ function showMessage(title, text, actions) {
 
 async function poll() {
   try {
-    const { state } = await api(`/api/checkout/status?session_id=${encodeURIComponent(sessionId)}`);
-    if (state === 'active') return showWelcome();
-    if (state === 'failed') {
+    const st = await api(`/api/checkout/status?session_id=${encodeURIComponent(sessionId)}`);
+    if (st.program) {
+      PROGRAM = st.program;
+      const cat = await api('/api/catalog').catch(() => null);
+      PROGRAM_NAME = cat?.programs?.find((x) => x.slug === PROGRAM)?.name ?? PROGRAM;
+    }
+    if (st.state === 'active') return showWelcome();
+    if (st.state === 'failed') {
       return showMessage('No se pudo completar el pago', 'No se ha activado ninguna suscripción. Tus resultados siguen guardados.',
         [h('a', { class: 'btn', href: '/planes' }, 'Volver a intentarlo')]);
     }
-    if (state === 'unknown') {
+    if (st.state === 'unknown') {
       return showMessage('No encontramos este pago', 'Si acabas de pagar, revisa tu cuenta en unos minutos.',
         [h('a', { class: 'btn', href: '/suscripcion' }, 'Ver mi suscripción')]);
     }

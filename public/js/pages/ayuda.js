@@ -1,4 +1,4 @@
-// Habla con Aliento: guía de apoyo con respuestas predefinidas y revisadas (no es un chat con IA).
+// Habla con Alento: guía de apoyo con respuestas predefinidas y revisadas (no es un chat con IA).
 import { $, api, h, icon, toast } from '../ui.js';
 import { errorState, initApp, loading, page } from '../shell.js';
 
@@ -11,7 +11,7 @@ const paragraphs = (text) => String(text ?? '').split(/\n{2,}|\n/).filter((p) =>
 function bubble({ role, content, links }) {
   if (role === 'user') return h('div', { class: 'bubble bubble--user' }, h('span', { class: 'sr-only' }, 'Tú: '), content);
   return h('div', { class: 'bubble bubble--guide' },
-    h('span', { class: 'sr-only' }, 'Aliento: '),
+    h('span', { class: 'sr-only' }, 'Alento: '),
     paragraphs(content),
     links?.length ? h('div', { class: 'bubble__links' }, links.map((l) => h('a', { class: 'btn btn--sm btn--ghost', href: l.href }, l.label))) : null);
 }
@@ -29,8 +29,8 @@ async function load() {
 function render({ topics = [], messages = [] }) {
   page(root, {
     eyebrow: 'Apoyo',
-    title: 'Habla con Aliento',
-    intro: 'Elige un tema y te mostraremos qué puedes hacer y dónde encontrarlo en Aliento.',
+    title: 'Habla con Alento',
+    intro: 'Elige un tema y te mostraremos qué puedes hacer y dónde encontrarlo en Alento.',
   });
 
   const chat = h('div', { class: 'chat', role: 'log', 'aria-live': 'polite', 'aria-label': 'Conversación con la guía' });
@@ -38,7 +38,7 @@ function render({ topics = [], messages = [] }) {
   else {
     chat.append(bubble({
       role: 'guide',
-      content: `Hola${firstName ? `, ${firstName}` : ''}. Elige un tema y te orientaré con lo que tienes disponible en Aliento.`,
+      content: `Hola${firstName ? `, ${firstName}` : ''}. Elige un tema y te orientaré con lo que tienes disponible en Alento.`,
     }));
   }
 

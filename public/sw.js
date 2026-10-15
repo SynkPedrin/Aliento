@@ -1,4 +1,4 @@
-// Service worker de Aliento.
+// Service worker de Alento.
 // Reglas de caché (seguridad y privacidad):
 //  · NUNCA se cachea /api/* (sesión, datos personales y de salud, pagos), ni Stripe, ni otros orígenes.
 //  · Páginas HTML: red primero (no contienen datos personales; se pintan en el navegador).
@@ -56,7 +56,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data?.text() }; }
-  event.waitUntil(self.registration.showNotification(data.title || 'Aliento', {
+  event.waitUntil(self.registration.showNotification(data.title || 'Alento', {
     body: data.body || '',
     icon: '/assets/icons/icon-192.png',
     badge: '/assets/icons/favicon-32.png',

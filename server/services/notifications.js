@@ -160,7 +160,7 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
 
   async function test(userId) {
     return send(userId, 'test', `test:${Date.now()}`, {
-      title: 'Aliento', body: 'Las notificaciones funcionan en este dispositivo.', url: '/notificaciones', tag: 'test',
+      title: 'Alento', body: 'Las notificaciones funcionan en este dispositivo.', url: '/notificaciones', tag: 'test',
     });
   }
 

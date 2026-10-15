@@ -19,7 +19,7 @@ const CLINICAL_REVIEW = new Set(['apoyo-y-ayuda-profesional', 'sintomas-de-absti
 
 let total = { lessons: 0, words: 0, mc: 0, errors: 0 };
 const out = [];
-out.push('# Aliento: inventario y completitud del contenido', '',
+out.push('# Alento: inventario y completitud del contenido', '',
   `Generado automáticamente el ${new Date().toISOString().slice(0, 10)} con \`scripts/content-report.js\` a partir de \`server/content/journey.js\` y de la base de datos.`, '',
   '**Regla de desbloqueo (todas las lecciones):** la primera lección del capítulo 0 está disponible desde el inicio; cada lección se desbloquea al completar la anterior (en orden global); un capítulo está completo cuando lo están todas sus lecciones. El servidor calcula el estado: no se puede abrir ni completar una lección bloqueada.', '',
   '**Criterio de conclusión:** todas las preguntas con respuesta correcta respondidas correctamente; reflexiones obligatorias con texto; ejercicios con el mínimo de selecciones; respiraciones completadas; compromisos aceptados. Validado por el servidor.', '');

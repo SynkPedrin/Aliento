@@ -1,10 +1,12 @@
 import { $, api, h } from '../ui.js';
 import { errorState, initApp, loading, page } from '../shell.js';
 
+const PROGRAM = new URLSearchParams(location.search).get('program') ?? 'sem-fumo';
 await initApp({ active: '/jornada' });
 const root = $('[data-root]');
+const lessonHref = (slug) => `/leccion?l=${encodeURIComponent(slug)}${PROGRAM === 'sem-fumo' ? '' : `&p=${PROGRAM}`}`;
 
-/** Planta original de Aliento: una hoja por lección completada; florece al terminar la jornada. */
+/** Planta original de Alento: una hoja por lección completada; florece al terminar la jornada. */
 export function plant(completed, total) {
   const ns = 'http://www.w3.org/2000/svg';
   const el = (tag, attrs) => { const n = document.createElementNS(ns, tag); for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v); return n; };
@@ -41,8 +43,9 @@ const CH_LABEL = { completed: 'Completado', in_progress: 'En curso', available: 
 async function render() {
   loading(root);
   let j;
-  try { j = await api('/api/app/journey'); } catch (err) { return errorState(root, err, render); }
-  page(root, { eyebrow: 'Tu programa', title: 'Mi jornada', intro: 'Diez capítulos de lecciones cortas. Cada una desbloquea la siguiente y puedes repasarlas cuando quieras.' });
+  try { j = await api(`/api/app/journey?program=${PROGRAM}`); } catch (err) { return errorState(root, err, render); }
+  page(root, { eyebrow: PROGRAM === 'sem-fumo' ? 'Tu programa' : `Programa ${PROGRAM}`, title: 'Mi jornada', intro: 'Diez capítulos de lecciones cortas. Cada una desbloquea la siguiente y puedes repasarlas cuando quieras.' });
+  if (PROGRAM !== 'sem-fumo') root.append(h('p', {}, h('a', { class: 'link', href: `/programa?p=${PROGRAM}` }, '← Volver al programa')));
   const { completed, lessons } = j.totals;
   root.append(h('section', { class: 'card journey-hero' },
     plant(completed, lessons),
@@ -50,7 +53,7 @@ async function render() {
       h('p', { class: 'kicker' }, 'Tu progreso'),
       h('p', { class: 'big-number u-mt-8' }, `${completed}`, h('span', { class: 'muted', style: 'font-size:20px' }, ` / ${lessons} lecciones`)),
       h('div', { class: 'progress-line' }, h('span', { style: `width:${lessons ? (completed / lessons) * 100 : 0}%` })),
-      j.nextLesson ? h('a', { class: 'btn u-mt-16', href: `/leccion?l=${encodeURIComponent(j.nextLesson.slug)}` },
+      j.nextLesson ? h('a', { class: 'btn u-mt-16', href: lessonHref(j.nextLesson.slug) },
         j.nextLesson.status === 'in_progress' ? 'Continuar: ' : 'Siguiente: ', j.nextLesson.title)
         : h('p', { class: 'u-mt-16' }, 'Has completado la jornada. ¡Enhorabuena!'))));
 
@@ -67,7 +70,7 @@ async function render() {
         ? h('div', { class: 'lesson-row', 'data-status': l.status, 'aria-disabled': 'true' },
           h('span', { class: 'lesson-row__state', 'aria-hidden': 'true' }, '🔒'),
           h('span', { class: 'lesson-row__main' }, l.title, h('span', { class: 'list__meta', style: 'display:block' }, `${l.minutes} min · Se desbloquea al completar la anterior`)))
-        : h('a', { class: 'lesson-row', 'data-status': l.status, href: `/leccion?l=${encodeURIComponent(l.slug)}` },
+        : h('a', { class: 'lesson-row', 'data-status': l.status, href: lessonHref(l.slug) },
           h('span', { class: 'lesson-row__state', 'aria-hidden': 'true' }, l.status === 'completed' ? '✓' : ''),
           h('span', { class: 'lesson-row__main' }, l.title, h('span', { class: 'list__meta', style: 'display:block' }, `${l.minutes} min · ${STATE_LABEL[l.status]}`)),
           h('span', { class: 'help' }, l.status === 'completed' ? 'Repasar' : 'Abrir'))))));

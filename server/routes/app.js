@@ -142,7 +142,7 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
       if (!prof?.onboarded_at) throw new HttpError(409, 'Completa la configuración inicial.', 'ONBOARDING_REQUIRED');
       const week = await dailySeries(q, userId, tz(req), addDays(today, -6), today);
       const since = await dailySeries(q, userId, tz(req), ctx.goal.start_date < today ? ctx.goal.start_date : today, today);
-      const journey = await journeyState(q, userId);
+      const journey = await journeyState(q, userId, 'sem-fumo');
       const todayRow = week.at(-1);
       const tasks = await q.rows(`select id, week, title, detail, done_at from public.daily_goals where user_id = $1 order by week, created_at`, [userId]);
       const exercisesThisWeek = week.reduce((a, d) => a + d.breathing, 0);
@@ -233,18 +233,18 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
     if (!ACTIVITY_KINDS.includes(kind)) throw new HttpError(422, 'Tipo de registro no válido.', 'INVALID', { field: 'kind' });
     const value = req.body?.value && typeof req.body.value === 'object' && !Array.isArray(req.body.value)
       ? JSON.parse(JSON.stringify(req.body.value).slice(0, 4000)) : {};
-    const row = await db.asUser(req.user.id, (q) => q.one(`
+    const row = await db.service.one(`
       insert into public.program_activity_entries (user_id, program_slug, kind, value)
-      values ($1, $2, $3, $4) returning id, kind, value, occurred_at`, [req.user.id, slug, kind, value]));
+      values ($1, $2, $3, $4) returning id, kind, value, occurred_at`, [req.user.id, slug, kind, value]);
     res.status(201).json({ entry: row });
   }));
 
   r.delete('/programs/:slug/activity/:id', wrap(async (req, res) => {
     const slug = String(req.params.slug);
     await requireProgram(req, slug);
-    const n = await db.asUser(req.user.id, (q) => q.exec(
+    const n = await db.service.exec(
       'delete from public.program_activity_entries where id = $1 and user_id = $2 and program_slug = $3',
-      [uuid(req.params.id), req.user.id, slug]));
+      [uuid(req.params.id), req.user.id, slug]);
     if (!n) throw new HttpError(404, 'Registro no encontrado.');
     res.json({ ok: true });
   }));

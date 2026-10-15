@@ -31,7 +31,7 @@ const demo = express();
 demo.use(express.urlencoded({ extended: false }));
 
 const page = (body) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Checkout simulado · Aliento</title><link rel="stylesheet" href="/css/app.css"></head><body>
+<title>Checkout simulado · Alento</title><link rel="stylesheet" href="/css/app.css"></head><body>
 <main class="auth-wrap"><div class="container narrow"><div class="card stack" style="--gap:16px">${body}</div></div></main></body></html>`;
 
 demo.get('/demo-checkout/:n', (req, res) => {

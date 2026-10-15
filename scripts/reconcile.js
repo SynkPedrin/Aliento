@@ -15,7 +15,7 @@ const apply = process.argv.includes('--apply');
 try {
   const r = await billing.reconcile({ apply });
   console.log(`Modo: ${apply ? 'APLICAR' : 'solo informe'}`);
-  console.log(`Suscripciones de Aliento revisadas: ${r.checked} · correctas: ${r.ok}`);
+  console.log(`Suscripciones de Alento revisadas: ${r.checked} · correctas: ${r.ok}`);
   for (const l of r.linked) console.log(`  ${apply ? 'sincronizada' : 'a sincronizar'}: ${l.subscription} → usuario ${l.user} (${l.from} → ${l.to})`);
   for (const v of r.review) console.log(`  REVISIÓN MANUAL: ${v.subscription} (${v.status}) — ${v.reason}`);
 } finally {

@@ -23,7 +23,7 @@ async function load() {
   loading(root);
   let d;
   try { d = await api('/api/subscription'); } catch (err) { return errorState(root, err, load); }
-  page(root, { eyebrow: 'Facturación', title: 'Mi suscripción' });
+  page(root, { eyebrow: 'Facturación', title: 'Mis suscripciones' });
   const s = d.subscription;
 
   const portalBtn = h('button', { class: 'btn' }, 'Gestionar suscripción y facturas');
@@ -32,23 +32,32 @@ async function load() {
     try { location.assign((await api('/api/billing/portal', { method: 'POST' })).url); } catch (err) { setBusy(portalBtn, false); toast(err.message); }
   });
 
-  if (!s) {
+  const entries = Object.entries(d.subscriptions ?? (s ? { 'sem-fumo': s } : {}));
+  if (!entries.length) {
     root.append(h('section', { class: 'card stack' },
       h('p', {}, 'No tienes ninguna suscripción.'),
       d.pendingCheckout ? h('div', { class: 'notice' }, icon('info', 'notice__icon'), h('div', {}, 'Tienes un pago sin terminar. Tus resultados siguen guardados.')) : null,
-      h('div', {}, h('a', { class: 'btn', href: d.hasResult ? '/planes' : '/test' }, d.hasResult ? (d.pendingCheckout ? 'Retomar el pago' : 'Ver planes') : 'Hacer el test'))));
+      h('div', {}, h('a', { class: 'btn', href: '/programas' }, 'Ver programas'))));
     return;
   }
-  const [label, cls] = STATUS[s.status] ?? [s.status, ''];
+  const NAMES = { 'sem-fumo': 'Sem Fumo', alcohol: 'Alcohol', azucar: 'Azúcar', ansiedad: 'Ansiedad', sueno: 'Sueño' };
+  for (const [program, sub] of entries) {
+    const [label, cls] = STATUS[sub.status] ?? [sub.status, ''];
+    const active = ['active', 'trialing', 'past_due'].includes(sub.status);
+    root.append(h('section', { class: 'card stack' },
+      h('div', { class: 'page-head', style: 'margin:0' },
+        h('h2', { class: 'title-md' }, `${NAMES[program] ?? program} · ${PLAN_NAMES[sub.plan] ?? sub.plan}`),
+        h('span', { class: `pill ${cls}` }, label)),
+      h('dl', { class: 'terms-box', style: 'margin:0' },
+        sub.amount != null ? h('div', {}, h('dt', {}, 'Precio'), h('dd', {}, `${moneyCents(sub.amount, sub.currency)} ${period(sub)}`)) : null,
+        sub.currentPeriodEnd && active ? h('div', {}, h('dt', {}, sub.cancelAtPeriodEnd ? 'Acceso hasta' : 'Próximo cobro'), h('dd', {}, longDate(sub.currentPeriodEnd))) : null,
+        h('div', {}, h('dt', {}, 'Renovación'), h('dd', {}, sub.cancelAtPeriodEnd ? 'Cancelada: no se volverá a cobrar.' : active ? 'Automática hasta que la canceles.' : 'Sin renovación activa.'))),
+      sub.status === 'past_due' ? h('div', { class: 'notice notice--warn' }, icon('info', 'notice__icon'), h('div', {}, 'No pudimos cobrar la renovación. Actualiza tu método de pago para no perder el acceso.')) : null));
+  }
   root.append(h('section', { class: 'card stack' },
-    h('div', { class: 'page-head', style: 'margin:0' }, h('h2', { class: 'title-md' }, PLAN_NAMES[s.plan] ?? s.plan), h('span', { class: `pill ${cls}` }, label)),
-    h('dl', { class: 'terms-box', style: 'margin:0' },
-      s.amount != null ? h('div', {}, h('dt', {}, 'Precio'), h('dd', {}, `${moneyCents(s.amount, s.currency)} ${period(s)}`)) : null,
-      s.currentPeriodEnd && d.access ? h('div', {}, h('dt', {}, s.cancelAtPeriodEnd ? 'Acceso hasta' : 'Próximo cobro'), h('dd', {}, longDate(s.currentPeriodEnd))) : null,
-      h('div', {}, h('dt', {}, 'Renovación'), h('dd', {}, s.cancelAtPeriodEnd ? 'Cancelada: no se volverá a cobrar.' : d.access ? 'Automática hasta que la canceles.' : 'Sin renovación activa.'))),
-    s.status === 'past_due' ? h('div', { class: 'notice notice--warn' }, icon('info', 'notice__icon'), h('div', {}, 'No pudimos cobrar la renovación. Actualiza tu método de pago para no perder el acceso.')) : null,
-    h('div', { class: 'actions-row', style: 'margin:0' }, d.hasBilling ? portalBtn : null, !d.access && d.hasResult ? h('a', { class: 'btn btn--ghost', href: '/planes' }, 'Volver a suscribirme') : null),
-    h('p', { class: 'help' }, 'Desde la gestión de la suscripción (Stripe) puedes cambiar de plan, actualizar tu método de pago, descargar facturas o cancelar. Si cancelas, conservas el acceso hasta el final del período pagado.')));
+    h('div', { class: 'actions-row', style: 'margin:0' }, d.hasBilling ? portalBtn : null,
+      h('a', { class: 'btn btn--ghost', href: '/programas' }, 'Ver programas')),
+    h('p', { class: 'help' }, 'Desde la gestión (Stripe) puedes cambiar de plan, actualizar tu método de pago, descargar facturas o cancelar cada suscripción de forma independiente. Si cancelas, conservas el acceso hasta el final del período pagado.')));
 }
 
 load();

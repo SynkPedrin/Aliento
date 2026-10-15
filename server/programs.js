@@ -1,4 +1,5 @@
 // Catálogo de programas y control de acceso por programa (ProgramEntitlementService).
+import { HttpError } from './routes/util.js';
 // El catálogo vive en public.journey_programs; el acceso, en subscriptions + access_grants.
 
 const ACCESS_STATUSES = ['active', 'trialing', 'past_due'];
@@ -29,9 +30,9 @@ export function createPrograms({ db, billing }) {
   /** ¿Se puede vender ahora? Solo programas habilitados comercialmente. */
   async function assertPurchasable(slug) {
     const p = await get(slug);
-    if (!p) throw Object.assign(new Error('Programa no encontrado.'), { status: 404, code: 'PROGRAM_NOT_FOUND' });
+    if (!p) throw new HttpError(404, 'Programa no encontrado.', 'PROGRAM_NOT_FOUND');
     if (p.commercial_status !== 'active') {
-      throw Object.assign(new Error('Este programa todavía no está disponible.'), { status: 409, code: 'PROGRAM_NOT_AVAILABLE' });
+      throw new HttpError(409, 'Este programa todavía no está disponible.', 'PROGRAM_NOT_AVAILABLE');
     }
     return p;
   }

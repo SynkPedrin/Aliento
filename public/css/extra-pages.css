@@ -1,7 +1,7 @@
 /* Estilos complementarios de diario, logros, ayuda, notificaciones y admin. */
 .section-card + .section-card { margin-top: 18px; }
 .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.cal-head__title { font: 600 16px/1.3 var(--font-title); text-transform: capitalize; }
+.cal-head__title { font: 400 16px/1.3 var(--font-title); text-transform: capitalize; }
 .calendar__day.is-selected { background: color-mix(in srgb, var(--chart-1) 12%, var(--surface)); }
 .calendar__blank { aspect-ratio: 1; }
 .mood-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 12px; font-size: 13px; color: var(--muted); }
@@ -34,4 +34,4 @@
 .table td.wrap { white-space: normal; min-width: 220px; }
 .modal__card--wide { max-width: 860px; }
 .list-reset { list-style: none; padding: 0; margin: 0; }
-.achievement__title { font: 600 16px/1.3 var(--font-title); }
+.achievement__title { font: 400 16px/1.3 var(--font-title); }

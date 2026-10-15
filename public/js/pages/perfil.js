@@ -72,10 +72,10 @@ async function load() {
     h('button', { class: 'link', onclick: async () => { await api('/api/auth/logout', { method: 'POST' }); location.assign('/'); } }, 'Cerrar sesión'));
 
   const app = installState() === 'installed'
-    ? h('section', { class: 'card' }, h('h2', { class: 'title-md' }, 'App instalada'), h('p', { class: 'muted small u-mt-8' }, 'Estás usando Aliento como app en este dispositivo.'))
+    ? h('section', { class: 'card' }, h('h2', { class: 'title-md' }, 'App instalada'), h('p', { class: 'muted small u-mt-8' }, 'Estás usando Alento como app en este dispositivo.'))
     : h('section', { class: 'card stack' }, h('h2', { class: 'title-md' }, 'Instalar la app'),
-      h('p', { class: 'muted small' }, 'Añade Aliento a tu pantalla de inicio para abrirlo como una app y recibir recordatorios.'),
-      h('div', {}, h('button', { class: 'btn btn--sm', onclick: () => installAction((content) => modal((close) => [...content, h('button', { class: 'btn btn--block u-mt-16', onclick: close }, 'Entendido')], { label: 'Instalar Aliento' })) }, 'Instalar Aliento')));
+      h('p', { class: 'muted small' }, 'Añade Alento a tu pantalla de inicio para abrirlo como una app y recibir recordatorios.'),
+      h('div', {}, h('button', { class: 'btn btn--sm', onclick: () => installAction((content) => modal((close) => [...content, h('button', { class: 'btn btn--block u-mt-16', onclick: close }, 'Entendido')], { label: 'Instalar Alento' })) }, 'Instalar Alento')));
   root.append(h('div', { class: 'stack' }, personal, password, app, links, data));
 }
 

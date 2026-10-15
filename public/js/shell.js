@@ -1,5 +1,5 @@
 // Estructura común del área privada: protección de acceso, navegación y componentes compartidos.
-import { $, api, h, ICONS, MARK_SVG, toast } from './ui.js';
+import { $, api, h, ICONS, MARK_SVG, mountSplash, splashReady, toast } from './ui.js';
 
 export const NAV = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
@@ -10,11 +10,12 @@ export const NAV = [
 ];
 
 export const MORE = [
+  { href: '/programas', label: 'Mis programas' },
   { href: '/respirar', label: 'Respirar' },
   { href: '/objetivos', label: 'Mis objetivos' },
   { href: '/diario', label: 'Mi diario' },
   { href: '/logros', label: 'Mis logros' },
-  { href: '/ayuda', label: 'Habla con Aliento' },
+  { href: '/ayuda', label: 'Habla con Alento' },
 ];
 
 const NAV_ICONS = {
@@ -30,6 +31,7 @@ const NAV_ICONS = {
  *  - access: 'premium' (suscripción + configuración inicial) | 'account' (solo sesión).
  */
 export async function initApp({ active, access = 'premium' } = {}) {
+  mountSplash();
   const here = location.pathname + location.search;
   let me;
   try {
@@ -46,6 +48,7 @@ export async function initApp({ active, access = 'premium' } = {}) {
     if (!me.onboardingCompleted) { location.replace('/configuracion'); return new Promise(() => {}); }
   }
   renderShell(me, active);
+  splashReady();
   return me;
 }
 
@@ -62,7 +65,7 @@ function renderShell(me, active) {
   offlineBanner();
   const header = h('header', { class: 'site-header app-header' },
     h('div', { class: 'container site-header__inner' },
-      h('a', { class: 'brand', href: me.access ? '/dashboard' : '/perfil', 'aria-label': 'Aliento, inicio', html: `${MARK_SVG}<span class="brand__name">Aliento</span>` }),
+      h('a', { class: 'brand', href: me.access ? '/dashboard' : '/perfil', 'aria-label': 'Alento, inicio', html: `${MARK_SVG}<span class="brand__name">Alento</span>` }),
       h('nav', { class: 'app-nav', 'aria-label': 'Principal' },
         me.access ? NAV.map((n) => h('a', { href: n.href, 'aria-current': n.href === active ? 'page' : null }, n.label)) : null,
         me.user.isAdmin ? h('a', { href: '/admin' }, 'Admin') : null)));

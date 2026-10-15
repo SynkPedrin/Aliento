@@ -1,10 +1,12 @@
-import { $, api, h, icon, MARK_SVG, renderFooter } from '../ui.js';
+import { $, api, h, icon, LOGO_BRANCO_HTML, mountSplash, renderFooter, splashReady } from '../ui.js';
 import { FEATURES } from '../paywall.js';
 
-$('[data-brand]').innerHTML = `${MARK_SVG}<span class="brand__name">Aliento</span>`;
-$('[data-mark]').innerHTML = MARK_SVG;
+mountSplash();
+$('[data-brand]').innerHTML = LOGO_BRANCO_HTML;
+$('[data-mark]').innerHTML = LOGO_BRANCO_HTML;
 $('[data-features]').append(...FEATURES.map((f) => h('li', {}, icon('check'), h('span', {}, f))));
 renderFooter($('[data-footer]'));
+splashReady();
 
 // Solo si hay indicio de sesión: cada visita desde un anuncio no consulta la API.
 if (document.cookie.includes('al_s=')) api('/api/me').then(({ user, access }) => {

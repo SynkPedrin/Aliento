@@ -4,7 +4,7 @@ const screenEl = $('[data-screen]');
 const backBtn = $('[data-back]');
 const countEl = $('[data-count]');
 const progressEl = $('[data-progress]');
-$('[data-brand]').innerHTML = `${MARK_SVG}<span class="brand__name">Aliento</span>`;
+$('[data-brand]').innerHTML = `${MARK_SVG}<span class="brand__name">Alento</span>`;
 backBtn.innerHTML = `${ICONS.back}<span>Atrás</span>`;
 
 const QUESTION_TYPES = ['single', 'multi', 'number'];

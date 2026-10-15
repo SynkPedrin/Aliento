@@ -163,7 +163,7 @@ export async function renderPaywall(root, { pendingCheckout } = {}) {
         h('ul', { class: 'feature-list', style: 'margin-top:16px' },
           ['Tus resultados del cuestionario y sus gráficos', 'Tus datos personales y su descarga', 'La gestión y cancelación de tu suscripción']
             .map((f) => h('li', {}, icon('shield'), h('span', {}, f)))))),
-    h('p', { class: 'tiny muted u-text-center u-mt-16' }, 'Aliento es un programa de apoyo y no sustituye el consejo de un profesional sanitario.'),
+    h('p', { class: 'tiny muted u-text-center u-mt-16' }, 'Alento es un programa de apoyo y no sustituye el consejo de un profesional sanitario.'),
   ].filter(Boolean));
   renderTerms();
   if (paymentsEnabled) armExitOffer();
