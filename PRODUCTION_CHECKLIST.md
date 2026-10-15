@@ -21,7 +21,7 @@
 1. [ ] **Aceitar os termos da integração Supabase** (só você pode fazer):
    https://vercel.com/pgvenegeroles09-9629s-projects/~/integrations/accept-terms/supabase?source=cli
 2. [ ] `npx vercel integration add supabase --name aliento-db --non-interactive` (cria o banco e injeta as variáveis).
-3. [ ] `npm run prod:finish -- admin@admin.com 'Elefante#123'`: migrations, jornada, conta admin, lembretes (pg_cron) e deploy.
+3. [ ] `npm run prod:finish -- <email-admin> '<senha-forte-nova>'`: migrations, jornada, conta admin, lembretes (pg_cron) e deploy.
 4. [ ] No Supabase › Authentication › URL Configuration: *Site URL* `https://aliento-alpha.vercel.app` e *Redirect URL* `https://aliento-alpha.vercel.app/restablecer`. Para volume real de e-mails de recuperação, configurar SMTP próprio.
 5. [ ] Stripe Dashboard › Settings › Business › Public details: hoje o Checkout mostra **"GS MIDIA"** e o descritor padrão da conta é **"ZIVAHSTORE"**. O produto já força "ALIENTO" nas assinaturas, mas o nome público só muda pelo painel.
 6. [ ] Vercel: `LEGAL_TAX_ID` (CNPJ), `LEGAL_ADDRESS` e `LEGAL_EMAIL` (e-mail de contato público). Sem eles, as páginas legais mostram "disponible a solicitud".
