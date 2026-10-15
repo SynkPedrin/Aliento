@@ -50,6 +50,10 @@ export function validateLesson(lesson) {
     errors.push(`${where}: debe terminar con un único bloque de cierre`);
   }
   if (!blocks.some((b) => INTERACTIVE.has(b.type))) errors.push(`${where}: necesita al menos un bloque interactivo`);
+  // Debe haber al menos un paso obligatorio: si todo es opcional, la lección se "completa" sin hacer nada.
+  const required = blocks.some((b) => ['multiple_choice', 'breathing_exercise', 'commitment'].includes(b.type)
+    || (b.type === 'reflection' && b.required !== false) || (b.type === 'interactive_exercise' && b.minSelected > 0));
+  if (!required) errors.push(`${where}: necesita al menos un paso obligatorio para poder completarse`);
   const text = JSON.stringify(lesson ?? {}).toLowerCase();
   for (const bad of ['lorem', 'próximamente', 'texto pendiente', 'contenido pendiente']) {
     if (text.includes(bad)) errors.push(`${where}: contiene texto provisional («${bad}»)`);
@@ -88,7 +92,9 @@ export async function seedJourney(db, journey, { publish = true } = {}) {
           returning id, version, (xmax = 0) as inserted`, [chapter.id, l.slug, i + 1, l.title, l.description, l.minutes, publish]);
         const changed = await replaceBlocks(q, lesson.id, l.blocks);
         if (changed && !lesson.inserted) {
-          await q.exec('update public.journey_lessons set version = version + 1 where id = $1', [lesson.id]);
+          // Contenido modificado: nueva versión y la revisión clínica vuelve a quedar pendiente.
+          await q.exec(`update public.journey_lessons set version = version + 1, clinical_review = 'pending',
+            clinical_reviewer = null, clinical_reviewed_at = null where id = $1`, [lesson.id]);
         }
         if (changed) lessonsChanged += 1;
       }
@@ -126,7 +132,7 @@ export async function replaceBlocks(q, lessonId, blocks) {
  */
 export async function journeyState(q, userId) {
   const lessons = await q.rows(`
-    select l.id, l.slug, l.title, l.description, l.minutes, l.position, l.version,
+    select l.id, l.slug, l.title, l.description, l.minutes, l.position, l.version, l.clinical_review,
            c.id as chapter_id, c.slug as chapter_slug, c.number as chapter_number, c.title as chapter_title,
            c.description as chapter_description
     from public.journey_lessons l
@@ -150,7 +156,8 @@ export async function journeyState(q, userId) {
       ch = { id: l.chapter_id, slug: l.chapter_slug, number: l.chapter_number, title: l.chapter_title, description: l.chapter_description, lessons: [] };
       chapters.push(ch);
     }
-    ch.lessons.push({ id: l.id, slug: l.slug, title: l.title, description: l.description, minutes: l.minutes, status, completedAt: p?.completed_at ?? null });
+    ch.lessons.push({ id: l.id, slug: l.slug, title: l.title, description: l.description, minutes: l.minutes, status,
+      completedAt: p?.completed_at ?? null, clinicalReview: l.clinical_review });
   }
   for (const ch of chapters) {
     const st = ch.lessons.map((l) => l.status);

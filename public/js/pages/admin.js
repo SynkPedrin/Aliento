@@ -229,10 +229,13 @@ function chapterCard(c, target, reload) {
           h('strong', {}, `${i + 1}. ${l.title}`),
           h('p', { class: 'list__meta' }, `${l.minutes} min · versión ${l.version} · ${num(l.completions ?? 0)} completadas · ${l.slug}`)),
         h('span', { class: `pill${l.published ? ' pill--ok' : ''}` }, l.published ? 'Publicada' : 'Borrador'),
+        h('span', { class: `pill${l.clinical_review === 'approved' ? ' pill--ok' : ' pill--warn'}`, title: l.clinical_reviewer ?? '' },
+          l.clinical_review === 'approved' ? 'Revisión clínica ✓' : 'Revisión clínica pendiente'),
         h('div', { class: 'admin-row-actions' },
           h('button', { type: 'button', class: 'icon-btn', disabled: i === 0, 'aria-label': `Subir «${l.title}»`, onclick: (e) => act(e.currentTarget, () => api(`/api/admin/lessons/${l.id}/move`, { method: 'POST', body: { direction: 'up' } }), 'Orden actualizado.', reload) }, '↑'),
           h('button', { type: 'button', class: 'icon-btn', disabled: i === lessons.length - 1, 'aria-label': `Bajar «${l.title}»`, onclick: (e) => act(e.currentTarget, () => api(`/api/admin/lessons/${l.id}/move`, { method: 'POST', body: { direction: 'down' } }), 'Orden actualizado.', reload) }, '↓'),
-          h('button', { type: 'button', class: 'icon-btn', onclick: () => lessonEditor(l.id, target, reload) }, 'Editar')))))
+          h('button', { type: 'button', class: 'icon-btn', onclick: () => lessonEditor(l.id, target, reload) }, 'Editar'),
+          h('button', { type: 'button', class: 'icon-btn', onclick: () => clinicalReview(l, reload) }, 'Revisión')))))
         : h('p', { class: 'muted small' }, 'Este capítulo aún no tiene lecciones.')));
 }
 
@@ -484,4 +487,23 @@ if (!me.user?.isAdmin) {
     RENDER[id](panel);
   }
   show(initial);
+}
+
+/** Registro de la revisión clínica de una lección (queda en la auditoría con el nombre del profesional). */
+function clinicalReview(lesson, reload) {
+  modal((close) => {
+    const reviewer = h('input', { class: 'input', id: 'cr-name', maxlength: 120, value: lesson.clinical_reviewer ?? '', placeholder: 'Nombre y número de colegiado o registro' });
+    const err = h('p', { class: 'form-error', role: 'alert' });
+    const send = async (status) => {
+      try {
+        await api(`/api/admin/lessons/${lesson.id}/review`, { method: 'POST', body: { status, reviewer: reviewer.value } });
+        close(); toast(status === 'approved' ? 'Lección marcada como revisada.' : 'Revisión marcada como pendiente.'); reload();
+      } catch (e) { err.textContent = e.message; }
+    };
+    return [h('h2', { class: 'title-md' }, 'Revisión clínica'),
+      h('p', { class: 'muted small u-mt-8' }, `«${lesson.title}». Márcala como revisada solo si un profesional sanitario ha validado su contenido. Si después se edita la lección, la revisión vuelve a quedar pendiente.`),
+      h('div', { class: 'field u-mt-16' }, h('label', { for: 'cr-name' }, 'Profesional que la revisó'), reviewer), err,
+      h('div', { class: 'actions-row' }, h('button', { class: 'btn', onclick: () => send('approved') }, 'Marcar como revisada'),
+        h('button', { class: 'btn btn--ghost', onclick: () => send('pending') }, 'Dejar pendiente'))];
+  }, { label: 'Revisión clínica' });
 }

@@ -76,7 +76,7 @@ export function adminRoutes({ db }) {
   r.get('/content', wrap(async (req, res) => {
     const chapters = await q.rows(`select c.id, c.slug, c.number, c.title, c.description, c.published
       from public.journey_chapters c order by c.number`);
-    const lessons = await q.rows(`select l.id, l.chapter_id, l.slug, l.position, l.title, l.minutes, l.published, l.version,
+    const lessons = await q.rows(`select l.id, l.chapter_id, l.slug, l.position, l.title, l.minutes, l.published, l.version, l.clinical_review, l.clinical_reviewer,
       (select count(*) from public.user_lesson_progress p where p.lesson_id = l.id and p.status = 'completed')::int as completions
       from public.journey_lessons l order by l.position`);
     res.json({ chapters: chapters.map((c) => ({ ...c, lessons: lessons.filter((l) => l.chapter_id === c.id) })) });
@@ -150,6 +150,20 @@ export function adminRoutes({ db }) {
       return l;
     });
     res.json({ lesson: row });
+  }));
+
+  // Revisión clínica: solo con el nombre del profesional que la realizó (queda en la auditoría).
+  r.post('/lessons/:id/review', wrap(async (req, res) => {
+    const id = uuid(req.params.id);
+    const approved = req.body?.status === 'approved';
+    const reviewer = text(req.body?.reviewer, { max: 120, required: approved, field: 'reviewer' });
+    await db.tx(async (qq) => {
+      const n = await qq.exec(`update public.journey_lessons set clinical_review = $2, clinical_reviewer = $3,
+        clinical_reviewed_at = case when $2 = 'approved' then now() end where id = $1`, [id, approved ? 'approved' : 'pending', approved ? reviewer : null]);
+      if (!n) throw new HttpError(404, 'Lección no encontrada.');
+      await audit(qq, req, approved ? 'lesson.clinical_approved' : 'lesson.clinical_pending', 'lesson', id, { reviewer });
+    });
+    res.json({ ok: true });
   }));
 
   r.post('/lessons/:id/move', wrap(async (req, res) => {

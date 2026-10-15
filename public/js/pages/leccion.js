@@ -144,6 +144,7 @@ async function render() {
     h('p', { class: 'eyebrow' }, h('a', { href: '/jornada' }, 'Mi jornada'), ` · Capítulo ${L.lesson.chapter.number} · ${L.lesson.chapter.title}`),
     h('h1', { class: 'title-lg u-mt-8' }, L.lesson.title),
     h('p', { class: 'muted u-mt-8' }, `${L.lesson.description} · ${L.lesson.minutes} min`),
+    L.lesson.clinicalReview !== 'approved' ? h('p', { class: 'help u-mt-8' }, 'Contenido educativo basado en guías de salud pública, pendiente de revisión por un profesional sanitario. No sustituye la atención médica.') : null,
     ...content.map((b) => h('section', { class: 'lesson-block', 'data-type': b.type }, ...(renderers[b.type]?.(b, ctx) ?? []).filter(Boolean))),
     h('div', { class: 'u-mt-16' }, finishBtn, pendingHint),
   );

@@ -928,7 +928,7 @@ export const JOURNEY = {
               id: 'que-quieres-pedir',
               prompt: '¿A qué amigo o familiar que fuma te gustaría contarle tu decisión? ¿Qué le pedirías?',
               placeholder: 'Me gustaría decirle a… que…',
-              required: false,
+              required: true,
             },
             {
               type: 'feedback',

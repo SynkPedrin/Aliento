@@ -549,3 +549,39 @@ test('oferta de salida: no se reutiliza tras haber sido cliente', async () => {
   assert.equal((await c('/api/exit-offer', { method: 'POST' })).body.offer, null);
   assert.equal((await c('/api/checkout', { method: 'POST', body: { plan: 'semanal', exitOffer: true } })).body.code, 'OFFER_UNAVAILABLE');
 });
+
+test('jornada completa: las 30 lecciones en orden, bloqueos, persistencia tras nuevo login y 100 %', async () => {
+  const { c, user } = await payingUser();
+  const all = JOURNEY.chapters.flatMap((ch, ci) => ch.lessons.map((l, li) => ({ ch, ci, l, li })));
+  for (const [i, { ch, ci, l, li }] of all.entries()) {
+    // La lección siguiente a la actual sigue bloqueada (también por URL directa).
+    if (all[i + 1]) assert.equal((await c(`/api/app/journey/lessons/${all[i + 1].l.slug}`)).body.code, 'LOCKED', `bloqueada: ${all[i + 1].l.slug}`);
+    const opened = await c(`/api/app/journey/lessons/${l.slug}`);
+    assert.equal(opened.status, 200, `abre ${l.slug}`);
+    assert.equal(opened.body.blocks.length, l.blocks.length);
+    // No se puede completar sin cumplir los requisitos.
+    assert.equal((await c(`/api/app/journey/lessons/${l.slug}/complete`, { method: 'POST' })).body.code, 'INCOMPLETE', `requisitos ${l.slug}`);
+    // Cada pregunta con respuesta correcta: la incorrecta se marca como incorrecta.
+    for (const b of l.blocks.filter((x) => x.type === 'multiple_choice' && x.correct)) {
+      const wrong = b.options.find((o) => o.id !== b.correct);
+      const r = await c(`/api/app/journey/lessons/${l.slug}/responses`, { method: 'POST', body: { blockId: b.id, response: { optionId: wrong.id } } });
+      assert.equal(r.body.correct, false);
+      assert.ok(r.body.feedback.length > 10, `feedback ${l.slug}/${b.id}`);
+    }
+    const done = await completeLessonVia(c, ci, li);
+    if (li === ch.lessons.length - 1) assert.equal(done.chapterCompleted, true, `capítulo ${ch.number} completo`);
+  }
+  // Cierra sesión, vuelve a entrar: el progreso sigue ahí (otro "dispositivo").
+  await c('/api/auth/logout', { method: 'POST' });
+  const d = client();
+  assert.equal((await d('/api/auth/login', { method: 'POST', body: { email: user.email, password: 'secreta123' } })).status, 200);
+  const j = (await d('/api/app/journey')).body;
+  assert.equal(j.totals.completed, 30);
+  assert.equal(j.totals.lessons, 30);
+  assert.ok(j.chapters.every((ch) => ch.status === 'completed'));
+  assert.equal(j.nextLesson, null);
+  const ach = (await d('/api/app/achievements')).body.achievements;
+  assert.ok(ach.find((a) => a.slug === 'primer-capitulo').unlocked_at);
+  // Las lecciones completadas se pueden repasar.
+  assert.equal((await d(`/api/app/journey/lessons/${all[0].l.slug}`)).body.lesson.status, 'completed');
+});
