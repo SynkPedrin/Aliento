@@ -41,6 +41,7 @@ export function validateLesson(lesson) {
     if (b.type === 'reflection' && !b.prompt?.trim()) errors.push(`${w}: falta la pregunta`);
     if (b.type === 'interactive_exercise') {
       const items = Array.isArray(b.items) ? b.items : [];
+      if (!(b.prompt ?? b.title)?.trim()) errors.push(`${w}: ejercicio sin título`);
       if (!items.length || !(b.minSelected >= 0) || b.minSelected > items.length) errors.push(`${w}: ejercicio incompleto`);
     }
     if (b.type === 'breathing_exercise' && !(b.pattern?.inhale > 0 && b.pattern?.exhale > 0 && b.cycles > 0)) errors.push(`${w}: patrón no válido`);

@@ -68,7 +68,7 @@ const renderers = {
       },
     }, h('span', { class: 'option__label' }, it.label), h('span', { class: 'option__check', html: ICONS.check }))));
     paint();
-    return [h('h2', {}, b.prompt), list, hint];
+    return [h('h2', {}, b.prompt ?? b.title), b.intro ? h('p', { class: 'muted' }, b.intro) : null, list, hint];
   },
 
   breathing_exercise(b, ctx) {
