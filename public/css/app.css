@@ -741,7 +741,7 @@ textarea.input { min-height: 96px; resize: vertical; line-height: 1.5; }
 .program-hero__catalog { margin-left: auto; }
 .next-lesson { display: block; margin-top: 16px; text-decoration: none; color: inherit;
   border-left: 4px solid var(--program, var(--azul)); }
-.grid-2 { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; margin-top: 12px; }
+.mini-grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; margin-top: 12px; }
 .mini-card { text-decoration: none; color: inherit; }
 .catalog-section { margin: 24px 0 10px; }
 .welcome-program { font-size: 20px; margin-top: 12px; }

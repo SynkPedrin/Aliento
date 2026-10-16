@@ -38,13 +38,14 @@ test('embudo: cuestionario → resultados → plan → cuenta → pago test → 
   // TEST 4–5: Stripe Checkout (modo test) y confirmación por webhook.
   await payInStripe(page, '4242424242424242');
   await page.waitForURL(/\/bienvenida/, { timeout: 60_000 });
-  await expect(page.getByRole('heading', { name: '¡Bienvenido a Aliento!' })).toBeVisible({ timeout: 60_000 });
-  await expect(page.getByText('Tu camino comienza hoy.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '¡Tu camino comienza aquí!' })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText('Gracias por dar este primer paso.')).toBeVisible();
+  await expect(page.getByText('Tu programa está listo.')).toBeVisible();
   // TEST 8: oferta de instalación (no obligatoria).
   await page.getByRole('button', { name: 'Continuar' }).click();
-  await expect(page.getByRole('heading', { name: 'Ten Aliento siempre contigo.' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Instalar Aliento' })).toBeVisible();
-  await page.getByRole('link', { name: 'Continuar en el navegador' }).click();
+  await expect(page.getByRole('heading', { name: 'Lleva Alento contigo.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Instalar Alento' })).toBeVisible();
+  await page.getByRole('link', { name: 'Continuar sin instalar' }).click();
   // Configuración inicial.
   await page.getByRole('button', { name: 'Confirmar mi meta' }).click();
   await page.getByRole('button', { name: 'Guardar fecha' }).click();

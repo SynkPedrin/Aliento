@@ -80,7 +80,7 @@ async function load() {
       : h('section', { class: 'card' }, h('h2', { class: 'title-md' }, 'Programa completado. ¡Enhorabuena!'),
         h('p', { class: 'muted' }, 'Puedes repasar cualquier lección cuando quieras.')),
     quickLog(p, () => recentEntries(p, entriesBox).catch(() => {})),
-    h('div', { class: 'grid-2' },
+    h('div', { class: 'mini-grid' },
       h('a', { class: 'card mini-card', href: `/jornada?program=${p.slug}` }, h('strong', {}, 'Mi jornada'), h('p', { class: 'muted small' }, 'Capítulos y lecciones')),
       p.slug === 'ansiedad' || p.slug === 'sueno'
         ? h('a', { class: 'card mini-card', href: '/respirar' }, h('strong', {}, 'Respirar'), h('p', { class: 'muted small' }, 'Ejercicios guiados, siempre opcionales'))

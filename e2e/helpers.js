@@ -1,6 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 
+/** Los límites de intentos son reales (Postgres). En E2E se parte de cero. */
+export function resetRateLimits() {
+  execFileSync('node', ['--env-file=.env', '--input-type=module', '-e',
+    "import { createDb } from './server/db.js'; import { loadConfig } from './server/config.js'; const db = createDb(loadConfig().supabase.dbUrl, { max: 1 }); await db.service.exec('delete from public.rate_limits'); await db.end();"], { stdio: 'ignore' });
+}
+
 export const PASSWORD = 'prueba-E2E-123';
 
 /** Cuenta con acceso de cortesía lista para usar (sin cobros). */

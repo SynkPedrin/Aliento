@@ -1,9 +1,9 @@
 // TEST 10, 12–19, 27–30: área del suscriptor (cuenta de cortesía, sin cobros).
 import { test, expect } from '@playwright/test';
-import { createAccount, login, PASSWORD } from './helpers.js';
+import { createAccount, login, resetRateLimits, PASSWORD } from './helpers.js';
 
 let email;
-test.beforeAll(() => { email = createAccount(); });
+test.beforeAll(() => { resetRateLimits(); email = createAccount(); });
 
 test('primera lección por la interfaz, progreso guardado y capítulo bloqueado por URL directa', async ({ page }) => {
   await login(page, email, '/jornada');

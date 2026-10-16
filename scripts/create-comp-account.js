@@ -49,7 +49,7 @@ try {
         [s.id, user.id, JSON.stringify(computeResult(ANSWERS))]);
     }
     if (!(await q.one('select 1 from public.access_grants where user_id = $1 and revoked_at is null', [user.id]))) {
-      await q.exec(`insert into public.access_grants (user_id, reason) values ($1, 'Cuenta interna de administración')`, [user.id]);
+      await q.exec(`insert into public.access_grants (user_id, reason, program_slug) values ($1, 'Cuenta interna de administración', 'sem-fumo')`, [user.id]);
     }
     await billing.ensureActivated(q, user.id, assessment.id);
     if (process.argv.includes('--admin')) await q.exec('insert into public.admin_users (user_id) values ($1) on conflict do nothing', [user.id]);

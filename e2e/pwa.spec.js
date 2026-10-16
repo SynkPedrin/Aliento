@@ -1,13 +1,15 @@
 // PWA (TEST 20–22): instalabilidad comprobada con Chrome, responsividad y tutorial iOS.
 import { test, expect } from '@playwright/test';
-import { createAccount, login } from './helpers.js';
+import { createAccount, login, resetRateLimits } from './helpers.js';
+
+test.beforeAll(() => resetRateLimits());
 
 test('manifest válido, service worker activo y Chrome sin errores de instalabilidad', async ({ page }) => {
   await page.goto('/');
   const manifest = await (await page.request.get('/manifest.webmanifest')).json();
-  expect(manifest.name).toBe('Aliento');
+  expect(manifest.name).toBe('Alento');
   expect(manifest.display).toBe('standalone');
-  expect(manifest.start_url).toMatch(/^\/dashboard/);
+  expect(manifest.start_url).toMatch(/^\/(programas|dashboard)/);
   for (const size of ['192x192', '512x512']) expect(manifest.icons.some((i) => i.sizes === size && i.purpose === 'any')).toBe(true);
   expect(manifest.icons.some((i) => i.purpose === 'maskable')).toBe(true);
   await page.waitForFunction(() => navigator.serviceWorker?.controller || navigator.serviceWorker?.getRegistration().then((r) => r?.active), null, { timeout: 15_000 });
@@ -66,8 +68,8 @@ test('iPhone (Safari): el botón Instalar muestra el tutorial en lugar de promet
   });
   const page = await ctx.newPage();
   await login(page, email, '/perfil');
-  await page.getByRole('button', { name: 'Instalar Aliento' }).click();
-  await expect(page.getByRole('heading', { name: 'Instala Aliento en tu iPhone' })).toBeVisible();
+  await page.getByRole('button', { name: 'Instalar Alento' }).click();
+  await expect(page.getByRole('heading', { name: 'Instala Alento en tu iPhone' })).toBeVisible();
   await expect(page.getByText('Selecciona «Añadir a pantalla de inicio».')).toBeVisible();
   await ctx.close();
 });
