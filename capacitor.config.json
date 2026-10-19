@@ -1,5 +1,14 @@
 {
   "appId": "app.alento",
   "appName": "Alento",
-  "webDir": "public"
+  "webDir": "public",
+  "server": {
+    "url": "https://citavel.ai",
+    "cleartext": false,
+    "allowNavigation": ["citavel.ai", "*.citavel.ai"]
+  },
+  "ios": {
+    "contentInset": "always",
+    "backgroundColor": "#1E3FFF"
+  }
 }

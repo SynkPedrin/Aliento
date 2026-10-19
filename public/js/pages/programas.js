@@ -1,6 +1,9 @@
 // «Mis programas»: catálogo de los cinco programas con el estado de acceso del usuario.
 import { $, api, h, money, mountSplash, splashReady, toast } from '../ui.js';
 import { installAction, installState } from '../install.js';
+import { isNativeApp, nativePurchase, nativeRestore, listenNativeUpdates } from '../native-iap.js';
+
+listenNativeUpdates();
 
 mountSplash();
 const root = $('[data-root]');
@@ -40,10 +43,17 @@ async function buy(p) {
       onclick: async (e) => {
         e.currentTarget.disabled = true;
         try {
+          if (isNativeApp()) {
+            const r = await nativePurchase(p.slug, pl.id);
+            if (r.status === 'success') return location.assign(programHome(p));
+            if (r.status === 'pending') toast('Tu compra está pendiente de aprobación. Te avisaremos cuando se active.', 6000);
+            e.currentTarget.disabled = false; return;
+          }
           const { url } = await api('/api/checkout', { method: 'POST', body: { program: p.slug, plan: pl.id, fromCatalog: true } });
           location.assign(url);
         } catch (err) {
-          if (err?.data?.code === 'ALREADY_SUBSCRIBED') { close(); toast('Ya tienes este programa activo.'); load(); }
+          if (err?.code === 'AUTH_REQUIRED') { close(); location.assign('/acceso'); }
+          else if (err?.data?.code === 'ALREADY_SUBSCRIBED') { close(); toast('Ya tienes este programa activo.'); load(); }
           else { toast(err.message); e.currentTarget.disabled = false; }
         }
       },

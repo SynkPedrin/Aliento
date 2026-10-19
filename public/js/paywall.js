@@ -1,6 +1,7 @@
 // Paywall: tres planes con precios reales de Stripe, condiciones visibles y
 // botón principal "Comenzar mi transformación".
 import { api, h, icon, moneyCents, setBusy, toast } from './ui.js';
+import { isNativeApp, nativePurchase } from './native-iap.js';
 
 export const FEATURES = [
   'Jornada de 10 capítulos y 30 lecciones con ejercicios prácticos',
@@ -59,6 +60,13 @@ export async function goToCheckout(plan, btn, { exitOffer = false, program = 'se
   rememberPlan(plan);
   if (btn) setBusy(btn, true, 'Preparando el pago seguro…');
   try {
+    if (isNativeApp()) { // app iOS: compra con StoreKit, nunca Stripe
+      const r = await nativePurchase(program, plan);
+      if (btn) setBusy(btn, false);
+      if (r.status === 'success') return window.location.assign(program === 'sem-fumo' ? '/bienvenida' : `/programa?p=${program}`);
+      if (r.status === 'pending') toast('Tu compra está pendiente de aprobación. Te avisaremos cuando se active.', 6000);
+      return;
+    }
     const { url } = await api('/api/checkout', { method: 'POST', body: { plan, exitOffer, program, fromCatalog } });
     window.location.assign(url);
   } catch (err) {

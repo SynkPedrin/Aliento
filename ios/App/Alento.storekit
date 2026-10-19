@@ -1,0 +1,352 @@
+{
+  "identifier": "E0E94D47",
+  "nonRenewingSubscriptions": [],
+  "products": [],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "es_ES",
+    "_storefront": "ESP",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [
+    {
+      "id": "B9A06D02",
+      "localizations": [],
+      "name": "Alento Sem Fumo",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "internalID": "6F410E2D2A56",
+          "localizations": [
+            {
+              "description": "Acceso a Sem Fumo durante 1 semana",
+              "displayName": "Sem Fumo · 1 semana",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.sem_fumo.semanal",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Sem Fumo semanal",
+          "subscriptionGroupID": "B9A06D02",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "internalID": "E82AE4F30F81",
+          "localizations": [
+            {
+              "description": "Acceso a Sem Fumo durante 1 mes",
+              "displayName": "Sem Fumo · 1 mes",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.sem_fumo.mensual",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Sem Fumo mensual",
+          "subscriptionGroupID": "B9A06D02",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "internalID": "E9C4C4099984",
+          "localizations": [
+            {
+              "description": "Acceso a Sem Fumo durante 3 meses",
+              "displayName": "Sem Fumo · 3 meses",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.sem_fumo.trimestral",
+          "recurringSubscriptionPeriod": "P3M",
+          "referenceName": "Sem Fumo trimestral",
+          "subscriptionGroupID": "B9A06D02",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    },
+    {
+      "id": "C392A15D",
+      "localizations": [],
+      "name": "Alento Alcohol",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "internalID": "FE416A0ADFF9",
+          "localizations": [
+            {
+              "description": "Acceso a Alcohol durante 1 semana",
+              "displayName": "Alcohol · 1 semana",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.alcohol.semanal",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Alcohol semanal",
+          "subscriptionGroupID": "C392A15D",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "internalID": "DF254DD125E3",
+          "localizations": [
+            {
+              "description": "Acceso a Alcohol durante 1 mes",
+              "displayName": "Alcohol · 1 mes",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.alcohol.mensual",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Alcohol mensual",
+          "subscriptionGroupID": "C392A15D",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "internalID": "5E97EB2F5D09",
+          "localizations": [
+            {
+              "description": "Acceso a Alcohol durante 3 meses",
+              "displayName": "Alcohol · 3 meses",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.alcohol.trimestral",
+          "recurringSubscriptionPeriod": "P3M",
+          "referenceName": "Alcohol trimestral",
+          "subscriptionGroupID": "C392A15D",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    },
+    {
+      "id": "B9765097",
+      "localizations": [],
+      "name": "Alento Azúcar",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "internalID": "F69D41826A1D",
+          "localizations": [
+            {
+              "description": "Acceso a Azúcar durante 1 semana",
+              "displayName": "Azúcar · 1 semana",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.azucar.semanal",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Azúcar semanal",
+          "subscriptionGroupID": "B9765097",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "internalID": "5611EC8540BF",
+          "localizations": [
+            {
+              "description": "Acceso a Azúcar durante 1 mes",
+              "displayName": "Azúcar · 1 mes",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.azucar.mensual",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Azúcar mensual",
+          "subscriptionGroupID": "B9765097",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "internalID": "8CA130DB77AD",
+          "localizations": [
+            {
+              "description": "Acceso a Azúcar durante 3 meses",
+              "displayName": "Azúcar · 3 meses",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.azucar.trimestral",
+          "recurringSubscriptionPeriod": "P3M",
+          "referenceName": "Azúcar trimestral",
+          "subscriptionGroupID": "B9765097",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    },
+    {
+      "id": "D01410FF",
+      "localizations": [],
+      "name": "Alento Ansiedad",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "internalID": "3F05E64CD5B7",
+          "localizations": [
+            {
+              "description": "Acceso a Ansiedad durante 1 semana",
+              "displayName": "Ansiedad · 1 semana",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.ansiedad.semanal",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Ansiedad semanal",
+          "subscriptionGroupID": "D01410FF",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "internalID": "0F4C6DDC948F",
+          "localizations": [
+            {
+              "description": "Acceso a Ansiedad durante 1 mes",
+              "displayName": "Ansiedad · 1 mes",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.ansiedad.mensual",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Ansiedad mensual",
+          "subscriptionGroupID": "D01410FF",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "internalID": "330DF78945B4",
+          "localizations": [
+            {
+              "description": "Acceso a Ansiedad durante 3 meses",
+              "displayName": "Ansiedad · 3 meses",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.ansiedad.trimestral",
+          "recurringSubscriptionPeriod": "P3M",
+          "referenceName": "Ansiedad trimestral",
+          "subscriptionGroupID": "D01410FF",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    },
+    {
+      "id": "23542D85",
+      "localizations": [],
+      "name": "Alento Sueño",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "7.99",
+          "familyShareable": false,
+          "internalID": "0414D229A8A7",
+          "localizations": [
+            {
+              "description": "Acceso a Sueño durante 1 semana",
+              "displayName": "Sueño · 1 semana",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.sueno.semanal",
+          "recurringSubscriptionPeriod": "P1W",
+          "referenceName": "Sueño semanal",
+          "subscriptionGroupID": "23542D85",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "19.99",
+          "familyShareable": false,
+          "internalID": "74FB4AD27059",
+          "localizations": [
+            {
+              "description": "Acceso a Sueño durante 1 mes",
+              "displayName": "Sueño · 1 mes",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.sueno.mensual",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "Sueño mensual",
+          "subscriptionGroupID": "23542D85",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "34.99",
+          "familyShareable": false,
+          "internalID": "5706E00ECFD9",
+          "localizations": [
+            {
+              "description": "Acceso a Sueño durante 3 meses",
+              "displayName": "Sueño · 3 meses",
+              "locale": "es_ES"
+            }
+          ],
+          "productID": "app.alento.sueno.trimestral",
+          "recurringSubscriptionPeriod": "P3M",
+          "referenceName": "Sueño trimestral",
+          "subscriptionGroupID": "23542D85",
+          "type": "RecurringSubscription",
+          "winbackOffers": []
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 4,
+    "minor": 0
+  }
+}

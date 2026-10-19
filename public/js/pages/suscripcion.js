@@ -1,6 +1,7 @@
 // Mi suscripción: siempre accesible con sesión, tenga o no acceso premium.
 import { $, api, h, icon, longDate, moneyCents, setBusy, toast } from '../ui.js';
 import { errorState, initApp, loading, page } from '../shell.js';
+import { isNativeApp, nativeRestore } from '../native-iap.js';
 
 await initApp({ active: '/perfil', access: 'account' });
 const root = $('[data-root]');
@@ -32,12 +33,20 @@ async function load() {
     try { location.assign((await api('/api/billing/portal', { method: 'POST' })).url); } catch (err) { setBusy(portalBtn, false); toast(err.message); }
   });
 
+  const native = isNativeApp();
+  const restoreBtn = h('button', { class: 'btn btn--ghost' }, 'Restaurar compras');
+  restoreBtn.addEventListener('click', async () => {
+    setBusy(restoreBtn, true, 'Restaurando…');
+    try { const n = await nativeRestore(); toast(n ? 'Compras restauradas.' : 'No encontramos compras para restaurar.'); if (n) load(); } catch (err) { toast(err.message); }
+    setBusy(restoreBtn, false);
+  });
+
   const entries = Object.entries(d.subscriptions ?? (s ? { 'sem-fumo': s } : {}));
   if (!entries.length) {
     root.append(h('section', { class: 'card stack' },
       h('p', {}, 'No tienes ninguna suscripción.'),
       d.pendingCheckout ? h('div', { class: 'notice' }, icon('info', 'notice__icon'), h('div', {}, 'Tienes un pago sin terminar. Tus resultados siguen guardados.')) : null,
-      h('div', {}, h('a', { class: 'btn', href: '/programas' }, 'Ver programas'))));
+      h('div', { class: 'actions-row' }, h('a', { class: 'btn', href: '/programas' }, 'Ver programas'), native ? restoreBtn : null)));
     return;
   }
   const NAMES = { 'sem-fumo': 'Sem Fumo', alcohol: 'Alcohol', azucar: 'Azúcar', ansiedad: 'Ansiedad', sueno: 'Sueño' };
@@ -55,9 +64,11 @@ async function load() {
       sub.status === 'past_due' ? h('div', { class: 'notice notice--warn' }, icon('info', 'notice__icon'), h('div', {}, 'No pudimos cobrar la renovación. Actualiza tu método de pago para no perder el acceso.')) : null));
   }
   root.append(h('section', { class: 'card stack' },
-    h('div', { class: 'actions-row', style: 'margin:0' }, d.hasBilling ? portalBtn : null,
+    h('div', { class: 'actions-row', style: 'margin:0' }, native ? null : (d.hasBilling ? portalBtn : null),
+      native ? h('a', { class: 'btn', href: 'https://apps.apple.com/account/subscriptions' }, 'Gestionar en App Store') : null,
+      native ? restoreBtn : null,
       h('a', { class: 'btn btn--ghost', href: '/programas' }, 'Ver programas')),
-    h('p', { class: 'help' }, 'Desde la gestión (Stripe) puedes cambiar de plan, actualizar tu método de pago, descargar facturas o cancelar cada suscripción de forma independiente. Si cancelas, conservas el acceso hasta el final del período pagado.')));
+    native ? h('p', { class: 'help' }, 'Las suscripciones contratadas en la app se gestionan y cancelan desde los ajustes de tu cuenta de Apple. Si cancelas, conservas el acceso hasta el final del período pagado.') : h('p', { class: 'help' }, 'Desde la gestión (Stripe) puedes cambiar de plan, actualizar tu método de pago, descargar facturas o cancelar cada suscripción de forma independiente. Si cancelas, conservas el acceso hasta el final del período pagado.')));
 }
 
 load();
