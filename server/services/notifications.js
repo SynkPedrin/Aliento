@@ -98,7 +98,8 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
     if (r.exercises && r.local_weekday === 'Thu') {
       const g = await db.service.one(`select g.exercise_per_week as goal,
         (select count(*) from public.breathing_sessions b where b.user_id = $1 and b.completed_at > now() - interval '7 days')::int as done
-        from public.user_goals g where g.user_id = $1 and g.superseded_at is null`, [r.user_id]);
+        from public.user_goals g
+        where g.user_id = $1 and g.program_slug = $2 and g.superseded_at is null`, [r.user_id, r.program_slug]);
       if (g && g.done < g.goal) {
         results.push(await send(r.user_id, 'exercises', `exercises:${day}`, {
           title: 'Un minuto para ti', url: '/respirar', tag: 'exercise',

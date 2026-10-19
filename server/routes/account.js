@@ -95,7 +95,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, log 
     const onboarded = await db.service.one('select onboarded_at from public.profiles where user_id = $1', [req.user.id]);
     const s = await store.current(req);
     res.json({
-      user: { name: req.user.name, email: req.user.email, isAdmin: req.user.is_admin },
+      user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: req.user.is_admin },
       access: Boolean(active) || grants.length > 0,
       programs: [...new Set([...programs, ...grants.map((g) => g.program_slug)])],
       subscription: subscriptionView(active ?? await billing.latestSubscription(req.user.id)),

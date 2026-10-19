@@ -16,7 +16,15 @@ npm start                     # servidor real (Stripe en modo test) — ver .env
 npm run demo                  # mismo producto con pagos simulados (webhook firmado)
 ```
 
-Webhook local de Stripe: `.tools/stripe listen --forward-to localhost:3100/api/stripe/webhook`.
+Webhook local de Stripe (CLI v1.53+ necesita `--events`; con la clave del `.env`, sin exponerla):
+
+```bash
+set -a; source .env; set +a
+.tools/stripe listen --api-key "$STRIPE_SECRET_KEY" \
+  --events "checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,customer.subscription.paused,customer.subscription.resumed,charge.refunded" \
+  --forward-to localhost:3100/api/stripe/webhook
+# arranca después el servidor con el secret que imprime el listener: STRIPE_WEBHOOK_SECRET=whsec_… npm start
+```
 
 ## Scripts de operación
 

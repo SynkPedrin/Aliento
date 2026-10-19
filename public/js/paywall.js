@@ -12,23 +12,62 @@ export const FEATURES = [
   'Recordatorios opcionales en tu dispositivo',
 ];
 
+const FEATURES_BY_PROGRAM = {
+  alcohol: [
+    'Jornada de capítulos y lecciones con ejercicios prácticos',
+    'Diario de consumo y registro de contextos',
+    'Identificación de tus gatillos recursivos',
+    'Ejercicios de respiración guiada',
+    'Metas semanales a tu ritmo',
+    'Gráficos de progreso y ahorro estimado',
+    'Recordatorios opcionales en tu dispositivo',
+  ],
+  azucar: [
+    'Jornada de capítulos y lecciones con ejercicios prácticos',
+    'Diario de hábitos dulces y nivel de energía',
+    'Mapa de antojos: hambre física vs. emocional',
+    'Metas sencillas sin dietas extremas',
+    'Gráficos de regularidad y avances',
+    'Recordatorios opcionales en tu dispositivo',
+  ],
+  ansiedad: [
+    'Jornada de capítulos y lecciones con ejercicios prácticos',
+    'Diario emocional con registro de gatillos',
+    'Respiración guiada y anclajes para el día a día',
+    'Termómetro de calma y actividades',
+    'Gráficos de tu evolución',
+    'Recordatorios opcionales en tu dispositivo',
+  ],
+  sueno: [
+    'Jornada de capítulos y lecciones con ejercicios prácticos',
+    'Diario del sueño con horarios y calidad percibida',
+    'Rutina nocturna paso a paso',
+    'Ejercicios de respiración para dormir',
+    'Gráficos de regularidad y descanso',
+    'Recordatorios opcionales en tu dispositivo',
+  ],
+};
+const programFeatures = (program) => FEATURES_BY_PROGRAM[program] ?? FEATURES;
+
 const PLAN_KEY = 'fg_plan';
 
 export function rememberPlan(id) { try { sessionStorage.setItem(PLAN_KEY, id); } catch {} }
 export function rememberedPlan() { try { return sessionStorage.getItem(PLAN_KEY); } catch { return null; } }
 
 /** Lanza Stripe Checkout para el plan; si no hay sesión, pasa por la identificación. */
-export async function goToCheckout(plan, btn, { exitOffer = false } = {}) {
+export async function goToCheckout(plan, btn, { exitOffer = false, program = 'sem-fumo', fromCatalog = false } = {}) {
   rememberPlan(plan);
   if (btn) setBusy(btn, true, 'Preparando el pago seguro…');
   try {
-    const { url } = await api('/api/checkout', { method: 'POST', body: { plan, exitOffer } });
+    const { url } = await api('/api/checkout', { method: 'POST', body: { plan, exitOffer, program, fromCatalog } });
     window.location.assign(url);
   } catch (err) {
     if (btn) setBusy(btn, false);
-    if (err.code === 'AUTH_REQUIRED') return window.location.assign(`/acceso?plan=${encodeURIComponent(plan)}${exitOffer ? '&oferta=1' : ''}`);
-    if (err.code === 'ALREADY_SUBSCRIBED') return window.location.assign('/dashboard');
-    if (err.code === 'NO_RESULT') return window.location.assign('/test');
+    if (err.code === 'AUTH_REQUIRED') {
+      return window.location.assign(`/acceso?plan=${encodeURIComponent(plan)}&program=${encodeURIComponent(program)}${exitOffer ? '&oferta=1' : ''}`);
+    }
+    if (err.code === 'ALREADY_SUBSCRIBED') return window.location.assign(program === 'sem-fumo' ? '/dashboard' : `/programa?p=${program}`);
+    if (err.code === 'NO_RESULT') return window.location.assign(program === 'sem-fumo' ? '/test' : `/quiz/${program}`);
     toast(err.message, 6000);
   }
 }
@@ -66,29 +105,29 @@ export function planList(plans, selected, onSelect, { compact = false } = {}) {
  * Oferta de salida: al intentar salir del paywall (ratón hacia fuera de la ventana o botón «atrás»)
  * se pide al servidor; solo existe una vez por cuestionario y es un cupón real del primer pago.
  */
-function armExitOffer() {
+function armExitOffer(program) {
   let armed = true;
   const trigger = async () => {
     if (!armed) return;
     armed = false;
     document.removeEventListener('mouseout', onMouseOut);
     let offer = null;
-    try { ({ offer } = await api('/api/exit-offer', { method: 'POST' })); } catch { return; }
-    if (offer) showExitOffer(offer);
+    try { ({ offer } = await api('/api/exit-offer', { method: 'POST', body: { program } })); } catch { return; }
+    if (offer) showExitOffer(offer, program);
   };
   const onMouseOut = (e) => { if (!e.relatedTarget && e.clientY <= 0) trigger(); };
   // Solo intención de salida en escritorio. No se intercepta el botón «atrás» del móvil.
   document.addEventListener('mouseout', onMouseOut);
 }
 
-function showExitOffer(offer) {
+function showExitOffer(offer, program = 'sem-fumo') {
   const price = moneyCents(offer.amount, offer.currency);
   const discounted = moneyCents(offer.discountedAmount, offer.currency);
   const card = h('div', { class: 'card modal__card', style: 'text-align:center' });
   const overlay = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'offer-title' }, card);
   const close = () => overlay.remove();
   const accept = h('button', { class: 'btn btn--lg btn--block' }, 'Aprovechar mi regalo');
-  accept.addEventListener('click', () => goToCheckout(offer.plan, accept, { exitOffer: true }));
+  accept.addEventListener('click', () => goToCheckout(offer.plan, accept, { exitOffer: true, program }));
   card.append(
     h('h2', { class: 'title-md', id: 'offer-title' }, 'Un pequeño regalo antes de irte'),
     h('p', { class: 'muted u-mt-8' }, `Ya diste el primer paso. Para que empieces con buen pie, te regalamos un ${offer.percentOff ?? ''}% de descuento en tu primer pago.`),
@@ -111,26 +150,33 @@ function showExitOffer(offer) {
   accept.focus();
 }
 
-export async function renderPaywall(root, { pendingCheckout } = {}) {
+export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo', purchasable = true } = {}) {
   root.replaceChildren(h('div', { class: 'loading' }, h('div', { class: 'skeleton', 'aria-label': 'Cargando planes' })));
   let data;
   try {
-    data = await api('/api/plans');
+    data = await api(`/api/plans?program=${encodeURIComponent(program)}`);
   } catch (err) {
     root.replaceChildren(h('p', { class: 'notice' }, err.message));
     return;
   }
   const { plans, paymentsEnabled } = data;
+  const canPurchase = purchasable !== false && (data.purchasable ?? true) && paymentsEnabled;
   const fallback = plans.find((p) => p.recommended && p.available)?.id ?? plans.find((p) => p.available)?.id ?? plans[0].id;
   let selected = plans.find((p) => p.id === rememberedPlan() && p.available)?.id ?? fallback;
 
   const terms = h('div', { class: 'terms-box', 'aria-live': 'polite' });
-  const cta = h('button', { type: 'button', class: 'btn btn--lg btn--block', onclick: () => goToCheckout(selected, cta) }, 'Comenzar mi transformación');
-  if (!paymentsEnabled) cta.disabled = true;
+  const cta = h('button', { type: 'button', class: 'btn btn--lg btn--block', onclick: () => goToCheckout(selected, cta, { program }) }, 'Comenzar mi transformación');
+  if (!canPurchase) cta.disabled = true;
 
   function renderTerms() {
     const p = plans.find((x) => x.id === selected);
     if (!p?.available) { terms.replaceChildren(h('p', {}, 'Los pagos no están disponibles ahora mismo. Tus resultados siguen guardados.')); return; }
+    if (!canPurchase) {
+      terms.replaceChildren(h('p', {}, purchasable
+        ? 'Los pagos no están disponibles ahora mismo. Tus resultados siguen guardados.'
+        : 'Este programa todavía no está disponible para comprar. Sus resultados se guardan y te avisaremos cuando abra.'));
+      return;
+    }
     const price = moneyCents(p.amount, p.currency);
     terms.replaceChildren(h('dl', {},
       h('div', {}, h('dt', {}, 'Precio total'), h('dd', {}, `${price} por ${p.unit}. El primer cargo se realiza hoy al confirmar el pago.`)),
@@ -157,7 +203,7 @@ export async function renderPaywall(root, { pendingCheckout } = {}) {
     h('div', { class: 'paywall__features' },
       h('div', { class: 'card card--flat' },
         h('h3', {}, 'Todos los planes incluyen'),
-        h('ul', { class: 'feature-list', style: 'margin-top:16px' }, FEATURES.map((f) => h('li', {}, icon('check'), h('span', {}, f))))),
+        h('ul', { class: 'feature-list', style: 'margin-top:16px' }, programFeatures(program).map((f) => h('li', {}, icon('check'), h('span', {}, f))))),
       h('div', { class: 'card card--flat' },
         h('h3', {}, 'Siempre gratis y accesible'),
         h('ul', { class: 'feature-list', style: 'margin-top:16px' },
@@ -166,5 +212,5 @@ export async function renderPaywall(root, { pendingCheckout } = {}) {
     h('p', { class: 'tiny muted u-text-center u-mt-16' }, 'Alento es un programa de apoyo y no sustituye el consejo de un profesional sanitario.'),
   ].filter(Boolean));
   renderTerms();
-  if (paymentsEnabled) armExitOffer();
+  if (paymentsEnabled) armExitOffer(program);
 }

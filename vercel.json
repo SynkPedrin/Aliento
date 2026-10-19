@@ -9,6 +9,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api"
+    },
+    {
+      "source": "/quiz/(.*)",
+      "destination": "/test.html"
     }
   ],
   "redirects": [
@@ -55,6 +59,24 @@
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
+        }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
         }
       ]
     },

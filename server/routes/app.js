@@ -5,7 +5,12 @@ import { TRIGGERS } from '../quiz.js';
 import { STRATEGIES } from '../results.js';
 import { buildPersonalPlan } from '../billing.js';
 import { checkAchievements } from '../services/achievements.js';
-import { completeLesson, getLesson, journeyState, programOfLesson, saveResponse } from '../services/journey.js';
+import {
+  ExerciseEngine,
+  JourneyEngine,
+  LessonEngine,
+  ProgressEngine,
+} from '../services/journey-engines.js';
 import { addDays, dailySeries, daysBetween, planContext, summarize, todayIn } from '../services/stats.js';
 import { SUPPORT_TOPICS } from '../services/support.js';
 import { DAY_RE, HttpError, int, oneOf, requireAccess, text, uuid, wrap } from './util.js';
@@ -27,9 +32,13 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
   r.use(requireAccess(billing));
 
   async function requireProgram(req, slug) {
-    const sub = await billing.activeSubscription(req.user.id, slug);
-    if (!sub) throw new HttpError(402, 'Necesitas una suscripción activa de este programa.', 'SUBSCRIPTION_REQUIRED');
-    return sub;
+    // Verificação unificada por programa (ProgramEntitlementService):
+    // cortesía o suscripción activa de ESTE programa, nunca un campo global.
+    const entitlement = await programs.getEntitlement(req.user.id, slug);
+    if (!entitlement.has_access) {
+      throw new HttpError(402, 'Necesitas una suscripción activa de este programa.', 'SUBSCRIPTION_REQUIRED');
+    }
+    return entitlement;
   }
   const semFumo = wrap(async (req, res, next) => { await requireProgram(req, 'sem-fumo'); next(); });
 
@@ -59,7 +68,8 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
   // ---------------------------------------------------------------- configuración inicial
   async function onboardingView(req) {
     return asUser(req, async (q) => {
-      const goal = await q.one('select * from public.user_goals where user_id = $1 and superseded_at is null', [req.user.id]);
+      const goal = await q.one('select * from public.user_goals where user_id = $1 and program_slug = $2 and superseded_at is null',
+        [req.user.id, 'sem-fumo']);
       const prefs = await q.one('select * from public.notification_preferences where user_id = $1', [req.user.id]);
       const prof = await q.sudo.one('select onboarded_at from public.profiles where user_id = $1', [req.user.id]);
       return {
@@ -81,14 +91,14 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
     const userId = req.user.id;
     if (goal !== undefined) {
       if (!STRATEGIES[goal]) throw new HttpError(422, 'Meta no válida.');
-      await changeStrategy(userId, goal, 'Meta confirmada en la configuración inicial');
+      await changeStrategy(userId, 'sem-fumo', goal, 'Meta confirmada en la configuración inicial');
     }
     if (startDate !== undefined) {
       const today = todayIn(tz(req));
       if (!DAY_RE.test(startDate) || startDate < today || daysBetween(today, startDate) > 60) {
         throw new HttpError(422, 'Elige una fecha entre hoy y los próximos 60 días.');
       }
-      await updateGoal(req, { start_date: startDate });
+      await updateGoal(req, 'sem-fumo', { start_date: startDate });
     }
     if (notifications !== undefined) {
       const time = notifications?.time ?? '09:00';
@@ -105,29 +115,31 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
   }));
 
   /** Cambia la estrategia: nueva versión del plan (historial) y del objetivo. */
-  async function changeStrategy(userId, strategy, reason) {
+  async function changeStrategy(userId, program, strategy, reason) {
     await db.tx(async (q) => {
       const plan = await q.one(`select v.data, p.assessment_id from public.personalized_plans p
-        join public.plan_versions v on v.plan_id = p.id and v.version = p.current_version where p.user_id = $1`, [userId]);
+        join public.plan_versions v on v.plan_id = p.id and v.version = p.current_version
+        where p.user_id = $1 and p.program_slug = $2`, [userId, program]);
       if (!plan || plan.data.strategy.id === strategy) return;
       const assessment = await q.one('select * from public.user_assessments where id = $1', [plan.assessment_id]);
-      if (assessment) await buildPersonalPlan(q, userId, assessment, { strategyOverride: strategy, reason });
+      if (assessment) await buildPersonalPlan(q, userId, assessment, { strategyOverride: strategy, reason, program });
     });
   }
 
   /** Nueva versión del objetivo con los cambios indicados; la anterior queda en el historial. */
-  async function updateGoal(req, changes) {
+  async function updateGoal(req, program, changes) {
     return asUser(req, async (q) => {
-      const cur = await q.one('select * from public.user_goals where user_id = $1 and superseded_at is null', [req.user.id]);
+      const cur = await q.one('select * from public.user_goals where user_id = $1 and program_slug = $2 and superseded_at is null',
+        [req.user.id, program]);
       if (!cur) throw new HttpError(409, 'Tu plan todavía se está preparando.', 'PLAN_PENDING');
       const next = { ...cur, ...changes };
       const same = ['strategy', 'start_date', 'quit_date', 'max_daily', 'exercise_per_week', 'money_goal', 'money_goal_label']
         .every((k) => String(cur[k] ?? '') === String(next[k] ?? ''));
       if (same) return cur;
       await q.exec('update public.user_goals set superseded_at = now() where id = $1', [cur.id]);
-      return q.one(`insert into public.user_goals (user_id, strategy, start_date, quit_date, max_daily, exercise_per_week, money_goal, money_goal_label)
-        values ($1, $2, $3, $4, $5, $6, $7, $8) returning *`,
-      [req.user.id, next.strategy, next.start_date, next.quit_date, next.max_daily, next.exercise_per_week, next.money_goal, next.money_goal_label]);
+      return q.one(`insert into public.user_goals (user_id, program_slug, strategy, start_date, quit_date, max_daily, exercise_per_week, money_goal, money_goal_label)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *`,
+      [req.user.id, program, next.strategy, next.start_date, next.quit_date, next.max_daily, next.exercise_per_week, next.money_goal, next.money_goal_label]);
     });
   }
 
@@ -136,15 +148,16 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
     const userId = req.user.id;
     const today = todayIn(tz(req));
     const data = await asUser(req, async (q) => {
-      const ctx = await planContext(q, userId);
+      const ctx = await planContext(q, userId, 'sem-fumo');
       if (!ctx) throw new HttpError(409, 'Estamos preparando tu plan.', 'PLAN_PENDING');
       const prof = await q.sudo.one('select onboarded_at from public.profiles where user_id = $1', [userId]);
       if (!prof?.onboarded_at) throw new HttpError(409, 'Completa la configuración inicial.', 'ONBOARDING_REQUIRED');
       const week = await dailySeries(q, userId, tz(req), addDays(today, -6), today);
       const since = await dailySeries(q, userId, tz(req), ctx.goal.start_date < today ? ctx.goal.start_date : today, today);
-      const journey = await journeyState(q, userId, 'sem-fumo');
+      const journey = await JourneyEngine.getJourneyState(q, userId, 'sem-fumo');
       const todayRow = week.at(-1);
-      const tasks = await q.rows(`select id, week, title, detail, done_at from public.daily_goals where user_id = $1 order by week, created_at`, [userId]);
+      const tasks = await q.rows(`select id, week, title, detail, done_at from public.daily_goals
+        where user_id = $1 and program_slug = $2 order by week, created_at`, [userId, 'sem-fumo']);
       const exercisesThisWeek = week.reduce((a, d) => a + d.breathing, 0);
       return {
         user: { name: req.user.name },
@@ -173,9 +186,11 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
   }));
 
   r.patch('/tasks/:id', semFumo, wrap(async (req, res) => {
+    const program = String(req.query.program ?? 'sem-fumo');
+    await requireProgram(req, program);
     const id = uuid(req.params.id);
-    const n = await asUser(req, (q) => q.exec('update public.daily_goals set done_at = $1 where id = $2 and user_id = $3',
-      [req.body?.done ? new Date().toISOString() : null, id, req.user.id]));
+    const n = await asUser(req, (q) => q.exec('update public.daily_goals set done_at = $1 where id = $2 and user_id = $3 and program_slug = $4',
+      [req.body?.done ? new Date().toISOString() : null, id, req.user.id, program]));
     if (!n) throw new HttpError(404, 'Meta no encontrada.');
     res.json({ ok: true });
   }));
@@ -186,24 +201,24 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
     if (!(await programs.get(program))) throw new HttpError(404, 'Programa no encontrado.');
     await requireProgram(req, program);
     await programs.setLastProgram(req.user.id, program);
-    res.json(await asUser(req, (q) => journeyState(q, req.user.id, program)));
+    res.json(await asUser(req, (q) => JourneyEngine.getJourneyState(q, req.user.id, program)));
   }));
 
   r.get('/journey/lessons/:slug', wrap(async (req, res) => {
-    await requireProgram(req, await programOfLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
-    res.json(await asUser(req, (q) => getLesson(q, req.user.id, String(req.params.slug))));
+    await requireProgram(req, await JourneyEngine.getProgramSlugForLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
+    res.json(await asUser(req, (q) => LessonEngine.get(q, req.user.id, String(req.params.slug))));
   }));
 
   r.post('/journey/lessons/:slug/responses', wrap(async (req, res) => {
-    await requireProgram(req, await programOfLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
+    await requireProgram(req, await JourneyEngine.getProgramSlugForLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
     const blockKey = String(req.body?.blockId ?? '');
-    const out = await asUser(req, (q) => saveResponse(q, q.sudo, req.user.id, String(req.params.slug), blockKey, req.body?.response));
+    const out = await asUser(req, (q) => ExerciseEngine.saveResponse(q, q.sudo, req.user.id, String(req.params.slug), blockKey, req.body?.response));
     res.json(out);
   }));
 
   r.post('/journey/lessons/:slug/complete', wrap(async (req, res) => {
-    await requireProgram(req, await programOfLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
-    const out = await asUser(req, (q) => completeLesson(q, q.sudo, req.user.id, String(req.params.slug)));
+    await requireProgram(req, await JourneyEngine.getProgramSlugForLesson(db.service, String(req.params.slug)) ?? 'sem-fumo');
+    const out = await asUser(req, (q) => ProgressEngine.completeLesson(q, q.sudo, req.user.id, String(req.params.slug)));
     res.json({ ...out, achievements: await achievementsAfter(req) });
   }));
 
@@ -343,12 +358,17 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
 
   // ---------------------------------------------------------------- objetivos
   r.get('/goals', semFumo, wrap(async (req, res) => {
-    const rows = await asUser(req, (q) => q.rows('select * from public.user_goals where user_id = $1 order by created_at desc limit 50', [req.user.id]));
-    res.json({ current: rows.find((g) => !g.superseded_at) ?? null, history: rows.filter((g) => g.superseded_at), strategies: Object.values(STRATEGIES), currency: config.currency });
+    const program = String(req.query.program ?? 'sem-fumo');
+    await requireProgram(req, program);
+    const rows = await asUser(req, (q) => q.rows('select * from public.user_goals where user_id = $1 and program_slug = $2 order by created_at desc limit 50',
+      [req.user.id, program]));
+    res.json({ program, current: rows.find((g) => !g.superseded_at) ?? null, history: rows.filter((g) => g.superseded_at), strategies: Object.values(STRATEGIES), currency: config.currency });
   }));
 
   r.put('/goals', semFumo, wrap(async (req, res) => {
     const b = req.body ?? {};
+    const program = String(req.query.program ?? 'sem-fumo');
+    await requireProgram(req, program);
     const strategy = oneOf(b.strategy, Object.keys(STRATEGIES), 'strategy');
     if (!strategy) throw new HttpError(422, 'Elige tu objetivo principal.', 'INVALID', { field: 'strategy' });
     const quit = b.quitDate ? b.quitDate : null;
@@ -365,8 +385,8 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
       })(),
       money_goal_label: text(b.moneyGoalLabel, { max: 80, field: 'moneyGoalLabel' }),
     };
-    await changeStrategy(req.user.id, strategy, 'Cambio de objetivo');
-    const goal = await updateGoal(req, changes);
+    await changeStrategy(req.user.id, program, strategy, 'Cambio de objetivo');
+    const goal = await updateGoal(req, program, changes);
     res.json({ current: goal });
   }));
 
@@ -423,11 +443,13 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
 
   // ---------------------------------------------------------------- progreso
   r.get('/progress', semFumo, wrap(async (req, res) => {
+    const program = String(req.query.program ?? 'sem-fumo');
+    await requireProgram(req, program);
     const days = RANGES[req.query.days] ?? 30;
     const today = todayIn(tz(req));
     const from = addDays(today, -(days - 1));
     const out = await asUser(req, async (q) => {
-      const ctx = await planContext(q, req.user.id);
+      const ctx = await planContext(q, req.user.id, program);
       if (!ctx) throw new HttpError(409, 'Estamos preparando tu plan.', 'PLAN_PENDING');
       const series = await dailySeries(q, req.user.id, tz(req), from, today);
       const triggers = await q.rows(`
@@ -435,8 +457,9 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
           select trigger from public.smoking_entries where user_id = $1 and trigger is not null and (smoked_at at time zone $2)::date >= $3::date
           union all select trigger from public.craving_entries where user_id = $1 and trigger is not null and (felt_at at time zone $2)::date >= $3::date
         ) t group by trigger order by total desc`, [req.user.id, tz(req), from]);
-      const goals = await q.rows('select strategy, max_daily, quit_date, created_at, superseded_at from public.user_goals where user_id = $1 order by created_at', [req.user.id]);
-      const journey = await journeyState(q, req.user.id);
+      const goals = await q.rows('select strategy, max_daily, quit_date, created_at, superseded_at from public.user_goals where user_id = $1 and program_slug = $2 order by created_at',
+        [req.user.id, program]);
+      const journey = await JourneyEngine.getJourneyState(q, req.user.id, program);
       return {
         range: { days, from, to: today },
         baseline: ctx.baseline,
@@ -474,25 +497,29 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
   });
 
   r.get('/notifications', wrap(async (req, res) => {
-    const p = await asUser(req, (q) => q.one('select * from public.notification_preferences where user_id = $1', [req.user.id]));
+    const program = String(req.query.program ?? 'sem-fumo');
+    const p = await asUser(req, (q) => q.one('select * from public.notification_preferences where user_id = $1 and program_slug = $2',
+      [req.user.id, program]));
     res.json(prefsView(p));
   }));
 
   r.put('/notifications', wrap(async (req, res) => {
     const b = req.body ?? {};
+    const program = String(req.query.program ?? 'sem-fumo');
+    await requireProgram(req, program);
     const time = b.time ?? '09:00';
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new HttpError(422, 'Hora no válida.', 'INVALID', { field: 'time' });
     const zone = b.timezone ?? tz(req);
     try { new Intl.DateTimeFormat('en-US', { timeZone: zone }); } catch { throw new HttpError(422, 'Zona horaria no válida.', 'INVALID', { field: 'timezone' }); }
     const p = await asUser(req, (q) => q.one(`
       insert into public.notification_preferences (user_id, program_slug, enabled, consent_at, timezone, reminder_time, lessons, tracking, exercises, achievements, weekly_summary)
-      values ($1, 'sem-fumo', $2, case when $2 then now() end, $3, $4, $5, $6, $7, $8, $9)
+      values ($1, $2, $3, case when $3 then now() end, $4, $5, $6, $7, $8, $9, $10)
       on conflict (user_id, program_slug) do update set enabled = excluded.enabled, timezone = excluded.timezone, reminder_time = excluded.reminder_time,
         lessons = excluded.lessons, tracking = excluded.tracking, exercises = excluded.exercises, achievements = excluded.achievements,
         weekly_summary = excluded.weekly_summary,
         consent_at = case when excluded.enabled then coalesce(public.notification_preferences.consent_at, now()) else public.notification_preferences.consent_at end
       returning *`,
-    [req.user.id, Boolean(b.enabled), zone, time, b.lessons !== false, b.tracking !== false, b.exercises !== false, b.achievements !== false, b.weeklySummary !== false]));
+    [req.user.id, program, Boolean(b.enabled), zone, time, b.lessons !== false, b.tracking !== false, b.exercises !== false, b.achievements !== false, b.weeklySummary !== false]));
     res.json(prefsView(p));
   }));
 

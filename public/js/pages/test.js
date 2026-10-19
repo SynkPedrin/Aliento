@@ -13,13 +13,21 @@ let answers = {};
 let index = 0;
 let config = { currency: 'USD', locale: 'es-US' };
 
+/** Programa del funil: /quiz/<slug>, ?program=<slug> o sem-fumo. */
+const SLUGS = ['sem-fumo', 'alcohol', 'azucar', 'ansiedad', 'sueno'];
+const PROGRAM =
+  location.pathname.match(/^\/quiz\/([a-z-]+)/)?.[1]
+  || new URLSearchParams(location.search).get('program')
+  || 'sem-fumo';
+const PROGRAM_OK = SLUGS.includes(PROGRAM);
+
 function currencySymbol() {
   const parts = new Intl.NumberFormat(config.locale, { style: 'currency', currency: config.currency }).formatToParts(0);
   return parts.find((p) => p.type === 'currency')?.value ?? config.currency;
 }
 
 async function save(questionId, value, nextStepId) {
-  const body = { step: nextStepId };
+  const body = { step: nextStepId, program: PROGRAM };
   if (questionId) Object.assign(body, { questionId, value, consent: true }); // tras el aviso visible en la primera pregunta
   const { assessment } = await api('/api/assessment/answers', { method: 'PUT', body });
   answers = assessment.answers;
@@ -74,7 +82,10 @@ function renderSingle(step) {
         answerAndNext(step, o.id);
       },
     }))),
-    index === 0 ? h('p', { class: 'help u-mt-16' }, 'Al responder, aceptas que tratemos tus respuestas —incluidas las relativas a tu consumo de tabaco y tu bienestar— solo para calcular tus resultados. Si no creas una cuenta, se eliminan en 30 días. ',
+    index === 0 ? h('p', { class: 'help u-mt-16' },
+      PROGRAM === 'sem-fumo'
+        ? 'Al responder, aceptas que tratemos tus respuestas —incluidas las relativas a tu consumo de tabaco y tu bienestar— solo para calcular tus resultados. Si no creas una cuenta, se eliminan en 30 días. '
+        : 'Al responder, aceptas que tratemos tus respuestas —incluidas las relativas a tu bienestar y tus hábitos— solo para calcular tus resultados. Si no creas una cuenta, se eliminan en 30 días. ',
       h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.') : null);
 }
 
@@ -159,7 +170,7 @@ function renderAnalysis(step) {
   const status = h('p', { class: 'sr-only', 'aria-live': 'polite' });
   const section = h('section', { class: 'quiz__screen analysis' }, ring, h('h1', {}, step.title), h('ul', { class: 'checklist' }, items), status);
 
-  const completion = api('/api/assessment/complete', { method: 'POST' });
+  const completion = api('/api/assessment/complete', { method: 'POST', body: { program: PROGRAM } });
   const t0 = performance.now();
   const tick = (t) => {
     const p = Math.min(1, (t - t0) / step.durationMs);
@@ -179,7 +190,7 @@ function renderAnalysis(step) {
     try {
       await completion;
       status.textContent = 'Resultados listos';
-      window.location.assign('/resultados');
+      window.location.assign(`/resultados?program=${PROGRAM}`);
     } catch (err) {
       if (err.data?.missing?.length) {
         toast('Falta alguna respuesta. Vamos a completarla.');
@@ -210,15 +221,17 @@ window.addEventListener('popstate', (e) => {
 backBtn.addEventListener('click', () => history.back());
 
 async function init() {
+  if (!PROGRAM_OK) return window.location.replace('/test');
   try {
-    const [quiz, cfg, state] = await Promise.all([api('/api/quiz'), api('/api/config'), api('/api/assessment')]);
+    const [quiz, cfg, state] = await Promise.all([
+      api(`/api/quiz?program=${PROGRAM}`), api('/api/config'), api(`/api/assessment?program=${PROGRAM}`)]);
     steps = quiz.steps;
     config = cfg;
     let assessment = state.assessment;
     const restart = new URLSearchParams(location.search).has('nuevo');
-    if (assessment?.completed && !restart) return window.location.replace('/resultados');
+    if (assessment?.completed && !restart) return window.location.replace(`/resultados?program=${PROGRAM}`);
     if (!assessment || assessment.paid || restart || assessment.completed) {
-      assessment = (await api('/api/assessment/reset', { method: 'POST' })).assessment;
+      assessment = (await api('/api/assessment/reset', { method: 'POST', body: { program: PROGRAM } })).assessment;
     }
     answers = assessment.answers;
     // Retoma en el paso guardado o en la primera pregunta sin responder.

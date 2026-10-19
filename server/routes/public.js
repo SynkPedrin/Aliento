@@ -1,17 +1,30 @@
 // Embudo público: configuración, cuestionario, resultados, planes y oferta de salida.
 import { Router } from 'express';
 import { ASSESSMENT_COOKIE, cookieOptions, sharedRateLimiter } from '../auth.js';
-import { QUIZ_VERSION, STEPS, missingAnswers, publicQuiz, validateAnswer } from '../quiz.js';
+import { QUIZ_VERSION, PROGRAM_STEPS, STEPS, missingAnswers, publicQuiz, validateAnswer } from '../quiz.js';
 import { computeResult } from '../results.js';
 import { wrap } from './util.js';
 
 /** Sesión de cuestionario del navegador o, si no hay, la última completada de la cuenta. */
 export function createAssessmentStore({ db, config }) {
   const createLimiter = sharedRateLimiter(db, { windowSeconds: 10 * 60, max: 60 });
-  async function cookieSession(req) {
+
+  async function cookieSession(req, program = null) {
     const id = req.cookies[ASSESSMENT_COOKIE];
     if (!/^[0-9a-f-]{36}$/i.test(id ?? '')) return null;
-    return db.service.one('select * from public.questionnaire_sessions where id = $1', [id]);
+    const s = await db.service.one('select * from public.questionnaire_sessions where id = $1', [id]);
+    if (s && program && s.program_slug !== program) {
+      // Si la cookie pertenece a otro programa, buscar si el usuario ya tiene sesión de este programa
+      if (req.user) {
+        const userSession = await db.service.one(
+          'select * from public.questionnaire_sessions where user_id = $1 and program_slug = $2 order by created_at desc limit 1',
+          [req.user.id, program]
+        );
+        if (userSession) return userSession;
+      }
+      return null;
+    }
+    return s;
   }
 
   async function answersOf(sessionId) {
@@ -19,25 +32,34 @@ export function createAssessmentStore({ db, config }) {
     return Object.fromEntries(rows.map((r) => [r.question_id, r.value]));
   }
 
-  async function current(req) {
-    const s = await cookieSession(req);
-    if (s && (!s.claimed_user_id || s.claimed_user_id === req.user?.id)) return s;
+  async function current(req, program = null) {
+    const s = await cookieSession(req, program);
+    if (s && (!s.claimed_user_id || s.claimed_user_id === req.user?.id)) {
+      if (!program || s.program_slug === program) return s;
+    }
     if (!req.user) return null;
     return db.service.one(`
-      select * from public.questionnaire_sessions where (user_id = $1 or claimed_user_id = $1) and completed_at is not null
-      order by (user_id is not null) desc, completed_at desc limit 1`, [req.user.id]);
+      select * from public.questionnaire_sessions
+      where (user_id = $1 or claimed_user_id = $1)
+        and ($2::text is null or program_slug = $2)
+        and completed_at is not null
+      order by (user_id is not null) desc, completed_at desc limit 1`, [req.user.id, program]);
   }
 
   async function assessmentFor(sessionId) {
     return db.service.one('select * from public.user_assessments where session_id = $1', [sessionId]);
   }
 
-  async function create(res, req) {
+  async function create(res, req, program = 'sem-fumo') {
     // Límite por IP: evita que bots llenen la base de cuestionarios vacíos.
     if (req && !(await createLimiter(`quiz:${req.ip}`))) {
       throw Object.assign(new Error('Demasiadas solicitudes. Espera un momento.'), { status: 429 });
     }
-    const s = await db.service.one('insert into public.questionnaire_sessions (quiz_version) values ($1) returning *', [QUIZ_VERSION]);
+    const prog = PROGRAM_STEPS[program] ? program : 'sem-fumo';
+    const s = await db.service.one(
+      'insert into public.questionnaire_sessions (quiz_version, program_slug) values ($1, $2) returning *',
+      [QUIZ_VERSION, prog]
+    );
     res.cookie(ASSESSMENT_COOKIE, s.id, cookieOptions(config, 180 * 86400));
     return s;
   }
@@ -58,6 +80,7 @@ export function publicRoutes({ db, billing, config, store, programs }) {
 
   const view = async (s) => s && ({
     id: s.id,
+    program: s.program_slug || 'sem-fumo',
     answers: await store.answersOf(s.id),
     currentStep: s.current_step,
     completed: Boolean(s.completed_at),
@@ -72,24 +95,34 @@ export function publicRoutes({ db, billing, config, store, programs }) {
     res.json({ currency: config.currency, locale: config.locale, paymentsEnabled: billing.enabled });
   });
 
-  r.get('/quiz', (req, res) => { publicCache(res); res.json(publicQuiz()); });
+  r.get('/quiz', (req, res) => {
+    const program = String(req.query.program || 'sem-fumo');
+    publicCache(res);
+    res.json(publicQuiz(program));
+  });
 
   r.get('/legal', (req, res) => { publicCache(res); res.json(config.legal); });
 
   r.get('/assessment', wrap(async (req, res) => {
-    res.json({ assessment: await view(await store.current(req)) });
+    const program = req.query.program ? String(req.query.program) : null;
+    res.json({ assessment: await view(await store.current(req, program)) });
   }));
 
   r.post('/assessment/reset', wrap(async (req, res) => {
-    res.json({ assessment: await view(await store.create(res, req)) });
+    const program = String(req.body?.program || req.query.program || 'sem-fumo');
+    res.json({ assessment: await view(await store.create(res, req, program)) });
   }));
 
   r.put('/assessment/answers', wrap(async (req, res) => {
-    const { questionId, value, step } = req.body ?? {};
-    let s = await store.cookieSession(req);
+    const { questionId, value, step, program } = req.body ?? {};
+    let prog = program ? String(program) : null;
+    let s = await store.cookieSession(req, prog);
     // Una evaluación ya vinculada a una suscripción no se modifica: se empieza otra.
-    if (!s || s.user_id || (s.claimed_user_id && s.claimed_user_id !== req.user?.id)) s = await store.create(res, req);
-    const currentStep = STEPS.some((x) => x.id === step) ? step : s.current_step;
+    if (!s || s.user_id || (s.claimed_user_id && s.claimed_user_id !== req.user?.id)) {
+      s = await store.create(res, req, prog || 'sem-fumo');
+    }
+    const currentSteps = PROGRAM_STEPS[s.program_slug] || STEPS;
+    const currentStep = currentSteps.some((x) => x.id === step) ? step : s.current_step;
     await db.tx(async (q) => {
       if (questionId !== undefined) {
         const check = validateAnswer(questionId, value);
@@ -113,27 +146,32 @@ export function publicRoutes({ db, billing, config, store, programs }) {
   }));
 
   r.post('/assessment/complete', wrap(async (req, res) => {
-    const s = await store.cookieSession(req);
+    const program = req.body?.program ? String(req.body.program) : null;
+    const s = await store.cookieSession(req, program);
     if (!s) return res.status(404).json({ error: 'No encontramos tu cuestionario.' });
+    const prog = s.program_slug || 'sem-fumo';
     const answers = await store.answersOf(s.id);
-    const missing = missingAnswers(answers);
+    const missing = missingAnswers(answers, prog);
     if (missing.length) return res.status(422).json({ error: 'Faltan respuestas.', missing });
     if (!s.completed_at) {
       await db.tx(async (q) => {
-        await q.exec(`insert into public.user_assessments (session_id, result) values ($1, $2)
-          on conflict (session_id) do update set result = excluded.result`, [s.id, JSON.stringify(computeResult(answers))]);
+        const result = computeResult(answers, { program: prog });
+        await q.exec(`insert into public.user_assessments (session_id, program_slug, result) values ($1, $2, $3)
+          on conflict (session_id) do update set result = excluded.result, program_slug = excluded.program_slug`,
+        [s.id, prog, JSON.stringify(result)]);
         await q.exec(`update public.questionnaire_sessions set completed_at = now(), current_step = 'analisis' where id = $1`, [s.id]);
       });
     }
-    res.json({ ok: true });
+    res.json({ ok: true, program: prog });
   }));
 
   // Los resultados son gratuitos y siempre accesibles para su dueño.
   r.get('/assessment/result', wrap(async (req, res) => {
-    const s = await store.current(req);
+    const program = req.query.program ? String(req.query.program) : null;
+    const s = await store.current(req, program);
     const a = s?.completed_at ? await store.assessmentFor(s.id) : null;
     if (!a) return res.status(404).json({ error: 'Aún no has completado el cuestionario.', code: 'NO_RESULT' });
-    res.json({ result: a.result, completedAt: s.completed_at, currency: config.currency, locale: config.locale });
+    res.json({ result: a.result, program: a.program_slug || s.program_slug || 'sem-fumo', completedAt: s.completed_at, currency: config.currency, locale: config.locale });
   }));
 
   r.get('/catalog', wrap(async (req, res) => {
@@ -142,23 +180,19 @@ export function publicRoutes({ db, billing, config, store, programs }) {
   }));
 
   r.get('/plans', wrap(async (req, res) => {
-    const plans = await billing.getPlans(String(req.query.program ?? 'sem-fumo'));
-    publicCache(res);
+    const program = String(req.query.program ?? 'sem-fumo');
+    const p = await programs.get(program);
     res.json({
-      plans: plans.map(({ priceId, ...p }) => p),
-      paymentsEnabled: billing.enabled && plans.some((p) => p.available),
+      plans: await billing.getPlans(program),
+      paymentsEnabled: billing.enabled,
+      purchasable: Boolean(p && p.commercial_status === 'active'),
     });
   }));
 
-  /**
-   * Oferta de salida: se muestra como máximo una vez por cuestionario. La primera llamada la
-   * "reclama" y la devuelve; las siguientes devuelven null. Solo para quien aún no pagó.
-   */
   r.post('/exit-offer', wrap(async (req, res) => {
-    const s = await store.current(req);
-    if (!s?.completed_at || s.user_id) return res.json({ offer: null });
-    if (req.user && await billing.activeSubscription(req.user.id)) return res.json({ offer: null });
-    res.json({ offer: await billing.claimExitOffer(s.id, req.user?.id ?? s.claimed_user_id) });
+    const program = req.body?.program ? String(req.body.program) : null;
+    const s = await store.current(req, program);
+    res.json({ offer: await billing.claimExitOffer(s?.id, req.user?.id ?? s?.claimed_user_id) });
   }));
 
   return r;

@@ -4,6 +4,7 @@ import { goToCheckout, planList, rememberPlan } from '../paywall.js';
 renderHeader($('[data-header]'));
 const params = new URLSearchParams(location.search);
 let plan = params.get('plan');
+const program = ['sem-fumo', 'alcohol', 'azucar', 'ansiedad', 'sueno'].includes(params.get('program')) ? params.get('program') : 'sem-fumo';
 const next = params.get('next');
 const form = $('[data-form]');
 const errorEl = $('[data-error]');
@@ -22,7 +23,7 @@ document.querySelectorAll('[data-tab]').forEach((t) => t.addEventListener('click
 setMode(mode);
 
 async function afterAuth() {
-  if (plan) return goToCheckout(plan, submit, { exitOffer: params.has('oferta') });
+  if (plan) return goToCheckout(plan, submit, { exitOffer: params.has('oferta'), program });
   // Solo rutas de este mismo sitio (evita redirecciones abiertas como /\\evil.com).
   if (next) {
     try {
@@ -55,7 +56,7 @@ form.addEventListener('submit', async (e) => {
 
 if (plan) {
   $('[data-subtitle]').textContent = 'Último paso antes del pago seguro. Así guardamos tu plan y tus resultados.';
-  api('/api/plans').then(({ plans }) => {
+  api(`/api/plans?program=${encodeURIComponent(program)}`).then(({ plans }) => {
     if (!plans.some((x) => x.id === plan && x.available)) return;
     const box = $('[data-plan-summary]');
     box.hidden = false;
@@ -71,7 +72,7 @@ if (plan) {
       planList(plans, plan, (id) => {
         plan = id;
         rememberPlan(id);
-        history.replaceState(null, '', `?plan=${encodeURIComponent(id)}`);
+        history.replaceState(null, '', `?plan=${encodeURIComponent(id)}&program=${encodeURIComponent(program)}`);
       }, { compact: true }),
     );
   }).catch(() => {});

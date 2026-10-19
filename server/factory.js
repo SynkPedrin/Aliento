@@ -9,6 +9,10 @@ import { loadConfig } from './config.js';
 import { createDb } from './db.js';
 import { createNotifier } from './services/notifications.js';
 
+import { createStoreSync } from './services/store-sync.js';
+import { createAppleJwsVerifier } from './services/apple-jws.js';
+import { createGooglePlayVerifier } from './services/google-play.js';
+
 export function buildApp(env = process.env, { poolSize = 10 } = {}) {
   const config = loadConfig(env);
   const db = createDb(config.supabase.dbUrl, { max: poolSize });
@@ -20,6 +24,12 @@ export function buildApp(env = process.env, { poolSize = 10 } = {}) {
   const notifier = createNotifier({ db, config });
   const billing = createBilling({ db, stripe, config });
   const programs = createPrograms({ db, billing });
-  const app = createApp({ db, auth, billing, config, notifier, programs });
-  return { app, config, db, notifier };
+  // Verificación de compras nativas: el cliente nunca define el acceso por sí solo.
+  const storeSync = createStoreSync({ db, billing });
+  const apple = createAppleJwsVerifier({ bundleId: config.apple.bundleId || null });
+  if (!config.apple.bundleId) console.warn('[alento] Falta APPLE_BUNDLE_ID: la verificación de App Store queda desactivada.');
+  const googlePlay = createGooglePlayVerifier({ env, log: console });
+  if (!googlePlay.enabled) console.warn('[alento] Google Play sin credenciales: la verificación de Android queda desactivada.');
+  const app = createApp({ db, auth, billing, config, notifier, programs, storeSync, apple, googlePlay });
+  return { app, config, db, notifier, storeSync, apple, googlePlay };
 }

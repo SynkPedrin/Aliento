@@ -1,9 +1,9 @@
 {
-  "name": "folego",
+  "name": "alento",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Fôlego — programa para dejar de fumar: cuestionario, resultados, suscripción Stripe y panel.",
+  "description": "Alento — apps para dejar los malos hábitos, día a día: cinco programas (Sem Fumo, Alcohol, Azúcar, Ansiedad, Sueño) con cuestionario, resultados, suscripción Stripe y panel.",
   "engines": {
     "node": ">=22.13"
   },
@@ -30,6 +30,9 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@playwright/test": "^1.64.1",
     "supabase": "^2.121.0"
   }

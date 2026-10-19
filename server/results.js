@@ -49,20 +49,20 @@ const round2 = (n) => Math.round(n * 100) / 100;
 
 function hsiScore(perDay, firstOption) {
   const cigPoints = perDay <= 10 ? 0 : perDay <= 20 ? 1 : perDay <= 30 ? 2 : 3;
-  const first = QUESTIONS.find((q) => q.id === 'q_primer').options.find((o) => o.id === firstOption);
-  const score = cigPoints + (first?.hsi ?? 0);
+  const first = QUESTIONS.find((q) => q.id === 'q_primer')?.options?.find((o) => o.id === firstOption);
+  const hsiMap = { '5min': 3, '30min': 2, '60min': 1, 'mas60': 0 };
+  const score = cigPoints + (first?.hsi ?? hsiMap[firstOption] ?? 0);
   const level = score <= 1 ? 'baja' : score <= 4 ? 'moderada' : 'alta';
   return { score, max: 6, level };
 }
 
 function habitProfile(answers) {
   const weights = Object.fromEntries(HABIT_GROUPS.map((g) => [g.id, 0]));
-  for (const t of answers.q_gatillos ?? []) weights[TRIGGERS[t].group] += 2;
+  for (const t of answers.q_gatillos ?? []) if (TRIGGERS[t]) weights[TRIGGERS[t].group] += 2;
   if (TRIGGERS[answers.q_dificil]) weights[TRIGGERS[answers.q_dificil].group] += 3;
-  const worry = QUESTIONS.find((q) => q.id === 'q_preocupacion').options.find((o) => o.id === answers.q_preocupacion);
-  if (worry) weights[worry.group] += 1;
+  const worry = QUESTIONS.find((q) => q.id === 'q_preocupacion')?.options?.find((o) => o.id === answers.q_preocupacion);
+  if (worry && worry.group) weights[worry.group] += 1;
   const total = Object.values(weights).reduce((a, b) => a + b, 0) || 1;
-  // Reparto en porcentajes enteros que suman 100 (método del mayor resto).
   const raw = HABIT_GROUPS.map((g) => ({ ...g, exact: (weights[g.id] / total) * 100 }));
   raw.forEach((r) => { r.value = Math.floor(r.exact); });
   let rest = 100 - raw.reduce((a, r) => a + r.value, 0);
@@ -75,6 +75,7 @@ function topTriggers(answers, profile) {
   const selected = [...(answers.q_gatillos ?? [])];
   if (TRIGGERS[answers.q_dificil] && !selected.includes(answers.q_dificil)) selected.push(answers.q_dificil);
   return selected
+    .filter((id) => TRIGGERS[id])
     .sort((a, b) => (b === answers.q_dificil) - (a === answers.q_dificil) || rank[TRIGGERS[a].group] - rank[TRIGGERS[b].group])
     .slice(0, 3)
     .map((id) => ({ id, label: TRIGGERS[id].label }));
@@ -122,22 +123,309 @@ function initialGoals(strategyId, perDay, answers, triggers) {
   return goals;
 }
 
+// ------------------------------------------------------------
+// CÁLCULO PARA ALCOHOL
+// ------------------------------------------------------------
+function computeAlcoholResult(answers) {
+  const freqScores = { nunca: 1, mensual: 2, semanal: 3, diario: 4 };
+  const qtyScores = { '1-2': 1, '3-4': 2, '5-6': 3, '7-9': 4, '10mas': 5 };
+  const auditScore = (freqScores[answers.q_alc_frecuencia] ?? 2) + (qtyScores[answers.q_alc_cantidad] ?? 2);
+  const level = auditScore <= 3 ? 'baja' : auditScore <= 6 ? 'moderada' : 'alta';
+
+  const monthlySpend = Number(answers.q_alc_gasto ?? 80);
+  const weeklySpend = round2(monthlySpend / WEEKS_PER_MONTH);
+  const yearlySpend = round2(monthlySpend * 12);
+
+  const triggersMap = {
+    desconexion: 'Al terminar el trabajo o para desconectar',
+    social: 'Con amigos, fiestas o comidas de fin de semana',
+    estres: 'Cuando siento estrés, agobio o problemas',
+    aburrimiento: 'Por aburrimiento o soledad en casa',
+    comidas: 'Acompañando siempre la cena o comida',
+  };
+
+  const selectedTriggers = (answers.q_alc_gatillos ?? ['desconexion']).map((id) => ({
+    id, label: triggersMap[id] || id,
+  }));
+
+  const hasPhysicalDependenceSigns = answers.q_alc_seguridad === 'si';
+  const safetyNotice = hasPhysicalDependenceSigns
+    ? 'Aviso de seguridad clínica: Has indicado síntomas compatibles con posible dependencia física (temblores matutinos o necesidad al despertar). Alento es un programa educativo y NO recomienda suspender el consumo de alcohol de forma brusca sin supervisión médica. Te recomendamos consultar con un profesional de la salud antes de cualquier interrupción repentina.'
+    : null;
+
+  const targetReduction = answers.q_alc_objetivo === 'dejarlo' ? 100 : answers.q_alc_objetivo === 'pausa' ? 100 : 50;
+  const savings12Weeks = round2(monthlySpend * 3 * (targetReduction / 100));
+
+  return {
+    program: 'alcohol',
+    current: {
+      product: 'alcohol',
+      frequency: answers.q_alc_frecuencia,
+      quantityPerOccasion: answers.q_alc_cantidad,
+      bingeFrequency: answers.q_alc_atracones,
+      weeklySpend,
+      monthlySpend,
+      yearlySpend,
+    },
+    dependence: {
+      score: auditScore,
+      max: 9,
+      level,
+      hasPhysicalRisk: hasPhysicalDependenceSigns,
+    },
+    profile: [
+      { id: 'desconexion', label: 'Desconexión y pausa', value: 35 },
+      { id: 'social', label: 'Entorno social', value: 30 },
+      { id: 'emocional', label: 'Gestión emocional', value: 20 },
+      { id: 'rutina', label: 'Hábito en comidas', value: 15 },
+    ],
+    triggers: selectedTriggers.slice(0, 3),
+    safetyNotice,
+    projection: {
+      weeks: PROJECTION_WEEKS,
+      savings12Weeks,
+      savingsYear: round2(monthlySpend * 12 * (targetReduction / 100)),
+      reductionPercent: targetReduction,
+    },
+    plan: {
+      strategy: {
+        id: answers.q_alc_objetivo || 'moderar',
+        name: answers.q_alc_objetivo === 'dejarlo' ? 'Cese completo guiado' : answers.q_alc_objetivo === 'pausa' ? 'Pausa saludable de 90 días' : 'Consumo consciente y reducción gradual',
+        summary: 'Acompañamiento reflexivo paso a paso para transformar tu relación con el alcohol, sin juicios y a tu ritmo.',
+      },
+      triggers: selectedTriggers,
+      goals: [
+        { week: 1, title: 'Registra tus ocasiones de consumo durante 7 días', detail: 'Conocer las situaciones exactas te da el control para elegir conscientemente.' },
+        { week: 1, title: 'Diseña una alternativa para tu momento más delicado', detail: 'Sustituye la bebida de desconexión por una opción refrescante sin alcohol.' },
+      ],
+      tools: [
+        { id: 'diario_consumo', name: 'Diario de consumo', detail: 'Anota cada ocasión y cómo te sentías en ese momento.' },
+        { id: 'alternativas', name: 'Guía de sustitutos', detail: 'Opciones atractivas sin alcohol para reuniones y cenas.' },
+        { id: 'respiracion', name: 'Pausa de autorregulación', detail: 'Respira 2 minutos antes de decidir servirte una bebida.' },
+      ],
+      tracking: [
+        'Registro rápido de consumiciones o días sin alcohol',
+        'Seguimiento de dinero ahorrado y calorías evitadas',
+        'Gráficos de patrones por días de la semana',
+      ],
+      motives: answers.q_alc_motivos ?? [],
+    },
+  };
+}
+
+// ------------------------------------------------------------
+// CÁLCULO PARA AZÚCAR
+// ------------------------------------------------------------
+function computeAzucarResult(answers) {
+  const timesPerDay = Number(answers.q_az_frecuencia ?? 3);
+  const moments = answers.q_az_momentos ?? ['bajon'];
+  const momentsMap = {
+    bajon: 'Bajón de energía a media tarde',
+    noche: 'En el sofá o tras la cena',
+    estres: 'Estrés y agobio',
+    recompensa: 'Recompensa tras el esfuerzo',
+    aburrimiento: 'Hábito o aburrimiento',
+  };
+  const triggers = moments.map((id) => ({ id, label: momentsMap[id] || id }));
+
+  return {
+    program: 'azucar',
+    current: {
+      product: answers.q_az_tipo ?? 'dulces',
+      perDay: timesPerDay,
+      estimatedMonthlySpend: 60,
+    },
+    dependence: {
+      score: Math.min(8, timesPerDay * 2),
+      max: 10,
+      level: timesPerDay <= 2 ? 'baja' : timesPerDay <= 4 ? 'moderada' : 'alta',
+    },
+    profile: [
+      { id: 'energia', label: 'Curva de energía y fatiga', value: 40 },
+      { id: 'emocional', label: 'Recompensa y alivio emocional', value: 35 },
+      { id: 'rutina', label: 'Hábito automático', value: 25 },
+    ],
+    triggers: triggers.slice(0, 3),
+    projection: {
+      weeks: PROJECTION_WEEKS,
+      reductionPercent: 60,
+      sugarSpikesAvoided: timesPerDay * 7 * 12,
+    },
+    plan: {
+      strategy: {
+        id: 'equilibrio',
+        name: 'Equilibrio consciente sin dietas extremas',
+        summary: 'Desactiva los picos de glucosa y el hambre emocional sustituyendo de forma deliciosa y sostenible.',
+      },
+      triggers,
+      goals: [
+        { week: 1, title: 'Registra tus momentos dulces del día', detail: 'Observa qué emoción o necesidad física precedió al dulce.' },
+        { week: 1, title: 'Añade proteína o fibra antes del dulce habitual', detail: 'Estabiliza tu glucosa para no tener el bajón posterior.' },
+      ],
+      tools: [
+        { id: 'mapa_antojos', name: 'Mapa de antojos', detail: 'Identifica hambre física vs. hambre emocional en 1 minuto.' },
+        { id: 'despensa_consciente', name: 'Guía de snacks saciantes', detail: 'Combinaciones que calman el paladar sin provocar picos.' },
+      ],
+      tracking: [
+        'Registro de momentos dulces y nivel de energía posterior',
+        'Conteo de días en equilibrio glucémico',
+      ],
+    },
+  };
+}
+
+// ------------------------------------------------------------
+// CÁLCULO PARA ANSIEDAD
+// ------------------------------------------------------------
+function computeAnsiedadResult(answers) {
+  const manifestations = answers.q_ans_manifestaciones ?? ['muscular', 'cabeza'];
+  const manifestMap = {
+    muscular: 'Tensión muscular y cervical',
+    pecho: 'Opresión torácica o respiración superficial',
+    cabeza: 'Pensamientos en bucle y sobrepensamiento',
+    estomago: 'Molestias digestivas o nudo estomacal',
+    inquietud: 'Inquietud psicomotriz',
+  };
+  const triggers = (answers.q_ans_gatillos ?? ['trabajo']).map((id) => ({
+    id, label: id === 'trabajo' ? 'Sobrecarga laboral/estudio' : id === 'futuro' ? 'Incertidumbre' : id,
+  }));
+
+  return {
+    program: 'ansiedad',
+    current: {
+      product: 'ansiedad',
+      frequency: answers.q_ans_frecuencia ?? 'semanal',
+      manifestations: manifestations.map((id) => manifestMap[id] || id),
+    },
+    dependence: {
+      score: 5,
+      max: 10,
+      level: answers.q_ans_frecuencia === 'diario' ? 'alta' : 'moderada',
+    },
+    profile: [
+      { id: 'somatico', label: 'Respuesta física (cuerpo y tensión)', value: 45 },
+      { id: 'cognitivo', label: 'Bucle mental (rumiación)', value: 35 },
+      { id: 'conductual', label: 'Respuestas de evitación', value: 20 },
+    ],
+    triggers: triggers.slice(0, 3),
+    projection: {
+      weeks: PROJECTION_WEEKS,
+      reductionPercent: 50,
+    },
+    plan: {
+      strategy: {
+        id: 'calma_sistematica',
+        name: 'Regulación del sistema nervioso',
+        summary: 'Herramientas somáticas y cognitivas breves para desactivar la alerta física y recuperar la calma.',
+      },
+      triggers,
+      goals: [
+        { week: 1, title: 'Practica 2 minutos de respiración guiada al día', detail: 'Entrena tu nervio vago en momentos de calma para que funcione en tensión.' },
+        { week: 1, title: 'Anota tu nivel de tensión de 1 a 10 dos veces al día', detail: 'Detecta la tensión antes de que se convierta en sobrecarga.' },
+      ],
+      tools: [
+        { id: 'respiracion_caja', name: 'Respiración en caja (Box breathing)', detail: 'Técnica de 4 tiempos para bajar la activación fisiológica.' },
+        { id: 'anclaje', name: 'Anclaje 5-4-3-2-1', detail: 'Devuelve tu mente al presente a través de los sentidos.' },
+        { id: 'diario_emocional', name: 'Mi diario emocional', detail: 'Espacio seguro para volcar preocupaciones y ordenar la mente.' },
+      ],
+      tracking: [
+        'Termómetro diario de calma (escala 0-10)',
+        'Contador de ejercicios de respiración completados',
+      ],
+    },
+  };
+}
+
+// ------------------------------------------------------------
+// CÁLCULO PARA SUEÑO
+// ------------------------------------------------------------
+function computeSuenoResult(answers) {
+  const hours = Number(answers.q_sue_horas ?? 6);
+  const habits = answers.q_sue_habitos ?? ['pantallas'];
+  const habitMap = {
+    pantallas: 'Luz azul antes de dormir',
+    cafeina: 'Cafeína por la tarde',
+    cenas: 'Cenas pesadas',
+    horarios: 'Horarios irregulares',
+    rumiacion: 'Pensamientos sobre mañana',
+  };
+  const triggers = habits.map((id) => ({ id, label: habitMap[id] || id }));
+
+  return {
+    program: 'sueno',
+    current: {
+      product: 'sueno',
+      hoursSlept: hours,
+      sleepDebtHours: Math.max(0, 8 - hours),
+      obstacle: answers.q_sue_dificultad ?? 'conciliar',
+    },
+    dependence: {
+      score: Math.max(2, 10 - hours),
+      max: 10,
+      level: hours < 6 ? 'alta' : hours < 7 ? 'moderada' : 'baja',
+    },
+    profile: [
+      { id: 'higiene', label: 'Factores de entorno y pantallas', value: 40 },
+      { id: 'rumiacion', label: 'Activación mental nocturna', value: 35 },
+      { id: 'ritmo', label: 'Regularidad de horarios', value: 25 },
+    ],
+    triggers: triggers.slice(0, 3),
+    projection: {
+      weeks: PROJECTION_WEEKS,
+      reductionPercent: 75,
+      recoveredRestHours: Math.round(Math.max(0, 8 - hours) * 7 * 12),
+    },
+    plan: {
+      strategy: {
+        id: 'higiene_nocturna',
+        name: 'Ritual nocturno de desconexión',
+        summary: 'Prepara tu entorno y tu biología para un descanso reparador sin presión ni exigencia.',
+      },
+      triggers,
+      goals: [
+        { week: 1, title: 'Apaga pantallas 30 minutos antes de acostarte', detail: 'Permite que tu cerebro empiece a liberar melatonina natural.' },
+        { week: 1, title: 'Mantén una hora fija para levantarte durante 7 días', detail: 'El ancla de tu reloj circadiano es la hora a la que despiertas.' },
+      ],
+      tools: [
+        { id: 'respiracion_sueno', name: 'Respiración 4-7-8', detail: 'Calma el ritmo cardíaco para inducir el descanso.' },
+        { id: 'vaciado_mental', name: 'Vaciado mental en papel', detail: 'Apunta las tareas del día siguiente antes de entrar al dormitorio.' },
+      ],
+      tracking: [
+        'Registro de horas y sensación de energía al despertar',
+        'Contador de noches con ritual completado',
+      ],
+    },
+  };
+}
+
 /**
- * Calcula el resultado completo a partir de respuestas validadas.
- * `strategyOverride` permite regenerar el plan si el usuario cambia su meta.
+ * Función universal de cálculo de resultados.
+ * Detecta automáticamente el programa o utiliza el especificado.
  */
-export function computeResult(answers, { strategyOverride } = {}) {
+export function computeResult(answers, options = {}) {
+  const program = options.program
+    || (answers.q_alc_frecuencia ? 'alcohol'
+      : answers.q_az_tipo ? 'azucar'
+        : answers.q_ans_frecuencia ? 'ansiedad'
+          : answers.q_sue_horas ? 'sueno'
+            : 'sem-fumo');
+
+  if (program === 'alcohol') return computeAlcoholResult(answers);
+  if (program === 'azucar') return computeAzucarResult(answers);
+  if (program === 'ansiedad') return computeAnsiedadResult(answers);
+  if (program === 'sueno') return computeSuenoResult(answers);
+
+  // Sem Fumo por defecto (mantiene 100 % fidelidad original)
   const perDay = Number(answers.q_cantidad);
   const weeklySpend = Number(answers.q_gasto);
-  const strategyId = strategyOverride ?? answers.q_objetivo;
-  const strategy = STRATEGIES[strategyId];
+  const strategyId = options.strategyOverride ?? answers.q_objetivo;
+  const strategy = STRATEGIES[strategyId] || STRATEGIES.gradual;
 
   const dependence = hsiScore(perDay, answers.q_primer);
   const profile = habitProfile(answers);
   const triggers = topTriggers(answers, profile);
   const schedule = weeklySchedule(strategyId, perDay);
 
-  // Estimación: ahorro proporcional a la reducción sobre el consumo actual.
   const pricePerCig = perDay > 0 ? weeklySpend / (perDay * 7) : 0;
   let cumulative = 0;
   let avoided = 0;
@@ -153,11 +441,12 @@ export function computeResult(answers, { strategyOverride } = {}) {
   const yearSavings = cumulative + Math.max(0, perDay - finalTarget) * 7 * pricePerCig * (52 - PROJECTION_WEEKS);
 
   const groups = new Set(profile.filter((g) => g.value > 0).slice(0, 3).map((g) => g.id));
-  const toolIds = ['diario', ...[...groups].flatMap((g) => TOOLS_BY_GROUP[g])];
+  const toolIds = ['diario', ...[...groups].flatMap((g) => TOOLS_BY_GROUP[g] || [])];
   if (dependence.level !== 'baja' && !toolIds.includes('respiracion')) toolIds.push('respiracion');
-  const tools = [...new Set(toolIds)].map((id) => TOOLS[id]);
+  const tools = [...new Set(toolIds)].map((id) => TOOLS[id]).filter(Boolean);
 
   return {
+    program: 'sem-fumo',
     current: {
       product: answers.q_producto,
       perDay,
@@ -190,3 +479,6 @@ export function computeResult(answers, { strategyOverride } = {}) {
     },
   };
 }
+
+export const computeResultForProgram = (program, answers, options = {}) =>
+  computeResult(answers, { ...options, program });

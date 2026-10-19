@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alento</title>
+<meta name="description" content="">
+<meta property="og:title" content="Alento">
+<link rel="icon" href="assets/logos/alento-icone-app.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Base da marca (tokens, símbolo, mockup de celular) vinda da apresentação -->
+<link rel="stylesheet" href="assets/css/deck.css">
+<link rel="stylesheet" href="site.css">
+<noscript><style>[data-r],.lines>span>span{opacity:1!important;transform:none!important;clip-path:none!important}</style></noscript>
+</head>
+<body>
+<!-- Todos os textos vêm de i18n.js pela chave em data-i18n. Idioma padrão: espanhol. -->
+
+<!-- 1 · Navegação -->
+<header class="topbar" id="topo">
+  <div class="wrap topbar__in">
+    <a href="#topo" class="topbar__logo" aria-label="Alento">
+      <span class="logo-light" data-logo="branco"></span><span class="logo-dark" data-logo="cor"></span>
+    </a>
+    <nav class="topbar__links" aria-label="Alento">
+      <a href="#como-funciona" data-i18n="nav.how"></a><a href="#para-quem" data-i18n="nav.who"></a><a href="#historias" data-i18n="nav.stories"></a><a href="#perguntas" data-i18n="nav.faq"></a>
+    </nav>
+    <div class="lang">
+      <button type="button" class="lang__btn" aria-haspopup="listbox" aria-expanded="false" data-i18n-aria="lang.label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>
+        <span class="lang__code">ES</span>
+        <svg class="lang__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+      </button>
+      <ul class="lang__menu" role="listbox" hidden></ul>
+    </div>
+    <a class="btn btn--sm btn--mint topbar__cta" href="#comecar" data-quiz data-i18n="cta.start"></a>
+  </div>
+</header>
+
+<main>
+
+<!-- 2 · Hero -->
+<section class="hero t-blue reveal">
+  <div class="ring breathe" style="width:1100px;height:1100px;right:-380px;top:-420px"></div>
+  <div class="ring" style="width:720px;height:720px;left:-360px;bottom:-420px"></div>
+  <div class="wrap hero__in">
+    <div class="hero__text">
+      <div class="eyebrow" data-r data-i18n="hero.eyebrow"></div>
+      <h1 class="d hero__title lines" data-r="fade"><span><span style="--k:0" data-i18n="hero.l1"></span></span><span><span style="--k:1" data-i18n="hero.l2"></span></span></h1>
+      <p class="hero__sub" data-r data-d=".5" data-i18n="hero.sub"></p>
+      <div class="hero__cta" data-r data-d=".65">
+        <a class="btn btn--mint" href="#comecar" data-quiz data-i18n="cta.start"></a>
+        <a class="btn btn--ghost-light" href="#como-funciona" data-i18n="cta.how"></a>
+      </div>
+      <p class="hero__trust" data-r data-d=".8"><span data-i18n="hero.trust1"></span> · <span class="tbd" data-i18n="hero.trust2"></span></p>
+    </div>
+    <div class="hero__media" aria-hidden="true">
+      <div class="hero__sun" data-r="soft" data-d=".9"><span class="breathe"></span></div>
+      <div class="hero__window" data-r="mask" data-d=".4"><img src="assets/images/IMG_001_MANIFESTO.jpg" alt="" style="object-position:48% 30%"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · Escolha por onde começar -->
+<section class="sec reveal" id="comecar">
+  <div class="wrap">
+    <div class="sec__head">
+      <div class="eyebrow" data-r data-i18n="goals.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="goals.title"></h2>
+    </div>
+    <div class="goals">
+      <a class="goal" href="#" data-quiz="cigarro" data-r data-d=".2"><div class="goal__art"><div data-sym-accent="mint"></div></div><div class="goal__name" data-i18n="goal.smoke"></div><p data-i18n="goal.smoke.t"></p><span class="goal__go"><span data-i18n="goal.start"></span> <i>→</i></span></a>
+      <a class="goal" href="#" data-quiz="alcool" data-r data-d=".28"><div class="goal__art"><div data-sym-accent="lav"></div></div><div class="goal__name" data-i18n="goal.alcohol"></div><p data-i18n="goal.alcohol.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+      <a class="goal" href="#" data-quiz="acucar" data-r data-d=".36"><div class="goal__art"><div data-sym-accent="coral"></div></div><div class="goal__name" data-i18n="goal.sugar"></div><p data-i18n="goal.sugar.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+      <a class="goal" href="#" data-quiz="ansiedade" data-r data-d=".44"><div class="goal__art"><div data-sym-accent="amber"></div></div><div class="goal__name" data-i18n="goal.anxiety"></div><p data-i18n="goal.anxiety.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+      <a class="goal goal--night" href="#" data-quiz="sono" data-r data-d=".52"><div class="goal__art"><div data-sym-night></div></div><div class="goal__name" data-i18n="goal.sleep"></div><p data-i18n="goal.sleep.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+    </div>
+    <a class="link-more" href="#" data-r><span data-i18n="goals.more"></span> <i>→</i></a>
+  </div>
+</section>
+
+<!-- 4 · Números -->
+<section class="sec sec--tight reveal">
+  <div class="wrap">
+    <h2 class="d h3 center" data-r data-i18n="stats.title"></h2>
+    <div class="stats">
+      <div class="stat-big" data-r data-d=".2"><b data-i18n="stats.n1"></b><span data-i18n="stats.l1"></span></div>
+      <div class="stat-big" data-r data-d=".3"><b data-i18n="stats.n2"></b><span data-i18n="stats.l2"></span></div>
+      <div class="stat-big" data-r data-d=".4"><b data-i18n="stats.n3"></b><span data-i18n="stats.l3"></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · Na imprensa -->
+<section class="press reveal">
+  <div class="wrap press__in">
+    <span class="micro muted" data-i18n="press.label"></span>
+    <div class="press__logos" data-r>
+      <img src="assets/imprensa/bloomberg.svg" alt="Bloomberg" height="28"><img src="assets/imprensa/cbs.svg" alt="CBS" height="28"><img src="assets/imprensa/yahoo.svg" alt="Yahoo Finance" height="28">
+    </div>
+  </div>
+</section>
+
+<!-- 6 · Manifesto -->
+<section class="manifesto reveal">
+  <img class="manifesto__img kb-img" src="assets/images/IMG_004_LIFESTYLE_MORNING.jpg" alt="" data-i18n-alt="alt.man" style="object-position:62% 50%">
+  <div class="wrap manifesto__in">
+    <div class="manifesto__text">
+      <div class="eyebrow" data-r data-i18n="man.eyebrow"></div>
+      <h2 class="d h2 lines" data-r="fade"><span><span style="--k:0" data-i18n="man.l1"></span></span><span><span style="--k:1" data-i18n="man.l2"></span></span><span><span style="--k:2" class="c-blue" data-i18n="man.l3"></span></span></h2>
+      <p class="lead-s" data-r data-d=".6" data-i18n="man.text"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Como funciona -->
+<section class="sec t-air reveal" id="como-funciona">
+  <div class="wrap">
+    <div class="sec__head center">
+      <div class="eyebrow" data-r data-i18n="how.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="how.title"></h2>
+      <p class="sec__sub" data-r data-i18n="how.sub"></p>
+    </div>
+    <div class="method">
+      <svg class="method__arc" viewBox="0 -12 1000 132" aria-hidden="true">
+        <path d="M20 100 C 296 -26, 704 -26, 980 100" fill="none" stroke="#D5DCF5" stroke-width="10" stroke-linecap="round"/>
+        <path class="method__arc-fill" d="M20 100 C 296 -26, 704 -26, 980 100" pathLength="1" fill="none" stroke="#1E3FFF" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+      <span class="method__sun" aria-hidden="true"></span>
+      <ol class="steps">
+        <li data-r data-d=".2"><span class="steps__n">1</span><h3 data-i18n="s1.t"></h3><p data-i18n="s1.p"></p></li>
+        <li data-r data-d=".3"><span class="steps__n">2</span><h3 data-i18n="s2.t"></h3><p data-i18n="s2.p"></p></li>
+        <li data-r data-d=".4"><span class="steps__n">3</span><h3 data-i18n="s3.t"></h3><p data-i18n="s3.p"></p></li>
+        <li data-r data-d=".5"><span class="steps__n">4</span><h3 data-i18n="s4.t"></h3><p data-i18n="s4.p"></p></li>
+        <li data-r data-d=".6"><span class="steps__n">5</span><h3 data-i18n="s5.t"></h3><p data-i18n="s5.p"></p></li>
+      </ol>
+    </div>
+    <p class="fineprint center" data-r data-i18n="how.note"></p>
+  </div>
+</section>
+
+<!-- 8 · No seu bolso -->
+<section class="sec t-blue pocket reveal">
+  <div class="ring breathe" style="width:900px;height:900px;left:50%;top:50%;margin:-450px 0 0 -450px"></div>
+  <div class="wrap">
+    <div class="sec__head center">
+      <div class="eyebrow" data-r data-i18n="pocket.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="pocket.title"></h2>
+    </div>
+    <div class="pocket__grid">
+      <ul class="features">
+        <li data-r data-d=".2"><span class="feat-ic" data-ui-icon="plan"></span><div><h3 data-i18n="f1.t"></h3><p data-i18n="f1.p"></p></div></li>
+        <li data-r data-d=".3"><span class="feat-ic" data-ui-icon="breath"></span><div><h3 data-i18n="f2.t"></h3><p data-i18n="f2.p"></p></div></li>
+        <li data-r data-d=".4"><span class="feat-ic" data-ui-icon="home"></span><div><h3 data-i18n="f3.t"></h3><p data-i18n="f3.p"></p></div></li>
+      </ul>
+      <div class="pocket__phone" data-r="soft" data-d=".3"><div class="phone" data-screen="home"></div></div>
+      <ul class="features">
+        <li data-r data-d=".5"><span class="feat-ic" data-ui-icon="you"></span><div><h3 data-i18n="f4.t"></h3><p data-i18n="f4.p"></p></div></li>
+        <li data-r data-d=".6"><span class="feat-ic" data-ui-icon="breath"></span><div><h3 data-i18n="f5.t"></h3><p data-i18n="f5.p"></p></div></li>
+        <li data-r data-d=".7"><span class="feat-ic" data-ui-icon="plan"></span><div><h3 data-i18n="f6.t"></h3><p data-i18n="f6.p"></p></div></li>
+      </ul>
+    </div>
+    <div class="stores" data-r>
+      <a class="badge" href="#" data-badge="apple"></a>
+      <a class="badge" href="#" data-badge="google"></a>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Para quem é -->
+<section class="sec reveal" id="para-quem">
+  <div class="wrap">
+    <div class="sec__head">
+      <div class="eyebrow" data-r data-i18n="who.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="who.title"></h2>
+    </div>
+    <div class="who">
+      <figure class="who__card" data-r data-d=".2"><img src="assets/images/IMG_012_SMALL_WINS.jpg" alt="" data-i18n-alt="alt.who1" style="object-position:55% 40%"><figcaption data-i18n="who.q1"></figcaption></figure>
+      <figure class="who__card" data-r data-d=".32"><img src="assets/images/IMG_011_FREEDOM.jpg" alt="" data-i18n-alt="alt.who2" style="object-position:50% 30%"><figcaption data-i18n="who.q2"></figcaption></figure>
+      <figure class="who__card" data-r data-d=".44"><img src="assets/images/IMG_008_SOCIAL_CAMPAIGN.jpg" alt="" data-i18n-alt="alt.who3" style="object-position:52% 30%"><figcaption data-i18n="who.q3"></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Histórias -->
+<section class="sec t-air reveal" id="historias">
+  <div class="wrap">
+    <div class="sec__head sec__head--row">
+      <div><div class="eyebrow" data-r data-i18n="stories.eyebrow"></div><h2 class="d h2" data-r data-i18n="stories.title"></h2></div>
+      <div class="slider-nav" data-r><button type="button" data-slide="-1" data-i18n-aria="aria.prev">←</button><button type="button" data-slide="1" data-i18n-aria="aria.next">→</button></div>
+    </div>
+  </div>
+  <div class="stories" tabindex="0">
+    <article class="story-card"><span class="chip"><i style="background:var(--mint)"></i><span data-i18n="t1.topic"></span></span><blockquote data-i18n="t1.q"></blockquote><footer><img class="avatar-img" src="assets/depoimentos/valeria.jpg" alt="Valeria"><div><b>Valeria</b><span data-age="34"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--lav)"></i><span data-i18n="t2.topic"></span></span><blockquote data-i18n="t2.q"></blockquote><footer><img class="avatar-img" src="assets/depoimentos/diego.jpg" alt="Diego"><div><b>Diego</b><span data-age="42"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--blue)"></i><span data-i18n="t3.topic"></span></span><blockquote data-i18n="t3.q"></blockquote><footer><img class="avatar-img" src="assets/depoimentos/camila.jpg" alt="Camila"><div><b>Camila</b><span data-age="29"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--coral)"></i><span data-i18n="t4.topic"></span></span><blockquote data-i18n="t4.q"></blockquote><footer><img class="avatar-img" src="assets/depoimentos/lucia.jpg" alt="Lucía"><div><b>Lucía</b><span data-age="37"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--amber)"></i><span data-i18n="t5.topic"></span></span><blockquote data-i18n="t5.q"></blockquote><footer><img class="avatar-img" src="assets/depoimentos/andres.jpg" alt="Andrés"><div><b>Andrés</b><span data-age="46"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--coral)"></i><span data-i18n="t6.topic"></span></span><blockquote data-i18n="t6.q"></blockquote><footer><img class="avatar-img" src="assets/depoimentos/sofia.jpg" alt="Sofía"><div><b>Sofía</b><span data-age="32"></span></div></footer></article>
+  </div>
+  <div class="wrap"><p class="fineprint" data-i18n="stories.note"></p></div>
+</section>
+
+<!-- 11 · Perguntas frequentes -->
+<section class="sec reveal" id="perguntas">
+  <div class="wrap faq">
+    <div class="faq__head">
+      <div class="eyebrow" data-r data-i18n="faq.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="faq.title"></h2>
+      <p class="sec__sub" data-r data-i18n="faq.sub"></p>
+    </div>
+    <div class="faq__list" data-r data-d=".2">
+      <details open><summary data-i18n="q1"></summary><p data-i18n="a1"></p></details>
+      <details><summary data-i18n="q2"></summary><p data-i18n="a2"></p></details>
+      <details><summary data-i18n="q3"></summary><p data-i18n="a3"></p></details>
+      <details><summary data-i18n="q4"></summary><p data-i18n="a4"></p></details>
+      <details><summary data-i18n="q5"></summary><p data-i18n="a5"></p></details>
+      <details><summary data-i18n="q6"></summary><p data-i18n="a6"></p></details>
+      <details><summary data-i18n="q7"></summary><p data-i18n="a7"></p></details>
+      <details><summary data-i18n="q8"></summary><p data-i18n="a8"></p></details>
+      <details><summary data-i18n="q9"></summary><p data-i18n="a9"></p></details>
+      <details><summary data-i18n="q10"></summary><p data-i18n="a10"></p></details>
+      <details><summary data-i18n="q11"></summary><p data-i18n="a11"></p></details>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Chamada final -->
+<section class="final t-blue reveal">
+  <div class="ring breathe" style="width:1300px;height:1300px;left:50%;top:50%;margin:-650px 0 0 -650px"></div>
+  <div class="ring" style="width:820px;height:820px;left:50%;top:50%;margin:-410px 0 0 -410px;opacity:.6"></div>
+  <div class="wrap final__in">
+    <div class="final__logo draw living" data-logo="branco"></div>
+    <h2 class="d h2" data-r data-d="1.6" data-i18n="final.title"></h2>
+    <p class="hero__sub" data-r data-d="1.8" data-i18n="final.sub"></p>
+    <div data-r data-d="2"><a class="btn btn--mint btn--lg" href="#comecar" data-quiz data-i18n="cta.start"></a></div>
+  </div>
+</section>
+
+</main>
+
+<!-- 13 · Rodapé -->
+<footer class="foot t-night">
+  <div class="wrap">
+    <div class="foot__top">
+      <div class="foot__brand"><div data-logo="branco" class="foot__logo"></div><p class="v" data-i18n="foot.tag"></p></div>
+      <nav class="foot__cols" aria-label="Alento">
+        <div><h4 data-i18n="foot.c1"></h4><a href="#" data-i18n="foot.about"></a><a href="#como-funciona" data-i18n="nav.how"></a><a href="#historias" data-i18n="nav.stories"></a><a href="#" class="tbd" data-i18n="foot.jobs"></a></div>
+        <div><h4 data-i18n="foot.c2"></h4><a href="#perguntas" data-i18n="faq.title"></a><a href="#" data-i18n="foot.contact"></a><a href="#" class="tbd" data-i18n="foot.member"></a></div>
+        <div><h4 data-i18n="foot.c3"></h4><a href="#" data-i18n="foot.terms"></a><a href="#" data-i18n="foot.privacy"></a><a href="#" data-i18n="foot.cookies"></a></div>
+      </nav>
+    </div>
+    <div class="foot__bottom">
+      <p data-i18n="foot.disc"></p>
+      <p data-i18n="foot.copy"></p>
+    </div>
+  </div>
+</footer>
+
+<!-- Cookies -->
+<div class="cookies" role="dialog" hidden>
+  <p data-i18n="cookies.text"></p>
+  <div><button type="button" class="btn btn--sm btn--ghost" data-cookies="essenciais" data-i18n="cookies.min"></button><button type="button" class="btn btn--sm" data-cookies="todos" data-i18n="cookies.all"></button></div>
+</div>
+
+<script src="assets/js/brand.js"></script>
+<script src="assets/js/screens.js"></script>
+<script src="i18n.js"></script>
+<script src="site.js"></script>
+</body>
+</html>

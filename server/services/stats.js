@@ -26,12 +26,13 @@ export function addDays(day, n) {
 export const daysBetween = (a, b) => Math.round((new Date(`${b}T00:00:00Z`) - new Date(`${a}T00:00:00Z`)) / 86400_000);
 
 /** Plan vigente (última versión), objetivo activo y funciones de objetivo diario. */
-export async function planContext(q, userId) {
+export async function planContext(q, userId, program = 'sem-fumo') {
   const plan = await q.one(`
     select v.data, p.created_at from public.personalized_plans p
     join public.plan_versions v on v.plan_id = p.id and v.version = p.current_version
-    where p.user_id = $1`, [userId]);
-  const goal = await q.one('select * from public.user_goals where user_id = $1 and superseded_at is null', [userId]);
+    where p.user_id = $1 and p.program_slug = $2`, [userId, program]);
+  const goal = await q.one('select * from public.user_goals where user_id = $1 and program_slug = $2 and superseded_at is null',
+    [userId, program]);
   if (!plan) return null;
   const { baseline, schedule, strategy } = plan.data;
   const pricePerCig = baseline.perDay > 0 ? baseline.weeklySpend / (baseline.perDay * 7) : 0;

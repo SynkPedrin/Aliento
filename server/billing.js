@@ -342,7 +342,7 @@ export function createBilling({ db, stripe, config, log = console }) {
     }
     // Compra desde el catálogo (sin cuestionario): el plan se crea en el onboarding del programa.
     if (!(await q.one('select 1 from public.personalized_plans where user_id = $1 and program_slug = $2', [userId, program])) && assessment) {
-      await buildPersonalPlan(q, userId, assessment, { reason: 'Activación de la suscripción' });
+      await buildPersonalPlan(q, userId, assessment, { reason: 'Activación de la suscripción', program });
     }
     await q.exec('insert into public.notification_preferences (user_id, program_slug) values ($1, $2) on conflict do nothing', [userId, program]);
     await unlockAchievement(q, userId, 'primer-paso');
@@ -566,7 +566,7 @@ export function createBilling({ db, stripe, config, log = console }) {
 }
 
 /** Crea una nueva versión del plan personalizado (historial en plan_versions) y sus metas semanales. */
-export async function buildPersonalPlan(q, userId, assessment, { strategyOverride, reason }) {
+export async function buildPersonalPlan(q, userId, assessment, { strategyOverride, reason, program = 'sem-fumo' }) {
   const answers = await q.rows('select question_id, value from public.questionnaire_answers where session_id = $1', [assessment.session_id]);
   const result = computeResult(Object.fromEntries(answers.map((a) => [a.question_id, a.value])), { strategyOverride });
   const data = {
@@ -578,9 +578,9 @@ export async function buildPersonalPlan(q, userId, assessment, { strategyOverrid
     schedule: result.projection.schedule,
     baseline: { perDay: result.current.perDay, weeklySpend: result.current.weeklySpend },
   };
-  let plan = await q.one('select * from public.personalized_plans where user_id = $1', [userId]);
+  let plan = await q.one('select * from public.personalized_plans where user_id = $1 and program_slug = $2', [userId, program]);
   if (!plan) {
-    plan = await q.one('insert into public.personalized_plans (user_id, assessment_id) values ($1, $2) returning *', [userId, assessment.id]);
+    plan = await q.one('insert into public.personalized_plans (user_id, program_slug, assessment_id) values ($1, $2, $3) returning *', [userId, program, assessment.id]);
   } else {
     plan = await q.one(`update public.personalized_plans set current_version = current_version + 1, assessment_id = $2
       where id = $1 returning *`, [plan.id, assessment.id]);
@@ -589,18 +589,21 @@ export async function buildPersonalPlan(q, userId, assessment, { strategyOverrid
     [plan.id, plan.current_version, JSON.stringify(data), reason]);
 
   // Metas semanales: se sustituyen las pendientes; las completadas se conservan.
-  await q.exec('delete from public.daily_goals where user_id = $1 and done_at is null', [userId]);
+  await q.exec('delete from public.daily_goals where user_id = $1 and program_slug = $2 and done_at is null', [userId, program]);
   for (const g of result.plan.goals) {
-    await q.exec('insert into public.daily_goals (user_id, week, title, detail) values ($1, $2, $3, $4)', [userId, g.week, g.title, g.detail]);
+    await q.exec('insert into public.daily_goals (user_id, program_slug, week, title, detail) values ($1, $2, $3, $4, $5)',
+      [userId, program, g.week, g.title, g.detail]);
   }
 
   // Objetivo principal: nueva versión, la anterior queda en el historial.
-  const current = await q.one('select * from public.user_goals where user_id = $1 and superseded_at is null', [userId]);
+  const current = await q.one('select * from public.user_goals where user_id = $1 and program_slug = $2 and superseded_at is null',
+    [userId, program]);
   if (!current || current.strategy !== data.strategy.id) {
-    await q.exec('update public.user_goals set superseded_at = now() where user_id = $1 and superseded_at is null', [userId]);
-    await q.exec(`insert into public.user_goals (user_id, strategy, start_date, quit_date, max_daily, exercise_per_week, money_goal, money_goal_label)
-      values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [userId, data.strategy.id, current?.start_date ?? new Date().toISOString().slice(0, 10), current?.quit_date ?? null,
+    await q.exec('update public.user_goals set superseded_at = now() where user_id = $1 and program_slug = $2 and superseded_at is null',
+      [userId, program]);
+    await q.exec(`insert into public.user_goals (user_id, program_slug, strategy, start_date, quit_date, max_daily, exercise_per_week, money_goal, money_goal_label)
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [userId, program, data.strategy.id, current?.start_date ?? new Date().toISOString().slice(0, 10), current?.quit_date ?? null,
       current?.max_daily ?? null, current?.exercise_per_week ?? 3, current?.money_goal ?? null, current?.money_goal_label ?? null]);
   }
   return data;

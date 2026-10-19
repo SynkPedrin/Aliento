@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /perfil
+Disallow: /admin
+Disallow: /suscripcion
+Disallow: /configuracion
+
+Sitemap: https://citavel.ai/sitemap.xml

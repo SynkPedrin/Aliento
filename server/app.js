@@ -9,6 +9,7 @@ import { accountRoutes } from './routes/account.js';
 import { adminRoutes } from './routes/admin.js';
 import { appRoutes } from './routes/app.js';
 import { createAssessmentStore, publicRoutes } from './routes/public.js';
+import { storeRoutes } from './routes/store.js';
 import { HttpError } from './routes/util.js';
 
 const PUBLIC_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'public');
@@ -21,12 +22,15 @@ const PAGE_ALIASES = {
 
 const NO_NOTIFIER = { enabled: false, publicKey: '', runDue: async () => ({ disabled: true }), notifyAchievements() {}, test: async () => 'disabled' };
 
-export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, log = console }) {
+export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, storeSync = null, apple = null, googlePlay = null, log = console }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
 
+  // CSP por rota: a landing (SITE-HOME) usa estilos inline e fontes Google (animações,
+  // custom properties dinâmicas); o resto da aplicação mantém o policy estrito.
   app.use((req, res, next) => {
+    const isLanding = req.path === '/' || req.path === '/index.html';
     res.set({
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
@@ -35,8 +39,8 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
       'Content-Security-Policy': [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self'",
-        "font-src 'self'",
+        isLanding ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" : "style-src 'self'",
+        isLanding ? "font-src 'self' https://fonts.gstatic.com" : "font-src 'self'",
         "img-src 'self' data:",
         "media-src 'self' data:",
         "connect-src 'self'",
@@ -127,6 +131,7 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
   const store = createAssessmentStore({ db, config });
   app.use('/api', publicRoutes({ db, billing, config, store, programs }));
   app.use('/api', accountRoutes({ db, auth, billing, config, store, programs, log }));
+  app.use('/api', storeRoutes({ db, billing, config, storeSync, apple, googlePlay, log }));
   app.use('/api/admin', adminRoutes({ db }));
   app.use('/api/app', appRoutes({ db, billing, config, notifier, programs }));
 
@@ -144,6 +149,13 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
   });
 
   // ---------- Páginas ----------
+  app.get('/quiz/:program', (req, res, next) => {
+    const slug = req.params.program;
+    if (['sem-fumo', 'alcohol', 'azucar', 'ansiedad', 'sueno'].includes(slug)) {
+      return res.sendFile(join(PUBLIC_DIR, 'test.html'));
+    }
+    next();
+  });
   app.use((req, res, next) => {
     const alias = PAGE_ALIASES[req.path];
     if (alias) return res.redirect(301, alias + (req.url.slice(req.path.length) || ''));

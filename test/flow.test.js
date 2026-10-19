@@ -80,8 +80,8 @@ function client() {
 }
 
 const ANSWERS = {
-  q_producto: 'cigarrillos', q_cantidad: 20, q_gasto: 35, q_anios: '10-19', q_primer: '30min',
-  q_gatillos: ['cafe', 'estres'], q_dificil: 'cafe', q_intentos: ['solo'], q_preocupacion: 'ansiedad',
+  q_producto: 'cigarrillos', q_cantidad: 20, q_gasto: 35, q_anios: '11a20', q_primer: '30min',
+  q_gatillos: ['cafe', 'estres'], q_dificil: 'cafe', q_intentos: '1', q_preocupacion: 'ansiedad',
   q_motivos: ['salud', 'dinero'], q_objetivo: 'gradual', q_edad: '35-44',
 };
 
@@ -602,6 +602,18 @@ async function buyProgram(c, program, plan = 'mensual') {
   return { session, sub };
 }
 
+/** Usuario que completa el embudo pero compra SOLO el programa indicado. */
+async function programOnlyUser(program) {
+  const c = client();
+  await completeQuiz(c);
+  const u = await register(c);
+  const { body } = await c('/api/checkout', { method: 'POST', body: { program, plan: 'mensual', fromCatalog: true } });
+  const sessionId = [...stripe.sessions.values()].find((s) => s.url === body.url).id;
+  const { session, sub } = stripe.pay(sessionId);
+  assert.equal(await sendEvent('checkout.session.completed', session), 200);
+  return { c, user: u, sub };
+}
+
 test('multiprograma: catálogo, compra de un segundo programa y accesos independientes', async () => {
   // Publica alcohol en la base local para la prueba.
   await db.service.exec(`update public.journey_programs set commercial_status = 'active', published = true where slug = 'alcohol'`);
@@ -649,6 +661,31 @@ test('multiprograma: catálogo, compra de un segundo programa y accesos independ
 
   // Programa no comercial: no se puede comprar.
   assert.equal((await c('/api/checkout', { method: 'POST', body: { program: 'azucar', plan: 'mensual', fromCatalog: true } })).body.code, 'PROGRAM_NOT_AVAILABLE');
+});
+
+test('multiprograma: acceso por programa — con solo Alcohol no hay acceso a las áreas de Sem Fumo', async () => {
+  // Publica alcohol (la publicación se hace aquí solo para poder comprarlo en la prueba).
+  await db.service.exec(`update public.journey_programs set commercial_status = 'active', published = true where slug = 'alcohol'`);
+  await db.service.exec(`update public.journey_chapters set published = true where program_id = (select p.id from public.journey_programs p where slug = 'alcohol')`);
+  await db.service.exec(`update public.journey_lessons set published = true where chapter_id in (select c.id from public.journey_chapters c join public.journey_programs p on p.id = c.program_id where p.slug = 'alcohol')`);
+
+  const { c, user } = await programOnlyUser('alcohol');
+  // El usuario pagó solo Alcohol: la jornada de ese programa sí está disponible.
+  const alcohol = await c('/api/app/journey?program=alcohol');
+  assert.equal(alcohol.status, 200, 'la jornada del programa comprado es accesible');
+  assert.equal(alcohol.body.totals.lessons, 30);
+
+  // …pero las áreas de Sem Fumo exigen acceso a ese programa concreto.
+  assert.equal((await c('/api/app/smoking')).body.code, 'SUBSCRIPTION_REQUIRED', 'los registros de Sem Fumo están bloqueados');
+  assert.equal((await c('/api/app/progress?program=sem-fumo')).body.code, 'SUBSCRIPTION_REQUIRED', 'el progreso de Sem Fumo está bloqueado');
+  assert.equal((await c('/api/app/goals?program=sem-fumo')).body.code, 'SUBSCRIPTION_REQUIRED', 'los objetivos de Sem Fumo están bloqueados');
+  assert.equal((await c('/api/app/dashboard')).body.code, 'SUBSCRIPTION_REQUIRED', 'el panel de Sem Fumo está bloqueado');
+  assert.equal((await c('/api/app/onboarding', { method: 'PUT', body: { complete: true } })).body.code, 'SUBSCRIPTION_REQUIRED');
+
+  // Continuar con Alcohol sigue disponible (el acceso no se pierde al usar otro programa).
+  const again = await c('/api/app/journey?program=alcohol');
+  assert.equal(again.status, 200);
+  void user;
 });
 
 test('multiprograma: cancelar un programa no cancela los demás', async () => {

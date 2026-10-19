@@ -36,7 +36,7 @@ self.addEventListener('fetch', (event) => {
         if (res.ok && res.type === 'basic') (await caches.open(PAGES)).put(url.pathname, res.clone());
         return res;
       } catch {
-        return (await caches.match(url.pathname, { cacheName: PAGES })) || caches.match('/offline.html');
+        return (await caches.match(url.pathname, { cacheName: PAGES })) || (await caches.match('/offline.html')); // offline.html vive en STATIC (precarga); buscar en todas las cachés
       }
     })());
     return;

@@ -56,6 +56,16 @@ export function loadConfig(env = process.env) {
       subject: env.VAPID_SUBJECT || 'mailto:soporte@aliento.app',
     },
     cronSecret: env.CRON_SECRET || '',
+    // Facturación nativa: App Store (StoreKit 2) y Google Play Billing.
+    // Sin APPLE_BUNDLE_ID/entorno configurados, los endpoints responden 503: no hay simulaciones.
+    apple: {
+      bundleId: env.APPLE_BUNDLE_ID || '',
+      environment: (env.APPLE_APP_STORE_ENV || 'production').toLowerCase() === 'sandbox' ? 'sandbox' : 'production',
+    },
+    googlePlay: {
+      packageName: env.GOOGLE_PLAY_PACKAGE_NAME || '',
+      serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
+    },
     // Identidad legal del responsable (se muestra en Términos y Privacidad).
     legal: {
       name: env.LEGAL_NAME || '',

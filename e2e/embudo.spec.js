@@ -1,7 +1,9 @@
 // TEST 1–9, 24, 26: embudo completo con Stripe Checkout REAL en modo test.
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { completeQuiz, PASSWORD } from './helpers.js';
+import { completeQuiz, PASSWORD, resetRateLimits } from './helpers.js';
+
+test.beforeAll(() => resetRateLimits());
 
 async function payInStripe(page, card) {
   await page.waitForURL(/checkout\.stripe\.com/, { timeout: 60_000 });
@@ -14,6 +16,7 @@ async function payInStripe(page, card) {
 }
 
 test('embudo: cuestionario → resultados → plan → cuenta → pago test → bienvenida → instalación → configuración → panel', async ({ page }) => {
+  test.setTimeout(900_000);
   await completeQuiz(page);
   // TEST 2: resultado personalizado con datos reales del cuestionario.
   await expect(page.getByRole('heading', { name: 'Este es tu punto de partida' })).toBeVisible();
@@ -66,6 +69,7 @@ test('embudo: cuestionario → resultados → plan → cuenta → pago test → 
 });
 
 test('pago rechazado: la tarjeta se rechaza en Stripe y no se activa nada (TEST 24)', async ({ page }) => {
+  test.setTimeout(900_000);
   await completeQuiz(page);
   await page.locator('#planes .plan-row[data-id="semanal"]').click();
   await page.getByRole('button', { name: 'Comenzar mi transformación' }).click();

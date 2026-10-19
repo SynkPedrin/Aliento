@@ -1,5 +1,6 @@
 // Catálogo de programas y control de acceso por programa (ProgramEntitlementService).
 import { HttpError } from './routes/util.js';
+import { createProgramEntitlementService } from './services/entitlements.js';
 // El catálogo vive en public.journey_programs; el acceso, en subscriptions + access_grants.
 
 const ACCESS_STATUSES = ['active', 'trialing', 'past_due'];
@@ -90,5 +91,7 @@ export function createPrograms({ db, billing }) {
     return Boolean(await billing.activeSubscription(userId, slug));
   }
 
-  return { publicCatalog, catalogFor, get, assertPurchasable, setLastProgram, hasAccess };
+  const entitlementService = createProgramEntitlementService({ db, billing });
+
+  return { publicCatalog, catalogFor, get, assertPurchasable, setLastProgram, hasAccess, getEntitlement: entitlementService.getEntitlement };
 }

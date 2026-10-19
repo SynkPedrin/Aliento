@@ -4,122 +4,306 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1E3FFF">
-<link rel="icon" type="image/png" href="/assets/icons/favicon-32.png">
-<link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Alento">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Alento · Apps para dejar los malos hábitos, día a día</title>
+<meta name="description" content="Alento crea aplicaciones que te ayudan a dejar atrás los hábitos que pesan. Un plan a tu ritmo, respiraciones guiadas y acompañamiento, sin juicios.">
+<meta property="og:title" content="Alento · Apps para dejar los malos hábitos, día a día">
+<meta property="og:description" content="Alento crea aplicaciones que te ayudan a dejar atrás los hábitos que pesan. Un plan a tu ritmo, respiraciones guiadas y acompañamiento, sin juicios.">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="/assets/brand/alento-icone-app.svg">
+<link rel="alternate icon" href="/assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/assets/brand/ios-180.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="preload" as="image" href="/assets/fondo-1280.webp" type="image/webp" fetchpriority="high">
-<link rel="preload" href="/fonts/varela.woff" as="font" type="font/woff" crossorigin>
-<link rel="preload" href="/fonts/Figtree-latin-300.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/css/brand-fonts.css">
-<link rel="stylesheet" href="/css/app.css">
-<title>Alento · Deja de fumar a tu ritmo</title>
-<meta name="description" content="Haz el test gratuito, descubre qué te mantiene fumando y recibe un plan personalizado para dejar el tabaco a tu ritmo.">
+<meta property="og:site_name" content="Alento">
+<link rel="canonical" href="https://citavel.ai/">
+<meta property="og:url" content="https://citavel.ai/">
+<meta property="og:image" content="https://citavel.ai/assets/brand/og-alento.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Alento · Respira de nuevo.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Alento · Apps para dejar los malos hábitos, día a día">
+<meta name="twitter:description" content="Alento crea aplicaciones que te ayudan a dejar atrás los hábitos que pesan. Un plan a tu ritmo, respiraciones guiadas y acompañamiento, sin juicios.">
+<meta name="twitter:image" content="https://citavel.ai/assets/brand/og-alento.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Alento",
+  "url": "https://citavel.ai/",
+  "logo": "https://citavel.ai/assets/brand/android-512.png",
+  "slogan": "Apps para una vida más ligera"
+}
+</script>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Alento">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Base da marca (tokens, símbolo, mockup de celular) vinda da apresentação -->
+<link rel="stylesheet" href="/assets/css/deck.css">
+<link rel="stylesheet" href="/site.css">
+<noscript><style>[data-r],.lines>span>span{opacity:1!important;transform:none!important;clip-path:none!important}</style></noscript>
 </head>
 <body>
-<div class="theme-deep">
-  <header class="site-header site-header--clear">
-    <div class="container site-header__inner">
-      <a class="brand" href="/" aria-label="Alento, inicio" data-brand></a>
-      <nav aria-label="Principal" data-nav>
-        <a href="/acceso" class="hide-sm">Entrar</a>
-        <a href="/test" class="btn btn--sm">Hacer el test</a>
-      </nav>
+<!-- Todos os textos vêm de i18n.js pela chave em data-i18n. Idioma padrão: espanhol. -->
+
+<!-- 1 · Navegação -->
+<header class="topbar" id="topo">
+  <div class="wrap topbar__in">
+    <a href="#topo" class="topbar__logo" aria-label="Alento">
+      <span class="logo-light" data-logo="branco"></span><span class="logo-dark" data-logo="cor"></span>
+    </a>
+    <nav class="topbar__links" aria-label="Alento">
+      <a href="#como-funciona" data-i18n="nav.how"></a><a href="#para-quem" data-i18n="nav.who"></a><a href="#historias" data-i18n="nav.stories"></a><a href="#perguntas" data-i18n="nav.faq"></a>
+    </nav>
+    <div class="lang">
+      <button type="button" class="lang__btn" aria-haspopup="listbox" aria-expanded="false" data-i18n-aria="lang.label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>
+        <span class="lang__code">ES</span>
+        <svg class="lang__chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+      </button>
+      <ul class="lang__menu" role="listbox" hidden></ul>
     </div>
-  </header>
-  <section class="hero">
-    <div class="container">
-      <div class="hero__content">
-        <div class="hero__mark" data-mark></div>
-        <p class="hero__tag">Un espacio para respirar</p>
-        <h1 class="title-xl">Deja de fumar a tu ritmo, con un plan hecho para ti</h1>
-        <p class="lead">Responde un cuestionario de unos 3 minutos y descubre qué te mantiene fumando: tu consumo real, tus gatillos y lo que podrías conseguir.</p>
-        <div class="hero__actions">
-          <a href="/test" class="btn btn--lg">Hacer el test gratuito</a>
-          <span class="hero__meta">Gratis · Sin registro para ver tus resultados</span>
-        </div>
-      </div>
-    </div>
-  </section>
-</div>
+    <a class="btn btn--sm btn--mint topbar__cta" href="#comecar" data-quiz="" data-i18n="cta.start"></a>
+  </div>
+</header>
 
 <main>
-  <section class="section">
-    <div class="container">
-      <div class="section__head">
-        <p class="eyebrow">Cómo funciona</p>
-        <h2 class="title-lg">Tres pasos para empezar con claridad</h2>
-      </div>
-      <div class="grid-3">
-        <article class="card step-card">
-          <p class="step-card__num">01</p>
-          <h3>Responde el test</h3>
-          <p>Preguntas sencillas sobre tu consumo, tus rutinas y lo que sientes. Tus respuestas se guardan a medida que avanzas.</p>
-        </article>
-        <article class="card step-card">
-          <p class="step-card__num">02</p>
-          <h3>Mira tus resultados</h3>
-          <p>Gráficos con tu punto de partida, tu índice de dependencia, tus gatillos principales y una estimación de lo que podrías ahorrar.</p>
-        </article>
-        <article class="card step-card">
-          <p class="step-card__num">03</p>
-          <h3>Sigue tu plan</h3>
-          <p>Con la suscripción, accedes a tu plan personalizado, objetivos diarios, registro, SOS para antojos y seguimiento de tu progreso.</p>
-        </article>
-      </div>
-    </div>
-  </section>
 
-  <section class="section section--surface">
-    <div class="container split">
-      <div class="stack">
-        <p class="eyebrow">Tu plan</p>
-        <h2 class="title-lg">Pequeños pasos, todos los días</h2>
-        <p class="lead">Fumar no es solo nicotina: también son rutinas y emociones. Alento trabaja los tres frentes con una estrategia que eliges tú.</p>
+<!-- 2 · Hero -->
+<section class="hero t-blue reveal">
+  <div class="ring breathe" style="width:1100px;height:1100px;right:-380px;top:-420px"></div>
+  <div class="ring" style="width:720px;height:720px;left:-360px;bottom:-420px"></div>
+  <div class="wrap hero__in">
+    <div class="hero__text">
+      <div class="eyebrow" data-r data-i18n="hero.eyebrow"></div>
+      <h1 class="d hero__title lines" data-r="fade"><span><span style="--k:0" data-i18n="hero.l1"></span></span><span><span style="--k:1" data-i18n="hero.l2"></span></span></h1>
+      <p class="hero__sub" data-r data-d=".5" data-i18n="hero.sub"></p>
+      <div class="hero__cta" data-r data-d=".65">
+        <a class="btn btn--mint" href="#comecar" data-quiz data-i18n="cta.start"></a>
+        <a class="btn btn--ghost-light" href="#como-funciona" data-i18n="cta.how"></a>
       </div>
-      <ul class="feature-list" data-features></ul>
+      <p class="hero__trust" data-r data-d=".8"><span data-i18n="hero.trust1"></span> · <span data-i18n="hero.trust2"></span></p>
     </div>
-  </section>
+    <div class="hero__media" aria-hidden="true">
+      <div class="hero__sun" data-r="soft" data-d=".9"><span class="breathe"></span></div>
+      <div class="hero__window" data-r="mask" data-d=".4"><img src="assets/images/IMG_001_MANIFESTO.jpg" alt="" style="object-position:48% 30%"></div>
+    </div>
+  </div>
+</section>
 
-  <section class="section faq">
-    <div class="container narrow">
-      <div class="section__head">
-        <p class="eyebrow">Preguntas frecuentes</p>
-        <h2 class="title-lg">Antes de empezar</h2>
-      </div>
-      <details>
-        <summary>¿El test es gratuito?</summary>
-        <p>Sí. El cuestionario y los gráficos de tus resultados son gratuitos. Las herramientas completas de seguimiento están disponibles con la suscripción.</p>
-      </details>
-      <details>
-        <summary>¿Tengo que dejarlo de golpe?</summary>
-        <p>No. Puedes elegir una fecha de corte, reducir poco a poco hasta dejarlo o empezar reduciendo a la mitad. Tu plan se adapta a la estrategia que elijas.</p>
-      </details>
-      <details>
-        <summary>¿Puedo cancelar la suscripción?</summary>
-        <p>Sí, cuando quieras y desde tu cuenta. La cancelación evita la siguiente renovación y conservas el acceso hasta el final del período pagado.</p>
-      </details>
-      <details>
-        <summary>¿Alento sustituye a un profesional sanitario?</summary>
-        <p>No. Alento es un programa de apoyo al cambio de hábitos. Si tienes una dependencia alta o alguna condición de salud, habla con tu médico sobre las opciones de tratamiento.</p>
-      </details>
+<!-- 3 · Escolha por onde começar -->
+<section class="sec reveal" id="comecar">
+  <div class="wrap">
+    <div class="sec__head">
+      <div class="eyebrow" data-r data-i18n="goals.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="goals.title"></h2>
     </div>
-  </section>
+    <div class="goals">
+      <a class="goal" href="#" data-quiz="cigarro" data-r data-d=".2"><div class="goal__art"><div data-sym-accent="mint"></div></div><div class="goal__name" data-i18n="goal.smoke"></div><p data-i18n="goal.smoke.t"></p><span class="goal__go"><span data-i18n="goal.start"></span> <i>→</i></span></a>
+      <a class="goal" href="#" data-quiz="alcool" data-r data-d=".28"><div class="goal__art"><div data-sym-accent="lav"></div></div><div class="goal__name" data-i18n="goal.alcohol"></div><p data-i18n="goal.alcohol.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+      <a class="goal" href="#" data-quiz="acucar" data-r data-d=".36"><div class="goal__art"><div data-sym-accent="coral"></div></div><div class="goal__name" data-i18n="goal.sugar"></div><p data-i18n="goal.sugar.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+      <a class="goal" href="#" data-quiz="ansiedade" data-r data-d=".44"><div class="goal__art"><div data-sym-accent="amber"></div></div><div class="goal__name" data-i18n="goal.anxiety"></div><p data-i18n="goal.anxiety.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+      <a class="goal goal--night" href="#" data-quiz="sono" data-r data-d=".52"><div class="goal__art"><div data-sym-night></div></div><div class="goal__name" data-i18n="goal.sleep"></div><p data-i18n="goal.sleep.t"></p><span class="goal__go"><span data-i18n="goal.notify"></span> <i>→</i></span></a>
+    </div>
+    <a class="link-more" href="/programas" data-r><span data-i18n="goals.more"></span> <i>→</i></a>
+  </div>
+</section>
 
-  <section class="theme-deep cta-band">
-    <div class="container narrow">
-      <p class="eyebrow">Respira. Todo se organiza.</p>
-      <h2 class="title-lg">Empieza por conocer tu punto de partida</h2>
-      <p class="lead">Tus resultados estarán listos en unos minutos.</p>
-      <p><a href="/test" class="btn btn--lg">Hacer el test gratuito</a></p>
+<!-- 4 · Números -->
+<section class="sec sec--tight reveal">
+  <div class="wrap">
+    <h2 class="d h3 center" data-r data-i18n="stats.title"></h2>
+    <div class="stats">
+      <div class="stat-big" data-r data-d=".2"><b data-i18n="stats.n1"></b><span data-i18n="stats.l1"></span></div>
+      <div class="stat-big" data-r data-d=".3"><b data-i18n="stats.n2"></b><span data-i18n="stats.l2"></span></div>
+      <div class="stat-big" data-r data-d=".4"><b data-i18n="stats.n3"></b><span data-i18n="stats.l3"></span></div>
     </div>
-  </section>
+  </div>
+</section>
+
+<!-- 5 · Na imprensa -->
+<section class="press reveal">
+  <div class="wrap press__in">
+    <span class="micro muted" data-i18n="press.label"></span>
+    <div class="press__logos" data-r>
+      <span class="press__fact" data-i18n="press.f1"></span>
+      <span class="press__fact" data-i18n="press.f2"></span>
+      <span class="press__fact" data-i18n="press.f3"></span>
+      <span class="press__fact" data-i18n="press.f4"></span>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · Manifesto -->
+<section class="manifesto reveal">
+  <img class="manifesto__img kb-img" src="assets/images/IMG_004_LIFESTYLE_MORNING.jpg" alt="" data-i18n-alt="alt.man" style="object-position:62% 50%">
+  <div class="wrap manifesto__in">
+    <div class="manifesto__text">
+      <div class="eyebrow" data-r data-i18n="man.eyebrow"></div>
+      <h2 class="d h2 lines" data-r="fade"><span><span style="--k:0" data-i18n="man.l1"></span></span><span><span style="--k:1" data-i18n="man.l2"></span></span><span><span style="--k:2" class="c-blue" data-i18n="man.l3"></span></span></h2>
+      <p class="lead-s" data-r data-d=".6" data-i18n="man.text"></p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · Como funciona -->
+<section class="sec t-air reveal" id="como-funciona">
+  <div class="wrap">
+    <div class="sec__head center">
+      <div class="eyebrow" data-r data-i18n="how.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="how.title"></h2>
+      <p class="sec__sub" data-r data-i18n="how.sub"></p>
+    </div>
+    <div class="method">
+      <svg class="method__arc" viewBox="0 -12 1000 132" aria-hidden="true">
+        <path d="M20 100 C 296 -26, 704 -26, 980 100" fill="none" stroke="#D5DCF5" stroke-width="10" stroke-linecap="round"/>
+        <path class="method__arc-fill" d="M20 100 C 296 -26, 704 -26, 980 100" pathLength="1" fill="none" stroke="#1E3FFF" stroke-width="10" stroke-linecap="round"/>
+      </svg>
+      <span class="method__sun" aria-hidden="true"></span>
+      <ol class="steps">
+        <li data-r data-d=".2"><span class="steps__n">1</span><h3 data-i18n="s1.t"></h3><p data-i18n="s1.p"></p></li>
+        <li data-r data-d=".3"><span class="steps__n">2</span><h3 data-i18n="s2.t"></h3><p data-i18n="s2.p"></p></li>
+        <li data-r data-d=".4"><span class="steps__n">3</span><h3 data-i18n="s3.t"></h3><p data-i18n="s3.p"></p></li>
+        <li data-r data-d=".5"><span class="steps__n">4</span><h3 data-i18n="s4.t"></h3><p data-i18n="s4.p"></p></li>
+        <li data-r data-d=".6"><span class="steps__n">5</span><h3 data-i18n="s5.t"></h3><p data-i18n="s5.p"></p></li>
+      </ol>
+    </div>
+    <p class="fineprint center" data-r data-i18n="how.note"></p>
+  </div>
+</section>
+
+<!-- 8 · No seu bolso -->
+<section class="sec t-blue pocket reveal">
+  <div class="ring breathe" style="width:900px;height:900px;left:50%;top:50%;margin:-450px 0 0 -450px"></div>
+  <div class="wrap">
+    <div class="sec__head center">
+      <div class="eyebrow" data-r data-i18n="pocket.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="pocket.title"></h2>
+    </div>
+    <div class="pocket__grid">
+      <ul class="features">
+        <li data-r data-d=".2"><span class="feat-ic" data-ui-icon="plan"></span><div><h3 data-i18n="f1.t"></h3><p data-i18n="f1.p"></p></div></li>
+        <li data-r data-d=".3"><span class="feat-ic" data-ui-icon="breath"></span><div><h3 data-i18n="f2.t"></h3><p data-i18n="f2.p"></p></div></li>
+        <li data-r data-d=".4"><span class="feat-ic" data-ui-icon="home"></span><div><h3 data-i18n="f3.t"></h3><p data-i18n="f3.p"></p></div></li>
+      </ul>
+      <div class="pocket__phone" data-r="soft" data-d=".3"><div class="phone" data-screen="home"></div></div>
+      <ul class="features">
+        <li data-r data-d=".5"><span class="feat-ic" data-ui-icon="you"></span><div><h3 data-i18n="f4.t"></h3><p data-i18n="f4.p"></p></div></li>
+        <li data-r data-d=".6"><span class="feat-ic" data-ui-icon="breath"></span><div><h3 data-i18n="f5.t"></h3><p data-i18n="f5.p"></p></div></li>
+        <li data-r data-d=".7"><span class="feat-ic" data-ui-icon="plan"></span><div><h3 data-i18n="f6.t"></h3><p data-i18n="f6.p"></p></div></li>
+      </ul>
+    </div>
+    <div class="stores" data-r>
+      <a class="badge" href="/test">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#3EE0B5" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.1 14.5l-4-4 1.4-1.4 2.6 2.6 5.8-5.8 1.4 1.4-7.2 7.2z"/></svg>
+        <span><small data-i18n="store.web.s"></small><b data-i18n="store.web.b"></b></span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · Para quem é -->
+<section class="sec reveal" id="para-quem">
+  <div class="wrap">
+    <div class="sec__head">
+      <div class="eyebrow" data-r data-i18n="who.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="who.title"></h2>
+    </div>
+    <div class="who">
+      <figure class="who__card" data-r data-d=".2"><img src="assets/images/IMG_012_SMALL_WINS.jpg" alt="" data-i18n-alt="alt.who1" style="object-position:55% 40%"><figcaption data-i18n="who.q1"></figcaption></figure>
+      <figure class="who__card" data-r data-d=".32"><img src="assets/images/IMG_011_FREEDOM.jpg" alt="" data-i18n-alt="alt.who2" style="object-position:50% 30%"><figcaption data-i18n="who.q2"></figcaption></figure>
+      <figure class="who__card" data-r data-d=".44"><img src="assets/images/IMG_008_SOCIAL_CAMPAIGN.jpg" alt="" data-i18n-alt="alt.who3" style="object-position:52% 30%"><figcaption data-i18n="who.q3"></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Histórias -->
+<section class="sec t-air reveal" id="historias">
+  <div class="wrap">
+    <div class="sec__head sec__head--row">
+      <div><div class="eyebrow" data-r data-i18n="stories.eyebrow"></div><h2 class="d h2" data-r data-i18n="stories.title"></h2></div>
+      <div class="slider-nav" data-r><button type="button" data-slide="-1" data-i18n-aria="aria.prev">←</button><button type="button" data-slide="1" data-i18n-aria="aria.next">→</button></div>
+    </div>
+  </div>
+  <div class="stories" tabindex="0">
+    <article class="story-card"><span class="chip"><i style="background:var(--mint)"></i><span data-i18n="t1.topic"></span></span><blockquote data-i18n="t1.q"></blockquote><footer><div><b data-i18n="t1.tag"></b><span data-i18n="t1.when"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--lav)"></i><span data-i18n="t2.topic"></span></span><blockquote data-i18n="t2.q"></blockquote><footer><div><b data-i18n="t2.tag"></b><span data-i18n="t2.when"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--blue)"></i><span data-i18n="t3.topic"></span></span><blockquote data-i18n="t3.q"></blockquote><footer><div><b data-i18n="t3.tag"></b><span data-i18n="t3.when"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--coral)"></i><span data-i18n="t4.topic"></span></span><blockquote data-i18n="t4.q"></blockquote><footer><div><b data-i18n="t4.tag"></b><span data-i18n="t4.when"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--amber)"></i><span data-i18n="t5.topic"></span></span><blockquote data-i18n="t5.q"></blockquote><footer><div><b data-i18n="t5.tag"></b><span data-i18n="t5.when"></span></div></footer></article>
+    <article class="story-card"><span class="chip"><i style="background:var(--coral)"></i><span data-i18n="t6.topic"></span></span><blockquote data-i18n="t6.q"></blockquote><footer><div><b data-i18n="t6.tag"></b><span data-i18n="t6.when"></span></div></footer></article>
+  </div>
+  <div class="wrap"><p class="fineprint" data-i18n="stories.note"></p></div>
+</section>
+
+<!-- 11 · Perguntas frequentes -->
+<section class="sec reveal" id="perguntas">
+  <div class="wrap faq">
+    <div class="faq__head">
+      <div class="eyebrow" data-r data-i18n="faq.eyebrow"></div>
+      <h2 class="d h2" data-r data-i18n="faq.title"></h2>
+      <p class="sec__sub" data-r data-i18n="faq.sub"></p>
+    </div>
+    <div class="faq__list" data-r data-d=".2">
+      <details open><summary data-i18n="q1"></summary><p data-i18n="a1"></p></details>
+      <details><summary data-i18n="q2"></summary><p data-i18n="a2"></p></details>
+      <details><summary data-i18n="q3"></summary><p data-i18n="a3"></p></details>
+      <details><summary data-i18n="q4"></summary><p data-i18n="a4"></p></details>
+      <details><summary data-i18n="q5"></summary><p data-i18n="a5"></p></details>
+      <details><summary data-i18n="q6"></summary><p data-i18n="a6"></p></details>
+      <details><summary data-i18n="q7"></summary><p data-i18n="a7"></p></details>
+      <details><summary data-i18n="q8"></summary><p data-i18n="a8"></p></details>
+      <details><summary data-i18n="q9"></summary><p data-i18n="a9"></p></details>
+      <details><summary data-i18n="q10"></summary><p data-i18n="a10"></p></details>
+      <details><summary data-i18n="q11"></summary><p data-i18n="a11"></p></details>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · Chamada final -->
+<section class="final t-blue reveal">
+  <div class="ring breathe" style="width:1300px;height:1300px;left:50%;top:50%;margin:-650px 0 0 -650px"></div>
+  <div class="ring" style="width:820px;height:820px;left:50%;top:50%;margin:-410px 0 0 -410px;opacity:.6"></div>
+  <div class="wrap final__in">
+    <div class="final__logo draw living" data-logo="branco"></div>
+    <h2 class="d h2" data-r data-d="1.6" data-i18n="final.title"></h2>
+    <p class="hero__sub" data-r data-d="1.8" data-i18n="final.sub"></p>
+    <div data-r data-d="2"><a class="btn btn--mint btn--lg" href="#comecar" data-quiz data-i18n="cta.start"></a></div>
+  </div>
+</section>
+
 </main>
 
-<div data-footer></div>
-<script type="module" src="/js/pages/landing.js"></script>
+<!-- 13 · Rodapé -->
+<footer class="foot t-night">
+  <div class="wrap">
+    <div class="foot__top">
+      <div class="foot__brand"><div data-logo="branco" class="foot__logo"></div><p class="v" data-i18n="foot.tag"></p></div>
+      <nav class="foot__cols" aria-label="Alento">
+        <div><h4 data-i18n="foot.c1"></h4><a href="#como-funciona" data-i18n="nav.how"></a><a href="#historias" data-i18n="nav.stories"></a></div>
+        <div><h4 data-i18n="foot.c2"></h4><a href="#perguntas" data-i18n="faq.title"></a><a href="/dashboard" data-i18n="foot.member"></a></div>
+        <div><h4 data-i18n="foot.c3"></h4><a href="/terminos" data-i18n="foot.terms"></a><a href="/privacidad" data-i18n="foot.privacy"></a><a href="/privacidad" data-i18n="foot.cookies"></a></div>
+      </nav>
+    </div>
+    <div class="foot__bottom">
+      <p data-i18n="foot.disc"></p>
+      <p data-i18n="foot.copy"></p>
+    </div>
+  </div>
+</footer>
+
+<!-- Cookies -->
+<div class="cookies" role="dialog" hidden>
+  <p data-i18n="cookies.text"></p>
+  <div><button type="button" class="btn btn--sm btn--ghost" data-cookies="essenciais" data-i18n="cookies.min"></button><button type="button" class="btn btn--sm" data-cookies="todos" data-i18n="cookies.all"></button></div>
+</div>
+
+<script src="assets/js/brand.js"></script>
+<script src="assets/js/screens.js"></script>
+<script src="i18n.js"></script>
+<script src="site.js"></script>
 </body>
 </html>
