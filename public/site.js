@@ -23,9 +23,10 @@
     el.innerHTML = `<svg class="alento-symbol" viewBox="14 24 92 84">${A.SYM(C.mist, C.amber, C.waveNight)}</svg>`;
   });
   document.querySelectorAll('[data-ui-icon]').forEach(el => { el.innerHTML = A.ICONS[el.dataset.uiIcon]; });
+  // Cada hábito lleva a su quiz (/quiz/<slug>); los CTA genéricos (#comecar) bajan al selector de hábitos.
   document.querySelectorAll('[data-quiz]').forEach(a => {
-    const href = a.getAttribute('href');
-    if (href === '#' || href === '#comecar') a.setAttribute('href', QUIZ_URL + (a.dataset.quiz ? '?program=' + QUIZ_PROGRAM[a.dataset.quiz] : ''));
+    const slug = QUIZ_PROGRAM[a.dataset.quiz];
+    if (slug) a.setAttribute('href', QUIZ_ROUTE + '/' + slug);
   });
 
   /* ---------- Idiomas ---------- */
