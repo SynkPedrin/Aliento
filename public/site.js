@@ -130,6 +130,7 @@
   box.addEventListener('click', e => {
     const b = e.target.closest('[data-cookies]'); if (!b) return;
     try { localStorage.setItem('alento-cookies', b.dataset.cookies); } catch (err) {}
+    window.dispatchEvent(new Event('alento-consent')); // lo escucha js/track.js
     box.hidden = true;
   });
 })();

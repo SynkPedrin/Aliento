@@ -40,6 +40,11 @@ try {
     const command = `select net.http_get(url := ${literal(`${appUrl}/api/cron/notifications`)}, headers := jsonb_build_object('Authorization', ${literal(`Bearer ${env.CRON_SECRET}`)}), timeout_milliseconds := 25000)`;
     await db.service.exec(`select cron.schedule('aliento-notificaciones', '*/10 * * * *', $1)`, [command]);
     console.log('   Programado cada 10 minutos.');
+    // Panel de growth: un único cron (cada 10 min) gobierna bandeja de eventos, anuncios, monitor, informe diario y semanal.
+    await db.service.exec(`select cron.unschedule(jobid) from cron.job where jobname = 'alento-growth'`);
+    const growthCmd = `select net.http_get(url := ${literal(`${appUrl}/api/cron/growth?job=tick`)}, headers := jsonb_build_object('Authorization', ${literal(`Bearer ${env.CRON_SECRET}`)}), timeout_milliseconds := 25000)`;
+    await db.service.exec(`select cron.schedule('alento-growth', '*/10 * * * *', $1)`, [growthCmd]);
+    console.log('   Growth: programado cada 10 minutos.');
   } finally {
     await db.end();
   }

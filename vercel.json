@@ -58,7 +58,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' https://connect.facebook.net https://analytics.tiktok.com; style-src 'self'; font-src 'self'; img-src 'self' data: https://www.facebook.com https://analytics.tiktok.com; media-src 'self' data:; connect-src 'self' https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
         }
       ]
     },
@@ -67,7 +67,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' https://connect.facebook.net https://analytics.tiktok.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.facebook.com https://analytics.tiktok.com; media-src 'self' data:; connect-src 'self' https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
         }
       ]
     },
@@ -76,7 +76,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; media-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' https://connect.facebook.net https://analytics.tiktok.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://www.facebook.com https://analytics.tiktok.com; media-src 'self' data:; connect-src 'self' https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com; worker-src 'self'; manifest-src 'self'; form-action 'self' https://checkout.stripe.com; frame-ancestors 'none'"
         }
       ]
     },
@@ -123,12 +123,25 @@
           "value": "application/manifest+json"
         }
       ]
+    },
+    {
+      "source": "/growth",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: https:; media-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'"
+        }
+      ]
     }
   ],
   "crons": [
     {
       "path": "/api/cron/notifications",
       "schedule": "17 13 * * *"
+    },
+    {
+      "path": "/api/cron/growth?job=tick",
+      "schedule": "43 6 * * *"
     }
   ]
 }

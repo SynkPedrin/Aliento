@@ -18,6 +18,7 @@
     "db:migrate:local": "supabase migration up --local",
     "billing:reconcile": "node --env-file-if-exists=.env scripts/reconcile.js",
     "admin:grant": "node --env-file-if-exists=.env scripts/admin-grant.js",
+    "growth:staff": "node --env-file-if-exists=.env scripts/growth-staff.js",
     "prod:finish": "node scripts/finish-production.js",
     "access:grant": "node --env-file-if-exists=.env scripts/create-comp-account.js",
     "e2e": "playwright test"

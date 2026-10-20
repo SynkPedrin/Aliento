@@ -10,6 +10,8 @@ import { adminRoutes } from './routes/admin.js';
 import { appRoutes } from './routes/app.js';
 import { createAssessmentStore, publicRoutes } from './routes/public.js';
 import { storeRoutes } from './routes/store.js';
+import { trackRoutes } from './routes/track.js';
+import { growthRoutes, growthCron } from './routes/growth.js';
 import { HttpError } from './routes/util.js';
 
 const PUBLIC_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'public');
@@ -20,9 +22,14 @@ const PAGE_ALIASES = {
   '/cuenta': '/perfil',
 };
 
+// Pixels de Meta y TikTok: el navegador solo los carga si la persona aceptó cookies de marketing.
+const PIXEL_SCRIPT = ' https://connect.facebook.net https://analytics.tiktok.com';
+const PIXEL_IMG = ' https://www.facebook.com https://analytics.tiktok.com';
+const PIXEL_CONN = ' https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com';
+
 const NO_NOTIFIER = { enabled: false, publicKey: '', runDue: async () => ({ disabled: true }), notifyAchievements() {}, test: async () => 'disabled' };
 
-export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, storeSync = null, apple = null, googlePlay = null, log = console }) {
+export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, storeSync = null, apple = null, googlePlay = null, growth = null, log = console }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -38,12 +45,12 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
       'Content-Security-Policy': [
         "default-src 'self'",
-        "script-src 'self'",
+        `script-src 'self'${PIXEL_SCRIPT}`,
         isLanding ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" : "style-src 'self'",
         isLanding ? "font-src 'self' https://fonts.gstatic.com" : "font-src 'self'",
-        "img-src 'self' data:",
+        `img-src 'self' data:${PIXEL_IMG}${req.path === '/growth' ? ' https:' : ''}`, // /growth: miniaturas de anuncios (CDN de Meta/TikTok)
         "media-src 'self' data:",
-        "connect-src 'self'",
+        `connect-src 'self'${PIXEL_CONN}`,
         "worker-src 'self'",
         "manifest-src 'self'",
         "form-action 'self' https://checkout.stripe.com",
@@ -66,6 +73,7 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
     }
     try {
       await billing.handleEvent(event);
+      if (growth) await growth.hooks.onStripeEvent(event); // rastreo/atribución: nunca bloquea el cobro
       res.json({ received: true });
     } catch (err) {
       log.error(`[webhook] Error procesando ${event.type} (${event.id}):`, err.message);
@@ -92,7 +100,7 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
     }
   });
 
-  app.use(express.json({ limit: '200kb' }));
+  app.use(express.json({ limit: '200kb', verify: (req, res, buf) => { req.rawBody = buf; } })); // rawBody: firma de webhooks de terceros
 
   // ---------- Sesión: token de acceso; si caducó, se renueva con el de refresco ----------
   app.use(async (req, res, next) => {
@@ -130,7 +138,14 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
 
   const store = createAssessmentStore({ db, config });
   app.use('/api', publicRoutes({ db, billing, config, store, programs }));
-  app.use('/api', accountRoutes({ db, auth, billing, config, store, programs, log }));
+  app.use('/api', accountRoutes({ db, auth, billing, config, store, programs, growth, log }));
+  if (growth) {
+    app.use('/api', trackRoutes({ db, config, growth, store, log }));
+    app.use('/api/growth', growthRoutes({ db, config, growth, auth, log }));
+    const cron = growthCron({ config, growth, log });
+    app.use('/api/cron', cron);
+    app.use('/api/webhooks', cron); // /api/webhooks/customerio (firma HMAC propia)
+  }
   app.use('/api', storeRoutes({ db, billing, config, storeSync, apple, googlePlay, log }));
   app.use('/api/admin', adminRoutes({ db }));
   app.use('/api/app', appRoutes({ db, billing, config, notifier, programs }));

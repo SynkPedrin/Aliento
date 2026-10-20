@@ -1,7 +1,9 @@
 // Paywall: tres planes con precios reales de Stripe, condiciones visibles y
 // botón principal "Comenzar mi transformación".
 import { api, h, icon, moneyCents, setBusy, toast } from './ui.js';
-import { isNativeApp, nativePurchase } from './native-iap.js';
+import { isNativeApp, nativePurchase, loadNativePlans } from './native-iap.js';
+import { pixelFor, track } from './track.js';
+import { needsLead, renderLeadGate } from './lead-gate.js';
 
 export const FEATURES = [
   'Jornada de 10 capítulos y 30 lecciones con ejercicios prácticos',
@@ -58,6 +60,7 @@ export function rememberedPlan() { try { return sessionStorage.getItem(PLAN_KEY)
 /** Lanza Stripe Checkout para el plan; si no hay sesión, pasa por la identificación. */
 export async function goToCheckout(plan, btn, { exitOffer = false, program = 'sem-fumo', fromCatalog = false } = {}) {
   rememberPlan(plan);
+  track('plan_selected', { plan, program });
   if (btn) setBusy(btn, true, 'Preparando el pago seguro…');
   try {
     if (isNativeApp()) { // app iOS: compra con StoreKit, nunca Stripe
@@ -67,7 +70,8 @@ export async function goToCheckout(plan, btn, { exitOffer = false, program = 'se
       if (r.status === 'pending') toast('Tu compra está pendiente de aprobación. Te avisaremos cuando se active.', 6000);
       return;
     }
-    const { url } = await api('/api/checkout', { method: 'POST', body: { plan, exitOffer, program, fromCatalog } });
+    const { url, eventId } = await api('/api/checkout', { method: 'POST', body: { plan, exitOffer, program, fromCatalog } });
+    if (eventId) await Promise.race([pixelFor('checkout_started', eventId), new Promise((r) => setTimeout(r, 400))]); // mismo event_id que la API de conversiones
     window.location.assign(url);
   } catch (err) {
     if (btn) setBusy(btn, false);
@@ -104,8 +108,8 @@ export function planList(plans, selected, onSelect, { compact = false } = {}) {
   h('span', { class: 'plan-row__radio', 'aria-hidden': 'true' }),
   h('span', { class: 'plan-row__main' },
     h('span', { class: 'plan-row__name' }, p.title),
-    h('span', { class: 'plan-row__total' }, p.available ? `${moneyCents(p.amount, p.currency)} ${p.periodLabel}` : 'Precio no disponible')),
-  p.available ? h('span', { class: 'plan-row__day' }, h('strong', {}, perDay(p)), h('span', {}, 'al día')) : null));
+    h('span', { class: 'plan-row__total' }, p.available ? `${(p.displayPrice ?? moneyCents(p.amount, p.currency))} ${p.periodLabel}` : 'Precio no disponible')),
+  p.available && !p.native ? h('span', { class: 'plan-row__day' }, h('strong', {}, perDay(p)), h('span', {}, 'al día')) : null));
   return h('div', { class: 'plan-list', role: 'radiogroup', 'aria-label': 'Elige tu plan' }, rows);
 }
 
@@ -159,15 +163,24 @@ function showExitOffer(offer, program = 'sem-fumo') {
 }
 
 export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo', purchasable = true } = {}) {
+  // Embudo: quiz → e-mail → plan. A quien aún no dejó su e-mail se lo pedimos antes de mostrar los precios.
+  if (!isNativeApp() && await needsLead()) {
+    return renderLeadGate(root, { program, onDone: () => renderPaywall(root, { pendingCheckout, program, purchasable }) });
+  }
+  track('plan_viewed', { program });
   root.replaceChildren(h('div', { class: 'loading' }, h('div', { class: 'skeleton', 'aria-label': 'Cargando planes' })));
   let data;
   try {
-    data = await api(`/api/plans?program=${encodeURIComponent(program)}`);
+    data = isNativeApp() ? await loadNativePlans(program) : await api(`/api/plans?program=${encodeURIComponent(program)}`);
   } catch (err) {
     root.replaceChildren(h('p', { class: 'notice' }, err.message));
     return;
   }
   const { plans, paymentsEnabled } = data;
+  if (!plans.length) {
+    root.replaceChildren(h('p', { class: 'notice' }, 'No hay suscripciones disponibles para este programa en este momento.'));
+    return;
+  }
   const canPurchase = purchasable !== false && (data.purchasable ?? true) && paymentsEnabled;
   const fallback = plans.find((p) => p.recommended && p.available)?.id ?? plans.find((p) => p.available)?.id ?? plans[0].id;
   let selected = plans.find((p) => p.id === rememberedPlan() && p.available)?.id ?? fallback;
@@ -185,7 +198,7 @@ export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo
         : 'Este programa todavía no está disponible para comprar. Sus resultados se guardan y te avisaremos cuando abra.'));
       return;
     }
-    const price = moneyCents(p.amount, p.currency);
+    const price = (p.displayPrice ?? moneyCents(p.amount, p.currency));
     terms.replaceChildren(h('dl', {},
       h('div', {}, h('dt', {}, 'Precio total'), h('dd', {}, `${price} por ${p.unit}. El primer cargo se realiza hoy al confirmar el pago.`)),
       h('div', {}, h('dt', {}, 'Renovación'), h('dd', {}, `Se renueva automáticamente ${p.periodLabel} por ${price} hasta que la canceles.`)),
@@ -204,7 +217,7 @@ export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo
       planList(plans, selected, (id) => { selected = id; rememberPlan(id); renderTerms(); }),
       h('div', { class: 'paywall__cta' },
         cta,
-        h('p', { class: 'tiny muted' }, 'Pago seguro procesado por Stripe. Al continuar aceptas los ',
+        h('p', { class: 'tiny muted' }, isNativeApp() ? 'Pago gestionado por App Store. Al continuar aceptas los ' : 'Pago seguro procesado por Stripe. Al continuar aceptas los ',
           h('a', { href: '/terminos', target: '_blank' }, 'Términos de servicio'), ' y la ',
           h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.')),
       terms),
@@ -220,5 +233,5 @@ export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo
     h('p', { class: 'tiny muted u-text-center u-mt-16' }, 'Alento es un programa de apoyo y no sustituye el consejo de un profesional sanitario.'),
   ].filter(Boolean));
   renderTerms();
-  if (paymentsEnabled) armExitOffer(program);
+  if (paymentsEnabled && !isNativeApp()) armExitOffer(program);
 }

@@ -56,6 +56,14 @@ export function loadConfig(env = process.env) {
       subject: env.VAPID_SUBJECT || 'mailto:soporte@aliento.app',
     },
     cronSecret: env.CRON_SECRET || '',
+    // Panel de operación y growth (ver docs/GROWTH_CONTRACT.md). Todo opcional: sin claves, cada integración queda inactiva.
+    growth: {
+      // Clave para cifrar tokens guardados en growth.settings (AES-256-GCM). En producción: definirla explícitamente.
+      encryptionKey: env.GROWTH_ENCRYPTION_KEY || '',
+      anthropicApiKey: env.ANTHROPIC_API_KEY || '',
+      timezone: env.GROWTH_TIMEZONE || 'Europe/Madrid',
+      customerio: { siteId: env.CUSTOMERIO_SITE_ID || '', apiKey: env.CUSTOMERIO_API_KEY || '', appApiKey: env.CUSTOMERIO_APP_API_KEY || '', region: (env.CUSTOMERIO_REGION || 'eu').toLowerCase() },
+    },
     // Facturación nativa: App Store (StoreKit 2) y Google Play Billing.
     // Sin APPLE_BUNDLE_ID/entorno configurados, los endpoints responden 503: no hay simulaciones.
     apple: {

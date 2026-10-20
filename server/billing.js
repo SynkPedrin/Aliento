@@ -126,8 +126,10 @@ export function createBilling({ db, stripe, config, log = console }) {
   async function activeSubscription(userId, program = null, q = db.service) {
     const sub = program
       ? await q.one(`select * from public.subscriptions where user_id = $1 and program_slug = $3 and status = any($2)
+          and (current_period_end > now() or (current_period_end is null and coalesce(billing_provider, 'stripe') = 'stripe'))
           order by created_at desc limit 1`, [userId, ACCESS_STATUSES, program])
       : await q.one(`select * from public.subscriptions where user_id = $1 and status = any($2)
+          and (current_period_end > now() or (current_period_end is null and coalesce(billing_provider, 'stripe') = 'stripe'))
           order by created_at desc limit 1`, [userId, ACCESS_STATUSES]);
     if (sub) return sub;
     // Acceso de cortesía: da acceso sin suscripción de pago (por programa si se indica).
@@ -173,13 +175,13 @@ export function createBilling({ db, stripe, config, log = console }) {
    * Garantías: no se crea si hay suscripción activa; una sesión abierta del mismo plan,
    * evaluación y descuento se reutiliza; cualquier otra sesión abierta se expira.
    */
-  function startCheckout({ user, program = 'sem-fumo', plan, assessment = null, useExitOffer = false }) {
+  function startCheckout({ user, program = 'sem-fumo', plan, assessment = null, useExitOffer = false, trackingMetadata = {} }) {
     // Candado en memoria (misma instancia). Entre instancias protege el índice único
     // checkout_sessions_one_open: solo puede existir un checkout abierto por usuario y programa.
-    return withUserLock(user.id, () => startCheckoutLocked({ user, program, plan, assessment, useExitOffer }));
+    return withUserLock(user.id, () => startCheckoutLocked({ user, program, plan, assessment, useExitOffer, trackingMetadata }));
   }
 
-  async function startCheckoutLocked({ user, program, plan, assessment, useExitOffer }) {
+  async function startCheckoutLocked({ user, program, plan, assessment, useExitOffer, trackingMetadata = {} }) {
     {
       if (!stripe) throw new BillingError('PAYMENTS_DISABLED', 'Los pagos no están configurados todavía.', 503);
       if (!PLAN_IDS.includes(plan)) throw new BillingError('INVALID_PLAN', 'Plan no válido.');
@@ -231,7 +233,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         }
       }
 
-      const metadata = { user_id: user.id, plan, program };
+      const metadata = { ...trackingMetadata, user_id: user.id, plan, program };
       if (assessment) metadata.assessment_id = assessment.id;
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
@@ -598,6 +600,7 @@ export async function buildPersonalPlan(q, userId, assessment, { strategyOverrid
   // Objetivo principal: nueva versión, la anterior queda en el historial.
   const current = await q.one('select * from public.user_goals where user_id = $1 and program_slug = $2 and superseded_at is null',
     [userId, program]);
+
   if (!current || current.strategy !== data.strategy.id) {
     await q.exec('update public.user_goals set superseded_at = now() where user_id = $1 and program_slug = $2 and superseded_at is null',
       [userId, program]);

@@ -6,7 +6,9 @@ import {
 import { isValidTimezone } from '../services/stats.js';
 import { HttpError, requireUser, wrap } from './util.js';
 
-export function accountRoutes({ db, auth, billing, config, store, programs, log = console }) {
+import { attributionFromRequest, clientInfo, eventIdFor } from '../growth/context.js';
+
+export function accountRoutes({ db, auth, billing, config, store, programs, growth = null, log = console }) {
   const r = Router();
   // Límites compartidos entre instancias (Postgres): por IP y por cuenta.
   const ipLimiter = sharedRateLimiter(db, { windowSeconds: 15 * 60, max: 30 });
@@ -129,14 +131,27 @@ export function accountRoutes({ db, auth, billing, config, store, programs, log 
       if (!s.claimed_user_id) await store.claim(req, req.user.id);
     }
     await programs.assertPurchasable(program);
+    const att = attributionFromRequest(req);
+    // El rastreo nunca puede impedir un pago: si falla (p. ej. migración pendiente), se compra igual sin atribución.
+    const tracking = growth ? await growth.tracker.identityFor({ userId: req.user.id, visitorId: att.visitorId })
+      .then((id) => ({ visitorId: att.visitorId, first: att.first, last: att.last, leadId: id.leadId }))
+      .catch(() => ({ visitorId: att.visitorId, first: att.first, last: att.last, leadId: null })) : null;
     const { url, reused } = await billing.startCheckout({
       user: req.user, program, plan: req.body?.plan, assessment, useExitOffer: req.body?.exitOffer === true,
+      trackingMetadata: growth ? growth.hooks.checkoutMetadata(tracking) : {},
     });
-    res.json({ url, reused });
+    const eventId = growth && !reused ? await growth.hooks.onCheckoutStarted({ user: req.user, program, plan: req.body?.plan, url, tracking, ctx: { ...clientInfo(req), page: '/planes' } }) : null;
+    res.json({ url, reused, eventId });
   }));
 
   r.get('/checkout/status', requireUser, wrap(async (req, res) => {
-    res.json(await billing.checkoutState(req.user.id, String(req.query.session_id ?? '')));
+    const sessionId = String(req.query.session_id ?? '');
+    const state = await billing.checkoutState(req.user.id, sessionId);
+    if (growth && state.state === 'active') {
+      const c = await db.service.one('select amount_cents, currency from growth.checkouts where stripe_session_id = $1 and user_id = $2', [sessionId, req.user.id]).catch(() => null);
+      return res.json({ ...state, purchaseEventId: eventIdFor('purchase', sessionId), valueCents: c?.amount_cents ?? null, currency: c?.currency ?? null });
+    }
+    res.json(state);
   }));
 
   r.post('/billing/portal', requireUser, wrap(async (req, res) => {
@@ -232,7 +247,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, log 
       throw new HttpError(422, 'La contraseña no es correcta.', 'INVALID', { field: 'password' });
     }
     const activeSubs = (await billing.subscriptionsByProgram(req.user.id))
-      .filter((x) => ['active', 'trialing', 'past_due'].includes(x.status) && !x.cancel_at_period_end);
+      .filter((x) => (!x.billing_provider || x.billing_provider === 'stripe') && ['active', 'trialing', 'past_due'].includes(x.status) && !x.cancel_at_period_end);
     if (activeSubs.length) {
       throw new HttpError(409, 'Antes de eliminar tu cuenta, cancela tus suscripciones desde «Mis suscripciones».', 'ACTIVE_SUBSCRIPTION');
     }
@@ -254,6 +269,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, log 
 
 export function subscriptionView(sub) {
   return sub && {
+    billingProvider: sub.billing_provider || 'stripe',
     plan: sub.plan,
     status: sub.status,
     amount: sub.amount,

@@ -1,4 +1,5 @@
 import { $, api, h, ICONS, MARK_SVG, setBusy, toast } from '../ui.js';
+import { giveHealthConsent, hasHealthConsent, track } from '../track.js';
 
 const screenEl = $('[data-screen]');
 const backBtn = $('[data-back]');
@@ -12,6 +13,7 @@ let steps = [];
 let answers = {};
 let index = 0;
 let config = { currency: 'USD', locale: 'es-US' };
+let shownAt = Date.now();
 
 /** Programa del funil: /quiz/<slug>, ?program=<slug> o sem-fumo. */
 const SLUGS = ['sem-fumo', 'alcohol', 'azucar', 'ansiedad', 'sueno'];
@@ -31,6 +33,8 @@ async function save(questionId, value, nextStepId) {
   if (questionId) Object.assign(body, { questionId, value, consent: true }); // tras el aviso visible en la primera pregunta
   const { assessment } = await api('/api/assessment/answers', { method: 'PUT', body });
   answers = assessment.answers;
+  // Solo a la base propia (pixel:false): las respuestas del quiz nunca viajan a plataformas de anuncios.
+  if (questionId) track('quiz_answered', { program: PROGRAM, question: questionId, answer: value, seconds: Math.round((Date.now() - shownAt) / 100) / 10, version: 'v1' }, { pixel: false });
 }
 
 function goTo(i, { push = true } = {}) {
@@ -206,6 +210,7 @@ function renderAnalysis(step) {
 }
 
 function render() {
+  shownAt = Date.now();
   const step = steps[index];
   updateChrome();
   const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, analysis: renderAnalysis }[step.type](step);
@@ -219,6 +224,23 @@ window.addEventListener('popstate', (e) => {
   if (i >= 0 && steps[index].type !== 'analysis') goTo(i, { push: false });
 });
 backBtn.addEventListener('click', () => history.back());
+
+/** Consentimiento explícito (datos de salud) antes de la primera pregunta. */
+function renderConsent(next) {
+  countEl.textContent = '';
+  backBtn.disabled = true;
+  const box = h('input', { type: 'checkbox', id: 'q-consent' });
+  const cta = h('button', { type: 'button', class: 'btn btn--lg', disabled: true }, 'Empezar el cuestionario');
+  box.addEventListener('change', () => { cta.disabled = !box.checked; });
+  cta.addEventListener('click', () => { giveHealthConsent(); next(); });
+  screenEl.replaceChildren(h('section', { class: 'quiz__screen' },
+    h('h1', { tabindex: '-1' }, 'Antes de empezar'),
+    h('p', { class: 'subtitle' }, 'Para crear tu plan te haremos preguntas sobre tus hábitos y tu bienestar. Son datos de salud y solo los usamos con tu permiso.'),
+    h('label', { class: 'check', for: 'q-consent' }, box,
+      h('span', {}, 'Acepto que Alento trate mis respuestas, incluidas las relativas a mi salud y mis hábitos, solo para calcular mis resultados y mi plan. Si no creo una cuenta, se eliminan en 30 días. ',
+        h('a', { href: '/privacidad', target: '_blank', rel: 'noopener' }, 'Política de privacidad'), '.')),
+    cta));
+}
 
 async function init() {
   if (!PROGRAM_OK) return window.location.replace('/test');
@@ -241,7 +263,8 @@ async function init() {
     if (steps[i].type === 'analysis' && firstMissing >= 0) i = firstMissing;
     index = i;
     history.replaceState({ step: steps[index].id }, '', `${restart ? location.pathname : ''}#${steps[index].id}`);
-    render();
+    const begin = () => { track('quiz_started', { program: PROGRAM }); render(); };
+    if (hasHealthConsent()) begin(); else renderConsent(begin);
   } catch (err) {
     screenEl.replaceChildren(h('p', { class: 'notice' }, err.message));
   }

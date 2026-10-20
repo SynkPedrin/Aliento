@@ -2,6 +2,7 @@
 // estado guardado en el servidor: la redirección por sí sola no activa nada.
 import { $, api, brandLink, h, LOGO_BRANCO_HTML } from '../ui.js';
 import { installAction, installState } from '../install.js';
+import { pixelFor } from '../track.js';
 
 $('[data-brand-wrap]').append(brandLink('/', { dark: true }));
 const root = $('[data-root]');
@@ -57,7 +58,16 @@ async function poll() {
       const cat = await api('/api/catalog').catch(() => null);
       PROGRAM_NAME = cat?.programs?.find((x) => x.slug === PROGRAM)?.name ?? PROGRAM;
     }
-    if (st.state === 'active') return showWelcome();
+    if (st.state === 'active') {
+      // Pixel de compra con el mismo event_id que la API de conversiones (una sola vez por pago).
+      let firedKey = `al_px_${sessionId}`, fired = false;
+      try { fired = sessionStorage.getItem(firedKey) === '1'; } catch { /* modo privado */ }
+      if (!fired && st.purchaseEventId) {
+        try { sessionStorage.setItem(firedKey, '1'); } catch { /* modo privado */ }
+        pixelFor('purchase', st.purchaseEventId, { value: st.valueCents != null ? st.valueCents / 100 : undefined, currency: st.currency });
+      }
+      return showWelcome();
+    }
     if (st.state === 'failed') {
       return showMessage('No se pudo completar el pago', 'No se ha activado ninguna suscripción. Tus resultados siguen guardados.',
         [h('a', { class: 'btn', href: '/planes' }, 'Volver a intentarlo')]);

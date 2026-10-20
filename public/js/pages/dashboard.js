@@ -2,8 +2,10 @@ import { $, api, h, icon, money, num, toast } from '../ui.js';
 import { celebrate, cravingFlow, emptyState, errorState, greeting, initApp, loading, modal } from '../shell.js';
 import { installAction, installState } from '../install.js';
 import { xyChart } from '../charts.js';
+import { track } from '../track.js';
 
 const me = await initApp({ active: '/dashboard' });
+track('app_activated', { program: 'sem-fumo' }); // el servidor lo registra una sola vez por usuario
 const root = $('[data-root]');
 
 const EXERCISES = { 'calma-4-6': 'Calma 4·6', 'caja-4-4': 'Respiración cuadrada', 'pausa-4-2-6': 'Pausa consciente' };

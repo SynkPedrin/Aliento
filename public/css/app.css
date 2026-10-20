@@ -762,3 +762,10 @@ body.program-night .next-lesson { border-left-color: var(--program, #FFC857); }
 
 /* App iOS (viewport-fit=cover): el contenido no debe quedar bajo la barra de estado ni el notch. */
 .site-header, .quiz, .auth-wrap { padding-top: env(safe-area-inset-top); }
+
+/* Banner de cookies de las páginas de la app (la landing tiene el suyo) y captura de e-mail. */
+.cookies-lite { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 60; max-width: 520px; margin: 0 auto;
+  background: #fff; border-radius: 18px; padding: 16px 18px; box-shadow: 0 24px 50px -20px rgba(10, 15, 60, .35), 0 0 0 1px var(--line); }
+.cookies-lite p { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.cookies-lite div { display: flex; gap: 10px; flex-wrap: wrap; }
+.lead-gate { max-width: 520px; margin: 0 auto; }
