@@ -159,14 +159,14 @@ async function render() {
       const r = await api(`/api/app/journey/lessons/${encodeURIComponent(slug)}/complete`, { method: 'POST' });
       celebrate(r.achievements);
       root.replaceChildren(h('section', { class: 'lesson lesson-done' },
-        h('div', { class: 'hero__mark', style: 'margin:0 auto 16px;width:72px;height:50px', html: '<svg viewBox="0 0 48 32" fill="currentColor" aria-hidden="true"><path d="M13 12.5C19.5 4.5 29 4 35.5 9.8c3.2 2.8 6.6 3.6 11 2.6-4 4.6-10.6 5.2-15.4 1.2C26 9.4 19.6 8.6 13 12.5Z"/><path d="M2 25C9 15.4 21.4 14 29.6 20.6c3.4 2.7 7.2 3.3 11.6 1.8-4.6 5.3-12 5.9-17.2 1.8C18.2 19.6 10 19.4 2 25Z"/></svg>' }),
+        h('div', { class: 'hero__mark', style: 'margin:0 auto 16px;width:72px;height:auto', html: '<img src="/assets/brand/alento-simbolo.svg" alt="" width="72" aria-hidden="true">' }),
         h('h1', { class: 'title-lg' }, completion?.title ?? '¡Lección completada!'),
         completion?.body ? richText(completion.body) : null,
         r.chapterCompleted ? h('p', { class: 'pill pill--ok u-mt-16' }, `Capítulo ${L.lesson.chapter.number} completado`) : null,
         h('p', { class: 'help u-mt-16' }, `${r.totals.completed} de ${r.totals.lessons} lecciones completadas`),
         h('div', { class: 'actions-row', style: 'justify-content:center' },
           r.next ? h('a', { class: 'btn', href: `/leccion?l=${encodeURIComponent(r.next.slug)}${PROGRAM === 'sem-fumo' ? '' : `&p=${PROGRAM}`}` }, `Siguiente: ${r.next.title}`) : null,
-          h('a', { class: 'btn btn--ghost', href: '/dashboard' }, 'Volver al inicio'))));
+          h('a', { class: 'btn btn--ghost', href: PROGRAM === 'sem-fumo' ? '/dashboard' : `/programa?p=${PROGRAM}` }, 'Volver al inicio'))));
       window.scrollTo({ top: 0 });
     } catch (err) {
       setBusy(finishBtn, false);
