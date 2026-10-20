@@ -1,0 +1,117 @@
+/* Panel y configuración de los programas Alcohol, Azúcar, Ansiedad y Sueño. Reutiliza los tokens de app.css. */
+
+.pg-head { align-items: center; }
+.pg-head__main { display: flex; gap: 16px; align-items: center; min-width: 0; }
+.pg-head__icon { width: 56px; height: 56px; flex: none; border-radius: 16px; }
+.pg-head .page-intro { margin-top: 6px; }
+
+/* Hoy */
+.today-card .big-number { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.today-card .big-number.is-empty { color: var(--muted); }
+.pg-unit { font: 400 18px/1 var(--font-text); color: var(--muted); }
+.pg-target { margin-top: 4px; line-height: 1.9; }
+.ganas-card .btn--accent { min-height: 54px; }
+
+/* Totales */
+.pg-stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.pg-stat .stat__label { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.pg-stat .stat__value { font-size: clamp(24px, 3.6vw, 32px); }
+.pg-stat__unit { font: 400 14px/1 var(--font-text); color: var(--muted); }
+.pg-stat.is-estimate .stat__sub { font-style: normal; }
+
+/* Racha */
+.pg-streak .big-number { color: var(--chart-1); }
+
+/* Metas */
+.pg-more { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pg-more summary { cursor: pointer; color: var(--ink-2); font-size: 14.5px; padding: 6px 0; }
+.pg-week-title { margin: 14px 0 2px; }
+
+/* Registros recientes */
+.pg-row-actions { display: flex; gap: 8px; flex: none; flex-wrap: wrap; justify-content: flex-end; }
+.pg-danger { border-color: var(--danger); color: var(--danger); }
+
+/* Seguridad */
+.pg-safety { border-left: 4px solid var(--program, var(--azul)); }
+.pg-safety__title { display: flex; gap: 10px; align-items: center; }
+.pg-safety__icon { display: inline-flex; width: 22px; height: 22px; flex: none; color: var(--program, var(--azul)); }
+.pg-safety__icon svg { width: 100%; height: 100%; }
+.pg-resources { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; }
+.pg-resources li { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.pg-resources a { color: var(--ink); }
+
+/* Enlaces rápidos */
+.pg-links { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.pg-link { display: grid; gap: 4px; padding: 18px 20px; }
+
+/* Formularios generados */
+.pg-fields { display: grid; gap: 22px; }
+.pg-field { gap: 8px; }
+.pg-label { font-weight: 500; font-size: 15px; }
+.pg-number { display: flex; align-items: center; gap: 10px; }
+.pg-number .input { max-width: 160px; }
+.pg-scale { display: flex; flex-wrap: wrap; gap: 6px; }
+.pg-scale__btn { flex: 1 0 40px; min-width: 40px; min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: 500 15px/1 var(--font-text); cursor: pointer; }
+.pg-scale__btn[aria-checked="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.pg-scale__btn:hover { border-color: var(--brand); }
+.chip[role="radio"][aria-checked="true"] { background: var(--brand); color: var(--brand-ink); border-color: var(--brand); }
+.pg-modal { padding: 24px; }
+.pg-modal .pg-fields { margin-top: 18px; }
+.pg-modal form > .pg-fields + .field { margin-top: 18px; }
+.pg-modal .modal__actions { position: sticky; bottom: -24px; background: var(--surface); padding: 14px 0 4px; margin-top: 20px; }
+.pg-range { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.pg-range__out { font: 400 22px/1 var(--font-title); font-variant-numeric: tabular-nums; }
+.pg-crisis { margin-top: 20px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.pg-crisis summary { cursor: pointer; font-weight: 500; font-size: 14.5px; }
+.pg-crisis p { margin-top: 8px; }
+.pg-support { margin-top: 16px; padding: 14px; border-radius: var(--radius-sm); background: var(--surface-2); }
+.option[role="radio"][aria-checked="true"] { border: 2px solid var(--azul); background: var(--ar); }
+body.program-night .option[role="radio"][aria-checked="true"], body.program-night .option.is-selected { background: var(--surface-2); border-color: var(--program, #FFC857); }
+body.program-night .option__label strong { color: var(--ink); }
+
+/* Respiración guiada */
+.pg-breath { display: grid; justify-items: center; gap: 10px; padding: 16px 0 4px; text-align: center; }
+.pg-breath .btn { max-width: 280px; }
+.pg-orb { width: 150px; height: 150px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--respiracao), var(--azul)); transform: scale(.62); transition-property: transform; transition-timing-function: ease-in-out; }
+.pg-orb[data-phase="in"], .pg-orb[data-phase="hold"] { transform: scale(1); }
+.pg-orb[data-phase="out"] { transform: scale(.62); }
+.pg-orb[data-phase="hold"] { box-shadow: 0 0 0 6px color-mix(in srgb, var(--respiracao) 30%, transparent); }
+.pg-breath__phase { font: 400 22px/1.2 var(--font-title); min-height: 28px; }
+@media (prefers-reduced-motion: reduce) { .pg-orb { transition: none; } }
+
+/* Configuración */
+.pg-setup { --gap: 24px; }
+.pg-setup__fields { --gap: 26px; }
+.pg-setup .chips { margin-bottom: 4px; }
+
+/* Foco visible */
+.pg-modal :focus-visible, .pg-scale__btn:focus-visible, .chip:focus-visible, .option:focus-visible, .icon-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Móvil */
+@media (max-width: 480px) {
+  .pg-head__icon { width: 44px; height: 44px; }
+  .pg-head__main { gap: 12px; }
+  .list > li { flex-wrap: wrap; }
+  .pg-row-actions { width: 100%; justify-content: flex-start; }
+  .card { padding: 20px; }
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .grid-3c { grid-template-columns: minmax(0, 1fr); }
+  .pg-modal { padding: 20px; }
+}
+
+/* Tema nocturno (Sueño) */
+body.program-night .ganas-card { background: #1F2A7A; border: 1px solid #3340A0; }
+body.program-night .btn--ghost { color: var(--ink); border-color: var(--line); }
+body.program-night .pill { background: var(--surface-2); color: var(--ink); }
+body.program-night .pill--ok { background: color-mix(in srgb, var(--program, #FFC857) 22%, var(--surface)); color: #fff; }
+body.program-night .input, body.program-night .select { background: var(--surface-2); color: var(--ink); border-color: var(--line); }
+body.program-night .pg-resources li, body.program-night .pg-crisis, body.program-night .pg-support { background: var(--surface-2); }
+body.program-night .pg-streak .big-number { color: var(--program, #FFC857); }
+body.program-night .site-header, body.program-night .tabbar { background: var(--surface); border-color: var(--line); }
+body.program-night .site-header a, body.program-night .brand__name, body.program-night .tabbar a { color: var(--ink); }
+body.program-night .progress-line span { background: var(--program, #FFC857); }
+body.program-night .chart .bar-1 { fill: var(--program, #FFC857); }
+body.program-night .chart .bar-muted { fill: #3A4590; }
+body.program-night .legend i.key-bar { background: var(--program, #FFC857); }
+body.program-night .chart text { fill: var(--nevoa); }
+body.program-night .modal { background: rgba(5, 8, 30, .75); }

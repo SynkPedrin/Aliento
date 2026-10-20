@@ -47,6 +47,11 @@ try {
     // Estado limpio: sin accesos ni suscripciones previas.
     await db.service.exec('delete from public.access_grants where user_id = $1', [user.id]);
     for (const t of ['subscriptions', 'checkout_sessions', 'user_assessments']) await db.service.exec(`delete from public.${t} where user_id = $1`, [user.id]).catch(() => {});
+    // Los 4 programas nuevos empiezan de cero (primer acceso real): sin plan, metas, registros ni ánimo.
+    for (const t of ['daily_goals', 'user_goals', 'personalized_plans', 'program_activity_entries', 'mood_entries', 'breathing_sessions']) {
+      await db.service.exec(`delete from public.${t} where user_id = $1 and program_slug <> 'sem-fumo'`, [user.id]).catch(() => {});
+    }
+    await db.service.exec('delete from public.rate_limits').catch(() => {});
     await db.service.exec('delete from public.questionnaire_sessions where user_id = $1 or claimed_user_id = $1', [user.id]).catch(() => {});
     if (a.premium) {
       for (const p of PROGRAMS) {

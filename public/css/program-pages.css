@@ -1,0 +1,35 @@
+/* Páginas secundarias con contexto de programa (?p=<slug>): progreso, objetivos, logros, diario, notificaciones, respirar, jornada. */
+.pp-ribbon { display: flex; align-items: center; gap: 10px; padding: 8px 0 2px; flex-wrap: wrap; }
+.pp-ribbon::before { content: none; }
+.pp-ribbon__icon { width: 28px; height: 28px; flex: none; }
+.pp-ribbon__name { font: 400 18px/1 var(--font-title); padding-bottom: 3px; border-bottom: 3px solid var(--program, var(--azul)); }
+.pp-ribbon__back { margin-left: auto; font-size: 14px; color: var(--ink-2); text-decoration: none; padding: 8px 0; }
+.pp-ribbon__back:hover { text-decoration: underline; }
+
+body.program-ctx .eyebrow { color: var(--ink-2); }
+body.program-ctx .progress-line > span { background: var(--program, var(--azul)); }
+.stat__unit { font: 500 13px var(--font-text); color: var(--muted); }
+.pp-subhead { margin: 28px 0 12px; align-items: center; }
+.pp-subhead .section-title { margin: 0; }
+.pp-insights .list__main { line-height: 1.5; }
+
+.pp-tl { flex: none; width: 22px; text-align: center; color: var(--program, var(--azul)); font-size: 14px; line-height: 1.5; }
+.pp-tl--urge { color: var(--accent-ink, var(--ink-2)); }
+
+.pp-tasks > li { align-items: flex-start; }
+.pp-tasks input[type="checkbox"] { width: 22px; height: 22px; margin-top: 2px; flex: none; accent-color: var(--program, var(--azul)); }
+.pp-tasks label { cursor: pointer; }
+.pp-tasks .pp-detail { display: block; margin-top: 4px; }
+.pp-tasks .pp-now { margin-left: 8px; vertical-align: middle; }
+.pp-tasks > li.is-current { background: color-mix(in srgb, var(--program, var(--azul)) 10%, transparent); border-radius: var(--radius-sm); padding-left: 10px; padding-right: 10px; margin: 0 -10px; }
+
+/* Tema nocturno (Sueño) en las páginas secundarias */
+body.program-night .stat, body.program-night .card--flat { background: var(--surface-2); border-color: var(--line); }
+body.program-night .option { background: var(--surface-2); border-color: var(--line); color: var(--ink); }
+body.program-night .option.is-selected { border-color: var(--program, #FFC857); }
+body.program-night .input, body.program-night .select, body.program-night textarea.input { background: var(--surface-2); color: var(--ink); border-color: var(--line); }
+body.program-night .segmented { background: var(--surface-2); }
+body.program-night .segmented button[aria-selected="true"] { background: var(--surface); color: var(--ink); }
+body.program-night .pp-ribbon__back, body.program-night .link, body.program-night .page-intro { color: var(--nevoa); }
+body.program-night .app-header, body.program-night .tabbar { background: var(--surface); border-color: var(--line); }
+body.program-night { --chart-1: var(--respiracao); --chart-2: var(--menta); --grid: #2A3370; --accent-ink: var(--noite); }

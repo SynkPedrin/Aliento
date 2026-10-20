@@ -1,8 +1,18 @@
 import { $, api, h, toast } from '../ui.js';
 import { celebrate, errorState, initApp, loading, page } from '../shell.js';
+import { applyProgramNav, programError, programQuery, programRibbon, programSlug } from '../program/nav.js';
 
+const SLUG = programSlug();
 await initApp({ active: null });
 const root = $('[data-root]');
+const META = SLUG ? await applyProgramNav(SLUG) : null;
+const PQ = programQuery(SLUG);
+const INTRO = {
+  sueno: 'Respirar despacio ayuda al cuerpo a bajar el ritmo antes de dormir. Sigue el círculo sin forzar.',
+  ansiedad: 'Unos minutos de respiración lenta ayudan a calmar el cuerpo cuando la ansiedad sube. Sigue el círculo.',
+  alcohol: 'Un minuto de respiración lenta ayuda a atravesar las ganas de beber y a bajar el ritmo. Sigue el círculo.',
+  azucar: 'Un minuto de respiración lenta ayuda a atravesar un antojo y a elegir con calma. Sigue el círculo.',
+};
 const params = new URLSearchParams(location.search);
 
 let exercises = [];
@@ -27,13 +37,16 @@ function chime(freq) {
 
 async function load() {
   loading(root);
-  try { ({ exercises } = await api('/api/app/breathing')); } catch (err) { return errorState(root, err, load); }
+  try { ({ exercises } = await api(`/api/app/breathing${PQ}`)); } catch (err) { return SLUG ? programError(root, err, SLUG, load) : errorState(root, err, load); }
+  // «Pausa consciente» habla de cigarrillos: solo en Sem Fumo.
+  if (SLUG) exercises = exercises.filter((e) => e.slug !== 'pausa-4-2-6');
   render();
 }
 
 function render() {
-  page(root, { eyebrow: 'Ejercicio', title: 'Respirar', intro: 'Un minuto de respiración lenta ayuda a atravesar las ganas y a bajar el ritmo. Sigue el círculo.' });
-  let ex = exercises.find((e) => e.slug === params.get('ejercicio')) ?? exercises[0];
+  page(root, { eyebrow: 'Ejercicio', title: 'Respirar', intro: INTRO[SLUG] ?? 'Un minuto de respiración lenta ayuda a atravesar las ganas y a bajar el ritmo. Sigue el círculo.' });
+  if (META) root.prepend(programRibbon(META));
+  let ex = exercises.find((e) => e.slug === params.get('ejercicio')) ?? (SLUG === 'sueno' && exercises.find((e) => e.slug === 'sueno-4-7-8')) ?? exercises[0];
   let minutes = 1;
   let sound = false;
 
@@ -81,7 +94,7 @@ function render() {
 
   async function start() {
     try {
-      session = (await api('/api/app/breathing/sessions', { method: 'POST', body: { exercise: ex.slug, plannedSeconds: planned() } })).session;
+      session = (await api(`/api/app/breathing/sessions${PQ}`, { method: 'POST', body: { exercise: ex.slug, plannedSeconds: planned() } })).session;
     } catch (err) { return toast(err.message); }
     active = 0; phaseIdx = 0; exSelect.disabled = true; durSelect.disabled = true;
     enterPhase();
@@ -108,7 +121,7 @@ function render() {
     startBtn.hidden = false; startBtn.textContent = 'Repetir';
     session = null; exSelect.disabled = false; durSelect.disabled = false;
     if (params.get('desde') === 'ganas') {
-      root.querySelector('.breathe').append(h('a', { class: 'btn btn--ghost', href: '/dashboard#ganas' }, 'Volver a mis ganas'));
+      root.querySelector('.breathe').append(h('a', { class: 'btn btn--ghost', href: SLUG ? `/programa?p=${SLUG}` : '/dashboard#ganas' }, SLUG ? 'Volver al panel' : 'Volver a mis ganas'));
     }
   }
   // Finalizar antes de tiempo: la sesión no cuenta como completada (no se envía la finalización).

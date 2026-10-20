@@ -1,9 +1,11 @@
 import { $, api, h } from '../ui.js';
 import { errorState, initApp, loading, page } from '../shell.js';
+import { applyProgramNav, programError, programRibbon, programSlug } from '../program/nav.js';
 
-const PROGRAM = new URLSearchParams(location.search).get('program') ?? 'sem-fumo';
+const PROGRAM = programSlug() ?? 'sem-fumo';
 await initApp({ active: '/jornada' });
 const root = $('[data-root]');
+const META = PROGRAM === 'sem-fumo' ? null : await applyProgramNav(PROGRAM);
 const lessonHref = (slug) => `/leccion?l=${encodeURIComponent(slug)}${PROGRAM === 'sem-fumo' ? '' : `&p=${PROGRAM}`}`;
 
 /** Planta original de Alento: una hoja por lección completada; florece al terminar la jornada. */
@@ -43,9 +45,9 @@ const CH_LABEL = { completed: 'Completado', in_progress: 'En curso', available: 
 async function render() {
   loading(root);
   let j;
-  try { j = await api(`/api/app/journey?program=${PROGRAM}`); } catch (err) { return errorState(root, err, render); }
-  page(root, { eyebrow: PROGRAM === 'sem-fumo' ? 'Tu programa' : `Programa ${PROGRAM}`, title: 'Mi jornada', intro: 'Diez capítulos de lecciones cortas. Cada una desbloquea la siguiente y puedes repasarlas cuando quieras.' });
-  if (PROGRAM !== 'sem-fumo') root.append(h('p', {}, h('a', { class: 'link', href: `/programa?p=${PROGRAM}` }, '← Volver al programa')));
+  try { j = await api(`/api/app/journey?program=${PROGRAM}`); } catch (err) { return PROGRAM === 'sem-fumo' ? errorState(root, err, render) : programError(root, err, PROGRAM, render); }
+  page(root, { eyebrow: META ? `Tu programa · ${META.name}` : 'Tu programa', title: 'Mi jornada', intro: 'Diez capítulos de lecciones cortas. Cada una desbloquea la siguiente y puedes repasarlas cuando quieras.' });
+  if (META) root.prepend(programRibbon(META));
   const { completed, lessons } = j.totals;
   root.append(h('section', { class: 'card journey-hero' },
     plant(completed, lessons),

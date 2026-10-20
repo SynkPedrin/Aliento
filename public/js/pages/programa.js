@@ -1,94 +1,59 @@
-// Dashboard de un programa (alcohol, azucar, ansiedad, sueno). Sem Fumo usa /dashboard.
-import { $, api, h, mountSplash, splashReady, toast } from '../ui.js';
-import { cravingFlow, emptyState, greeting } from '../shell.js';
+// Panel de un programa (alcohol, azucar, ansiedad, sueno). Sem Fumo usa /dashboard.
+import { $, api, h, icon } from '../ui.js';
+import { errorState, greeting, initApp, loading } from '../shell.js';
+import { dayLong } from '../program/format.js';
+import * as S from '../program/sections.js';
 
-mountSplash();
-const root = $('[data-root]');
 const slug = new URLSearchParams(location.search).get('p') ?? '';
-if (!slug || slug === 'sem-fumo') location.replace('/dashboard');
+const SLUGS = ['alcohol', 'azucar', 'ansiedad', 'sueno'];
+if (slug === 'sem-fumo' || !SLUGS.includes(slug)) {
+  location.replace(slug === 'sem-fumo' ? '/dashboard' : '/programas');
+  await new Promise(() => {});
+}
+if (slug === 'sueno') document.body.classList.add('program-night');
 
-const ACTIVITY = {
-  alcohol: { kind: 'consumo', label: 'Registrar consumo', field: '¿Qué registras hoy?', placeholder: 'Ej.: una cerveza con amigos, copa de vino en la cena…' },
-  azucar: { kind: 'habito', label: 'Registrar hábito', field: '¿Qué hábito quieres anotar?', placeholder: 'Ej.: refresco en la comida, postre después de cenar…' },
-  ansiedad: { kind: 'emocion', label: 'Registrar cómo me siento', field: '¿Cómo te sientes en este momento?', placeholder: 'Ej.: tensión media por una reunión, más calmado tras pasear…' },
-  sueno: { kind: 'sueno', label: 'Registrar mi descanso', field: '¿Cómo fue tu noche?', placeholder: 'Ej.: me dormí a las 23:30, desperté una vez, descansé bien…' },
-};
+const me = await initApp({ active: '/programas', access: 'account' });
+const root = $('[data-root]');
 
-function quickLog(p, onSaved) {
-  const cfg = ACTIVITY[p.slug];
-  if (!cfg) return null;
-  const input = h('textarea', { class: 'input', rows: 2, maxlength: 500, placeholder: cfg.placeholder, 'aria-label': cfg.field });
-  const status = h('p', { class: 'help', role: 'status' });
-  const btn = h('button', { class: 'btn btn--sm', onclick: async () => {
-    const v = input.value.trim();
-    if (!v) { status.textContent = 'Escribe algo primero.'; return; }
-    btn.disabled = true;
-    try {
-      await api(`/api/app/programs/${p.slug}/activity`, { method: 'POST', body: { kind: cfg.kind, value: { nota: v } } });
-      input.value = ''; status.textContent = 'Guardado.';
-      onSaved();
-    } catch (e) { toast(e.message); } finally { btn.disabled = false; }
-  } }, cfg.label);
-  return h('section', { class: 'card stack' },
-    h('h2', { class: 'title-md' }, 'Registro rápido'),
-    h('label', { class: 'muted small' }, cfg.field), input, h('div', {}, btn), status);
+async function render() {
+  if (!root.children.length || root.querySelector('.loading')) loading(root);
+  let d;
+  try {
+    d = await api(`/api/app/programs/${slug}/dashboard`);
+  } catch (err) {
+    if (err.code === 'ONBOARDING_REQUIRED') return location.replace(`/configuracion?p=${slug}`);
+    if (err.code === 'SUBSCRIPTION_REQUIRED' || err.status === 402) return location.replace('/programas');
+    if (err.status === 404) return location.replace('/programas');
+    return errorState(root, err, render);
+  }
+  document.title = `${d.program.name} · Alento`;
+  document.body.classList.toggle('program-night', d.program.theme === 'night');
+  document.documentElement.style.setProperty('--program', d.program.color);
+
+  const started = d.dayNumber >= 1;
+  const first = (d.user?.name ?? me.user.name ?? '').split(' ')[0];
+  const notice = d.subscription?.status === 'past_due'
+    ? h('div', { class: 'notice notice--warn' }, icon('info', 'notice__icon'), h('div', {}, h('strong', {}, 'No pudimos renovar tu suscripción. '), 'Actualiza tu método de pago en ', h('a', { href: '/suscripcion' }, 'Mi suscripción'), '.'))
+    : null;
+
+  root.replaceChildren(...[
+    h('div', { class: 'page-head pg-head' },
+      h('div', { class: 'pg-head__main' },
+        h('img', { src: d.program.icon, alt: '', width: 56, height: 56, class: 'pg-head__icon' }),
+        h('div', {},
+          h('p', { class: 'eyebrow' }, started ? `${d.program.name} · Día ${d.dayNumber} · ${d.strategy.name}` : `${d.program.name} · Empiezas el ${dayLong(d.startDate)}`),
+          h('h1', { class: 'title-lg' }, first ? greeting(first) : 'Hola'),
+          h('p', { class: 'muted page-intro' }, d.ui?.tagline ?? d.program.tagline))),
+      h('a', { class: 'link', href: '/programas' }, 'Mis programas')),
+    notice,
+    h('div', { class: 'dash-hero' }, S.todayCard(d, render), S.urgeCard(d, render)),
+    h('div', { class: 'grid-3c u-mt-16' }, S.lessonCard(d), S.exerciseCard(d), S.achievementsCard(d)),
+    h('div', { class: 'grid-2 u-mt-16' }, S.weekCard(d), S.totalsCard(d)),
+    h('div', { class: 'grid-2 u-mt-16' }, S.tasksCard(d), S.streakCard(d)),
+    h('div', { class: 'grid-2 u-mt-16' }, S.recentCard(d, render), S.safetyCard(d)),
+    h('div', { class: 'u-mt-16' }, S.quickLinks(d)),
+  ].filter(Boolean));
+  if (location.hash === '#ganas') { location.hash = ''; document.querySelector('#ganas button')?.click(); }
 }
 
-async function recentEntries(p, box) {
-  const { entries } = await api(`/api/app/programs/${p.slug}/activity`);
-  box.replaceChildren(entries.length
-    ? h('ul', { class: 'list' }, entries.slice(0, 7).map((e) => h('li', {},
-        h('div', { class: 'list__main' },
-          h('span', {}, String(e.value?.nota ?? e.kind)),
-          h('p', { class: 'list__meta' }, new Date(e.occurred_at).toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }))),
-        h('button', { class: 'link', onclick: async () => {
-          await api(`/api/app/programs/${p.slug}/activity/${e.id}`, { method: 'DELETE' });
-          recentEntries(p, box).catch(() => {});
-        } }, 'Eliminar'))))
-    : h('p', { class: 'muted small' }, 'Todavía no hay registros. El primero es solo para ti.'));
-}
-
-async function load() {
-  let me;
-  try { me = await api('/api/me'); } catch { me = { user: null }; }
-  if (!me.user) { location.replace(`/acceso?modo=entrar&next=${encodeURIComponent(location.pathname + location.search)}`); return; }
-  const cat = await api('/api/programs');
-  const p = cat.programs.find((x) => x.slug === slug);
-  if (!p) { location.replace('/programas'); return; }
-  if (p.state !== 'active' && p.state !== 'canceled_but_active') { location.replace('/programas'); return; }
-  document.title = `${p.name} · Alento`;
-  if (p.theme === 'night') document.body.classList.add('program-night');
-
-  const journey = await api(`/api/app/journey?program=${p.slug}`);
-  const next = journey.nextLesson;
-  const entriesBox = h('div', { class: 'card' });
-  recentEntries(p, entriesBox).catch(() => {});
-
-  root.replaceChildren(
-    h('header', { class: 'program-hero', style: `--program:${p.color}` },
-      h('img', { src: p.icon, alt: '', width: 56, height: 56, class: 'program-hero__icon' }),
-      h('div', {},
-        h('p', { class: 'eyebrow' }, `${greeting((me.user.name || '').split(' ')[0] || 'bienvenida')} · ${p.name}`),
-        h('h1', { class: 'title-lg' }, p.tagline),
-        h('p', { class: 'muted' }, `${journey.totals.completed} de ${journey.totals.lessons} lecciones · Cada paso cuenta.`)),
-      h('a', { class: 'link program-hero__catalog', href: '/programas' }, 'Mis programas')),
-    next ? h('a', { class: 'card next-lesson', href: `/leccion?l=${next.slug}&p=${p.slug}` },
-      h('p', { class: 'eyebrow' }, `Siguiente lección · Capítulo ${next.chapter.number}: ${next.chapter.title}`),
-      h('h2', { class: 'title-md' }, next.title),
-      h('p', { class: 'muted small' }, `${next.description} · ${next.minutes} min`),
-      h('span', { class: 'btn btn--sm u-mt-8' }, 'Continuar'))
-      : h('section', { class: 'card' }, h('h2', { class: 'title-md' }, 'Programa completado. ¡Enhorabuena!'),
-        h('p', { class: 'muted' }, 'Puedes repasar cualquier lección cuando quieras.')),
-    quickLog(p, () => recentEntries(p, entriesBox).catch(() => {})),
-    h('div', { class: 'mini-grid' },
-      h('a', { class: 'card mini-card', href: `/jornada?program=${p.slug}` }, h('strong', {}, 'Mi jornada'), h('p', { class: 'muted small' }, 'Capítulos y lecciones')),
-      p.slug === 'ansiedad' || p.slug === 'sueno'
-        ? h('a', { class: 'card mini-card', href: '/respirar' }, h('strong', {}, 'Respirar'), h('p', { class: 'muted small' }, 'Ejercicios guiados, siempre opcionales'))
-        : h('a', { class: 'card mini-card', href: '/diario' }, h('strong', {}, 'Mi diario'), h('p', { class: 'muted small' }, 'Cómo te sientes'))),
-    h('section', {}, h('h2', { class: 'title-md catalog-section' }, 'Registros recientes'), entriesBox),
-  );
-  splashReady();
-}
-
-load().catch((e) => { splashReady(); root.replaceChildren(h('p', { class: 'form-error' }, e.message)); });
-void cravingFlow; void emptyState;
+render();

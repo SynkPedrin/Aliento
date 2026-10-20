@@ -2,9 +2,13 @@
 import { $, api, h, localDay, longDate, setBusy, toast } from '../ui.js';
 import { celebrate, errorState, initApp, loading, page } from '../shell.js';
 import { xyChart } from '../charts.js';
+import { applyProgramNav, programError, programQuery, programRibbon, programSlug } from '../program/nav.js';
 
+const SLUG = programSlug();
 await initApp({ active: '/diario' });
 const root = $('[data-root]');
+const META = SLUG ? await applyProgramNav(SLUG) : null;
+const PQ = programQuery(SLUG);
 
 const MOODS = [
   [5, 'Muy bien'], [4, 'Bien'], [3, 'Regular'], [2, 'Mal'], [1, 'Muy mal'],
@@ -24,23 +28,24 @@ const state = { entries: new Map(), today: localDay(), selected: null, month: nu
 async function load() {
   loading(root);
   try {
-    const data = await api('/api/app/mood?days=90');
+    const data = await api(`/api/app/mood?days=90${programQuery(SLUG, false)}`);
     state.today = dayKey(data.today ?? localDay());
     state.entries = new Map((data.entries ?? []).map((e) => [dayKey(e.day), { ...e, day: dayKey(e.day) }]));
     state.selected = state.selected ?? state.today;
     if (!state.month) { const t = toDate(state.today); state.month = { y: t.getFullYear(), m: t.getMonth() }; }
     render();
   } catch (err) {
-    errorState(root, err, load);
+    if (SLUG) programError(root, err, SLUG, load); else errorState(root, err, load);
   }
 }
 
 function render() {
   page(root, {
-    eyebrow: 'Diario',
+    eyebrow: META ? `Diario · ${META.name}` : 'Diario',
     title: 'Mi diario',
     intro: 'Anota cómo te sientes cada día. Con el tiempo verás qué te ayuda y qué te cuesta más.',
   });
+  if (META) root.prepend(programRibbon(META));
   root.append(
     h('div', { class: 'grid-2' }, formCard(), calendarCard()),
     chartCard(),
@@ -73,7 +78,7 @@ function formCard() {
       if (!mood) { toast('Elige cómo te has sentido.'); return; }
       setBusy(btn, true, 'Guardando…');
       try {
-        const r = await api(`/api/app/mood/${day}`, { method: 'PUT', body: { mood, note: note.value.trim() || null } });
+        const r = await api(`/api/app/mood/${day}${PQ}`, { method: 'PUT', body: { mood, note: note.value.trim() || null } });
         state.entries.set(day, { day, mood, note: note.value.trim(), updated_at: new Date().toISOString() });
         toast('Entrada guardada.');
         celebrate(r.achievements);

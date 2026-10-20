@@ -1,6 +1,8 @@
 import { $, api, h, longDate, money, setBusy, toast } from '../ui.js';
 import { errorState, initApp, loading, page } from '../shell.js';
+import { applyProgramNav, programSlug } from '../program/nav.js';
 
+const SLUG = programSlug();
 await initApp({ active: null });
 const root = $('[data-root]');
 const NAMES = { parar: 'Dejarlo en una fecha', gradual: 'Reducción progresiva', reducir: 'Reducir a la mitad primero' };
@@ -66,4 +68,7 @@ async function load() {
     : h('p', { class: 'muted' }, 'Todavía no has cambiado tus objetivos.')));
 }
 
-load();
+if (SLUG) {
+  const [{ mountProgramGoals }, meta] = await Promise.all([import('../program/goals-view.js'), applyProgramNav(SLUG)]);
+  mountProgramGoals(root, SLUG, meta);
+} else load();

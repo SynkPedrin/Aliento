@@ -1,9 +1,12 @@
 // Mis logros: insignias conseguidas y pendientes.
 import { $, api, h, longDate } from '../ui.js';
 import { emptyState, errorState, initApp, loading, page } from '../shell.js';
+import { applyProgramNav, programError, programRibbon, programSlug } from '../program/nav.js';
 
+const SLUG = programSlug();
 await initApp({ active: '/logros' });
 const root = $('[data-root]');
+const META = SLUG ? await applyProgramNav(SLUG) : null;
 
 const svg = (paths) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 const BADGES = {
@@ -22,21 +25,22 @@ const BADGES = {
 async function load() {
   loading(root);
   try {
-    const { achievements = [] } = await api('/api/app/achievements');
+    const { achievements = [] } = await api(`/api/app/achievements${SLUG ? `?program=${SLUG}` : ''}`);
     render(achievements);
   } catch (err) {
-    errorState(root, err, load);
+    if (SLUG) programError(root, err, SLUG, load); else errorState(root, err, load);
   }
 }
 
 function render(list) {
   const unlocked = list.filter((a) => a.unlocked_at);
   page(root, {
-    eyebrow: 'Logros',
+    eyebrow: META ? `Logros · ${META.name}` : 'Logros',
     title: 'Mis logros',
     intro: 'Cada paso cuenta. Un tropiezo no borra tus logros.',
     actions: list.length ? h('span', { class: 'pill pill--ok' }, `${unlocked.length} de ${list.length} conseguidos`) : null,
   });
+  if (META) root.prepend(programRibbon(META));
   if (!list.length) {
     root.append(emptyState('Aún no hay logros disponibles', 'Vuelve más tarde: aquí aparecerán tus insignias.'));
     return;

@@ -1,7 +1,9 @@
 import { $, api, h, money, num } from '../ui.js';
 import { emptyState, errorState, initApp, loading, page, rangeTabs } from '../shell.js';
 import { hbars, xyChart } from '../charts.js';
+import { applyProgramNav, programSlug } from '../program/nav.js';
 
+const SLUG = programSlug();
 await initApp({ active: '/progreso' });
 const root = $('[data-root]');
 let days = 30;
@@ -78,4 +80,7 @@ async function load() {
         h('p', { class: 'list__meta' }, `${g.max_daily != null ? `máximo ${g.max_daily}/día` : 'máximo según el plan'} · desde el ${new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long' }).format(new Date(g.created_at))}`))))))));
 }
 
-load();
+if (SLUG) {
+  const [{ mountProgramProgress }, meta] = await Promise.all([import('../program/progress-view.js'), applyProgramNav(SLUG)]);
+  mountProgramProgress(root, SLUG, meta);
+} else load();

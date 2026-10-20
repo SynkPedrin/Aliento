@@ -122,4 +122,9 @@ async function init() {
   go(state.completed ? 3 : 0);
 }
 
-init();
+const programSlug = new URLSearchParams(location.search).get('p') ?? '';
+if (['alcohol', 'azucar', 'ansiedad', 'sueno'].includes(programSlug)) {
+  import('../program/setup.js').then((m) => m.runProgramSetup({ root, slug: programSlug, dots }));
+} else {
+  init();
+}

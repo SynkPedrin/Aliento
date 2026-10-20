@@ -1,9 +1,13 @@
 // Preferencias de recordatorios: consentimiento explícito, horario y categorías.
 import { $, api, h, icon, setBusy, toast } from '../ui.js';
 import { errorState, initApp, loading, page, userTimezone } from '../shell.js';
+import { applyProgramNav, programError, programQuery, programRibbon, programSlug } from '../program/nav.js';
 
+const SLUG = programSlug();
 await initApp({ active: null });
 const root = $('[data-root]');
+const META = SLUG ? await applyProgramNav(SLUG) : null;
+const PQ = programQuery(SLUG);
 
 const ZONES = [
   ['Europe/Madrid', 'España (península)'],
@@ -38,9 +42,9 @@ const CATEGORIES = [
 async function load() {
   loading(root);
   try {
-    render(await api('/api/app/notifications'));
+    render(await api(`/api/app/notifications${PQ}`));
   } catch (err) {
-    errorState(root, err, load);
+    if (SLUG) programError(root, err, SLUG, load); else errorState(root, err, load);
   }
 }
 
@@ -56,7 +60,7 @@ const toggle = (id, label, help, checked) => {
 
 function render(prefs) {
   page(root, {
-    eyebrow: 'Ajustes',
+    eyebrow: META ? `Ajustes · ${META.name}` : 'Ajustes',
     title: 'Notificaciones',
     intro: 'Decide si quieres recibir recordatorios, cuándo y sobre qué. Puedes cambiarlo en cualquier momento.',
   });
@@ -103,7 +107,7 @@ function render(prefs) {
       };
       setBusy(btn, true, 'Guardando…');
       try {
-        const saved = await api('/api/app/notifications', { method: 'PUT', body });
+        const saved = await api(`/api/app/notifications${PQ}`, { method: 'PUT', body });
         toast('Preferencias guardadas.');
         render(saved);
       } catch (err) {
@@ -119,6 +123,7 @@ function render(prefs) {
   h('div', { class: 'u-mt-16' }, btn));
 
   const device = h('div', { class: 'u-mt-16' });
+  if (META) root.prepend(programRibbon(META));
   root.append(...[
     prefs.deliveryAvailable === false ? h('div', { class: 'notice notice--warn' }, icon('info', 'notice__icon'),
       h('div', {}, 'Tus preferencias quedan guardadas. El envío de recordatorios se activará cuando esté disponible el canal de notificaciones; no recibirás avisos hasta entonces.')) : null,
