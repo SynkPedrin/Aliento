@@ -162,7 +162,7 @@ export async function submitLead({ email, program, marketingEmail }) {
       consents: { health_data: true, marketing_email: Boolean(marketingEmail), cookies_marketing: marketingConsent() } }),
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw Object.assign(new Error(data.error ?? 'No se pudo guardar tu e-mail.'), { code: data.code ?? (res.status < 500 ? 'INVALID' : 'SERVER') });
+  if (!res.ok) throw Object.assign(new Error(data.error ?? 'No se pudo guardar tu e-mail.'), { code: data.code ?? 'SERVER' });
   if (data.eventId) pixelFor('lead_created', data.eventId);
   return data;
 }
