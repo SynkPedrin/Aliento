@@ -99,7 +99,7 @@ function send(events, { beacon = false } = {}) {
     events: events.map((e) => ({ id: e.id ?? uuid(), name: e.name, props: e.props ?? {}, page: location.pathname })),
   });
   if (beacon && navigator.sendBeacon) { navigator.sendBeacon('/api/track', new Blob([body], { type: 'application/json' })); return Promise.resolve(); }
-  return fetch('/api/track', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body, keepalive: true }).catch(() => {});
+  return fetch('/api/track', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body }).then((r) => r.text()).catch(() => {});
 }
 
 function flush() { timer = null; const batch = pending; pending = []; if (batch.length) send(batch); }
@@ -187,10 +187,11 @@ function mountBanner() {
   const p = document.createElement('p');
   p.textContent = 'Usamos cookies para que Alento funcione y, si aceptas, para medir y mejorar nuestros anuncios. Tú eliges.';
   const row = document.createElement('div');
-  const mk = (label, choice, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = label; b.addEventListener('click', () => { setCookieConsent(choice); box.remove(); }); return b; };
+  const mk = (label, choice, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = label; b.addEventListener('click', () => { setCookieConsent(choice); box.remove(); document.body.classList.remove('has-cookiebar'); }); return b; };
   row.append(mk('Solo las esenciales', 'min', 'btn btn--ghost btn--sm'), mk('Aceptar todas', 'all', 'btn btn--sm'));
   box.append(p, row);
   document.body.append(box);
+  document.body.classList.add('has-cookiebar'); // deja espacio para que el banner no tape los botones
 }
 
 let started = false;

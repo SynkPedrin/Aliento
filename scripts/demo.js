@@ -9,6 +9,8 @@ import { createAuth } from '../server/auth.js';
 import { createBilling } from '../server/billing.js';
 import { loadConfig } from '../server/config.js';
 import { createDb } from '../server/db.js';
+import { createGrowth } from '../server/growth/index.js';
+import { createPrograms } from '../server/programs.js';
 import { fakeStripe } from './fake-stripe.js';
 import { localSupabaseEnv } from './local-supabase.js';
 
@@ -25,7 +27,10 @@ if (!/127\.0\.0\.1|localhost/.test(config.supabase.url)) throw new Error('El mod
 const webhooks = new Stripe('sk_test_demo').webhooks;
 const stripe = fakeStripe({ webhooks, baseUrl: `${config.appUrl}/demo-checkout` });
 const db = createDb(config.supabase.dbUrl);
-const app = createApp({ db, auth: createAuth({ config, db }), billing: createBilling({ db, stripe, config }), config });
+const auth = createAuth({ config, db });
+const billing = createBilling({ db, stripe, config });
+const growth = createGrowth({ db, config, auth });
+const app = createApp({ db, auth, billing, config, programs: createPrograms({ db, billing }), growth });
 
 const demo = express();
 demo.use(express.urlencoded({ extended: false }));

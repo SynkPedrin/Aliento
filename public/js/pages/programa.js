@@ -68,7 +68,7 @@ async function load() {
     h('header', { class: 'program-hero', style: `--program:${p.color}` },
       h('img', { src: p.icon, alt: '', width: 56, height: 56, class: 'program-hero__icon' }),
       h('div', {},
-        h('p', { class: 'eyebrow' }, `${greeting()} · ${p.name}`),
+        h('p', { class: 'eyebrow' }, `${greeting((me.user.name || '').split(' ')[0] || 'bienvenida')} · ${p.name}`),
         h('h1', { class: 'title-lg' }, p.tagline),
         h('p', { class: 'muted' }, `${journey.totals.completed} de ${journey.totals.lessons} lecciones · Cada paso cuenta.`)),
       h('a', { class: 'link program-hero__catalog', href: '/programas' }, 'Mis programas')),

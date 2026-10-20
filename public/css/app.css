@@ -769,3 +769,8 @@ body.program-night .next-lesson { border-left-color: var(--program, #FFC857); }
 .cookies-lite p { margin: 0 0 12px; font-size: 14px; line-height: 1.5; color: var(--ink); }
 .cookies-lite div { display: flex; gap: 10px; flex-wrap: wrap; }
 .lead-gate { max-width: 520px; margin: 0 auto; }
+body.has-cookiebar { padding-bottom: 190px; }
+/* El banner de cookies siempre es claro, también sobre páginas de tema oscuro. */
+.cookies-lite, .cookies-lite p { color: #0A0F3C; }
+.cookies-lite .btn--ghost { color: #0A0F3C; background: #fff; border-color: #C9D0F5; }
+.cookies-lite .btn:not(.btn--ghost) { color: #fff; background: #1E3FFF; }
