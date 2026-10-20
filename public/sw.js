@@ -3,9 +3,9 @@
 //  · NUNCA se cachea /api/* (sesión, datos personales y de salud, pagos), ni Stripe, ni otros orígenes.
 //  · Páginas HTML: red primero (no contienen datos personales; se pintan en el navegador).
 //    Sin conexión: la última versión guardada o la página "Sin conexión".
-//  · CSS/JS/imágenes/fuentes propias: caché con actualización en segundo plano.
+//  · JS/CSS propios: red primero; imágenes/fuentes: caché con actualización en segundo plano.
 //  · Al cambiar VERSION se borran las cachés anteriores (actualización controlada).
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC = `aliento-static-${VERSION}`;
 const PAGES = `aliento-pages-${VERSION}`;
 const PRECACHE = [
@@ -42,7 +42,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (/\.(css|js|png|jpg|jpeg|webp|avif|svg|woff2|webmanifest)$/.test(url.pathname)) {
+  // JS/CSS: red primero (un cambio publicado se ve al instante; la caché solo sirve sin conexión).
+  if (/\.(css|js)$/.test(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(STATIC);
+      try {
+        const res = await fetch(req);
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch {
+        return (await cache.match(req)) || Response.error();
+      }
+    })());
+    return;
+  }
+
+  // Imágenes, fuentes y manifest: caché con actualización en segundo plano.
+  if (/\.(png|jpg|jpeg|webp|avif|svg|woff2|webmanifest)$/.test(url.pathname)) {
     event.respondWith((async () => {
       const cache = await caches.open(STATIC);
       const cached = await cache.match(req);
