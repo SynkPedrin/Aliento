@@ -59,9 +59,9 @@ export async function dailySeries(q, userId, tz, from, to) {
     c as (select (felt_at at time zone $2)::date as d, count(*) as n, count(*) filter (where outcome = 'resisted') as r
           from public.craving_entries, b where user_id = $1 and felt_at >= b.lo and felt_at < b.hi group by 1),
     k as (select day as d from public.daily_checkins where user_id = $1 and day between $3::date and $4::date),
-    m as (select day as d, mood from public.mood_entries where user_id = $1 and day between $3::date and $4::date),
+    m as (select day as d, mood from public.mood_entries where user_id = $1 and program_slug = 'sem-fumo' and day between $3::date and $4::date),
     br as (select (completed_at at time zone $2)::date as d, count(*) as n
-          from public.breathing_sessions, b where user_id = $1 and completed_at >= b.lo and completed_at < b.hi group by 1),
+          from public.breathing_sessions, b where user_id = $1 and program_slug = 'sem-fumo' and completed_at >= b.lo and completed_at < b.hi group by 1),
     l as (select (completed_at at time zone $2)::date as d, count(*) as n
           from public.user_lesson_progress, b where user_id = $1 and status = 'completed' and completed_at >= b.lo and completed_at < b.hi group by 1)
     select to_char(days.d, 'YYYY-MM-DD') as day,

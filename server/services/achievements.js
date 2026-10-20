@@ -14,7 +14,7 @@ export const TRACKED_DAYS_SQL = `
     select (smoked_at at time zone $2)::date as d from public.smoking_entries where user_id = $1
     union select day from public.daily_checkins where user_id = $1
     union select (felt_at at time zone $2)::date from public.craving_entries where user_id = $1
-    union select day from public.mood_entries where user_id = $1
+    union select day from public.mood_entries where user_id = $1 and program_slug = 'sem-fumo'
   ) t`;
 
 const TOTAL = 9;
@@ -24,7 +24,10 @@ const TOTAL = 9;
  * servicio (los usuarios no pueden escribir en user_achievements). Devuelve los recién desbloqueados.
  */
 export async function checkAchievements(q, userId, timezone = 'UTC') {
-  const have = await q.one('select count(*)::int as n from public.user_achievements where user_id = $1', [userId]);
+  // Solo los logros de Sem Fumo: los de los demás programas los concede program-companion.js.
+  const have = await q.one(`select count(*)::int as n from public.user_achievements ua
+    join public.achievements a on a.slug = ua.achievement_slug
+    where ua.user_id = $1 and a.program_slug = 'sem-fumo'`, [userId]);
   if (have.n >= TOTAL) return [];
   const rows = await q.rows(`
     with rules(slug, ok) as (values
@@ -33,10 +36,10 @@ export async function checkAchievements(q, userId, timezone = 'UTC') {
       ('primer-registro', exists (select 1 from public.smoking_entries where user_id = $1)
          or exists (select 1 from public.daily_checkins where user_id = $1)
          or exists (select 1 from public.craving_entries where user_id = $1)
-         or exists (select 1 from public.mood_entries where user_id = $1)),
+         or exists (select 1 from public.mood_entries where user_id = $1 and program_slug = 'sem-fumo')),
       ('semana-seguimiento', (select count(*) >= 7 from (${TRACKED_DAYS_SQL}) x)),
       ('ganas-superadas', exists (select 1 from public.craving_entries where user_id = $1 and outcome = 'resisted')),
-      ('respiracion-5', (select count(*) >= 5 from public.breathing_sessions where user_id = $1 and completed_at is not null)),
+      ('respiracion-5', (select count(*) >= 5 from public.breathing_sessions where user_id = $1 and program_slug = 'sem-fumo' and completed_at is not null)),
       ('primer-dia-sin-fumar', exists (select 1 from public.daily_checkins c where c.user_id = $1 and not exists (
          select 1 from public.smoking_entries s where s.user_id = $1
            and s.smoked_at >= c.day::timestamp at time zone $2 and s.smoked_at < (c.day + 1)::timestamp at time zone $2))),
@@ -48,6 +51,6 @@ export async function checkAchievements(q, userId, timezone = 'UTC') {
       on conflict do nothing returning achievement_slug
     )
     select a.slug, a.title, a.description, a.icon from public.achievements a
-    join granted g on g.achievement_slug = a.slug order by a.position`, [userId, timezone]);
+    join granted g on g.achievement_slug = a.slug where a.program_slug = 'sem-fumo' order by a.position`, [userId, timezone]);
   return rows;
 }

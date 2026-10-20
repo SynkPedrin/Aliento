@@ -16,6 +16,7 @@ import { SUPPORT_TOPICS } from '../services/support.js';
 import { DAY_RE, HttpError, int, oneOf, requireAccess, text, uuid, wrap } from './util.js';
 import { sharedRateLimiter } from '../auth.js';
 import { subscriptionView } from './account.js';
+import { programRoutes } from './program.js';
 
 export const MOODS = ['muy-bien', 'bien', 'regular', 'mal', 'muy-mal'];
 export const FEELINGS = ['ansiedad', 'estres', 'aburrimiento', 'tristeza', 'enojo', 'cansancio', 'alegria', 'costumbre'];
@@ -41,6 +42,16 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
     return entitlement;
   }
   const semFumo = wrap(async (req, res, next) => { await requireProgram(req, 'sem-fumo'); next(); });
+
+  /** Programa al que se asocian humor/respiración (?program=). Sin parámetro: Sem Fumo, como siempre. */
+  async function programParam(req) {
+    const p = req.query.program == null || req.query.program === '' ? 'sem-fumo' : String(req.query.program);
+    if (p !== 'sem-fumo') {
+      if (!(await programs.get(p))) throw new HttpError(404, 'Programa no encontrado.', 'PROGRAM_NOT_FOUND');
+      await requireProgram(req, p);
+    }
+    return p;
+  }
 
   const tz = (req) => req.user.timezone || 'UTC';
   const asUser = (req, fn) => db.asUser(req.user.id, fn);
@@ -225,6 +236,11 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
   // ---------------------------------------------------------------- consumo
   const entryView = (e) => ({ id: e.id, at: e.smoked_at, quantity: e.quantity, trigger: e.trigger, mood: e.mood, note: e.note });
 
+  // -------------------------------------------------- companheiro de programa (alcohol, azucar, ansiedad, sueno)
+  // Va ANTES de las rutas genéricas /programs/:slug/activity: los slugs que no son de un programa
+  // acompañado salen del router con next('router') y siguen su camino.
+  r.use('/programs/:slug', programRoutes({ db, config, notifier, programs, requireProgram }));
+
   // -------------------------------------------------- registros genéricos por programa
   // (alcohol, azucar, ansiedad, sueno). Sem Fumo usa sus tablas especializadas.
   const ACTIVITY_KINDS = ['consumo', 'contexto', 'habito', 'emocion', 'sueno', 'nota'];
@@ -392,18 +408,21 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
 
   // ---------------------------------------------------------------- respiración
   r.get('/breathing', wrap(async (req, res) => {
+    const program = await programParam(req);
     const exercises = await db.service.rows('select slug, name, description, inhale, hold, exhale, hold_after from public.breathing_exercises order by position');
     const recent = await asUser(req, (q) => q.rows(`select exercise_slug, planned_seconds, completed_at from public.breathing_sessions
-      where user_id = $1 and completed_at is not null order by completed_at desc limit 10`, [req.user.id]));
-    res.json({ exercises, recent });
+      where user_id = $1 and program_slug = $2 and completed_at is not null order by completed_at desc limit 10`, [req.user.id, program]));
+    res.json({ exercises, recent, program });
   }));
 
   r.post('/breathing/sessions', wrap(async (req, res) => {
     const slug = String(req.body?.exercise ?? '');
     if (!(await db.service.one('select 1 from public.breathing_exercises where slug = $1', [slug]))) throw new HttpError(422, 'Ejercicio no válido.');
     const planned = int(req.body?.plannedSeconds, { min: 30, max: 1800, field: 'plannedSeconds' });
-    const row = await asUser(req, (q) => q.one(`insert into public.breathing_sessions (user_id, exercise_slug, planned_seconds)
-      values ($1, $2, $3) returning id, started_at`, [req.user.id, slug, planned]));
+    if (req.query.program == null && typeof req.body?.program === 'string') req.query.program = req.body.program;
+    const program = await programParam(req);
+    const row = await asUser(req, (q) => q.one(`insert into public.breathing_sessions (user_id, exercise_slug, planned_seconds, program_slug)
+      values ($1, $2, $3, $4) returning id, started_at`, [req.user.id, slug, planned, program]));
     res.status(201).json({ session: row });
   }));
 
@@ -425,19 +444,21 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
 
   // ---------------------------------------------------------------- diario de ánimo
   r.get('/mood', wrap(async (req, res) => {
+    const program = await programParam(req);
     const days = RANGES[req.query.days] ?? 30;
     const from = addDays(todayIn(tz(req)), -(days - 1));
     const rows = await asUser(req, (q) => q.rows(`select day, mood, note, updated_at from public.mood_entries
-      where user_id = $1 and day >= $2 order by day desc`, [req.user.id, from]));
-    res.json({ entries: rows, today: todayIn(tz(req)) });
+      where user_id = $1 and program_slug = $3 and day >= $2 order by day desc`, [req.user.id, from, program]));
+    res.json({ entries: rows, today: todayIn(tz(req)), program });
   }));
 
   r.put('/mood/:day', wrap(async (req, res) => {
+    const program = await programParam(req);
     const day = localDay(req.params.day, req);
     const mood = int(req.body?.mood, { min: 1, max: 5, field: 'mood' });
     const note = text(req.body?.note, { max: 1000, field: 'note' });
-    await asUser(req, (q) => q.exec(`insert into public.mood_entries (user_id, day, mood, note) values ($1, $2, $3, $4)
-      on conflict (user_id, day) do update set mood = excluded.mood, note = excluded.note`, [req.user.id, day, mood, note]));
+    await asUser(req, (q) => q.exec(`insert into public.mood_entries (user_id, day, mood, note, program_slug) values ($1, $2, $3, $4, $5)
+      on conflict (user_id, program_slug, day) do update set mood = excluded.mood, note = excluded.note`, [req.user.id, day, mood, note, program]));
     res.json({ ok: true, achievements: await achievementsAfter(req) });
   }));
 
@@ -481,10 +502,13 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
   // ---------------------------------------------------------------- logros
   r.get('/achievements', wrap(async (req, res) => {
     await achievementsAfter(req);
+    // Sin ?program= son los de Sem Fumo (los demás programas: /programs/:slug/achievements).
+    const program = req.query.program == null ? 'sem-fumo' : String(req.query.program);
     const rows = await asUser(req, (q) => q.rows(`
       select a.slug, a.title, a.description, a.icon, ua.unlocked_at
       from public.achievements a left join public.user_achievements ua on ua.achievement_slug = a.slug and ua.user_id = $1
-      order by a.position`, [req.user.id]));
+      where a.program_slug = $2
+      order by a.position`, [req.user.id, program]));
     res.json({ achievements: rows });
   }));
 
