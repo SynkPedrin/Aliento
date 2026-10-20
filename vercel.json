@@ -12,7 +12,7 @@
     },
     {
       "source": "/quiz/(.*)",
-      "destination": "/test.html"
+      "destination": "/test"
     }
   ],
   "redirects": [
