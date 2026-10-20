@@ -38,7 +38,7 @@ a { color: inherit; }
 .reveal { position: relative; }
 
 /* 1 · Barra */
-.topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 50; transition: background .4s, box-shadow .4s, color .4s; color: #fff; }
+.topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 50; transition: background .4s, box-shadow .4s, color .4s; color: #fff; padding-top: env(safe-area-inset-top); }
 .topbar__in { display: flex; align-items: center; gap: 32px; height: 76px; }
 .topbar__logo { width: 116px; flex: none; display: block; }
 .logo-dark { display: none; }
@@ -200,7 +200,7 @@ a { color: inherit; }
 .foot__bottom p { margin: 0; }
 
 /* Cookies */
-.cookies { position: fixed; left: 20px; bottom: 20px; z-index: 60; max-width: 420px; background: #fff; border-radius: 22px; padding: 22px; box-shadow: 0 30px 60px -20px rgba(10, 15, 60, .35), 0 0 0 1px var(--line); }
+.cookies { position: fixed; left: 20px; bottom: max(20px, calc(12px + env(safe-area-inset-bottom))); z-index: 60; max-width: 420px; background: #fff; border-radius: 22px; padding: 22px; box-shadow: 0 30px 60px -20px rgba(10, 15, 60, .35), 0 0 0 1px var(--line); }
 .cookies p { margin: 0 0 16px; font: 400 14px/1.5 var(--figtree); color: var(--night); }
 .cookies div { display: flex; gap: 10px; flex-wrap: wrap; }
 

@@ -759,3 +759,6 @@ body.program-night .next-lesson { border-left-color: var(--program, #FFC857); }
 .admin-program-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .admin-program-row:last-child { border-bottom: 0; }
 .admin-program-row select { max-width: 200px; }
+
+/* App iOS (viewport-fit=cover): el contenido no debe quedar bajo la barra de estado ni el notch. */
+.site-header, .quiz, .auth-wrap { padding-top: env(safe-area-inset-top); }
