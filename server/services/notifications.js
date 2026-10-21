@@ -95,7 +95,7 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
         order by c.number, l.position limit 1`, [r.user_id, r.program_slug]);
       if (next) parts.push(`Tu próxima lección: «${next.title}».`);
     }
-    return parts.length ? { title: `Hola, ${r.name.split(' ')[0]}`, body: parts.join(' '), url: copy.home, tag: `daily-${r.program_slug}` } : null;
+    return parts.length ? { title: `Hola, ${r.name.split(' ')[0]}`, body: parts.join(' '), url: copy.home, tag: r.program_slug === 'sem-fumo' ? 'daily' : `daily-${r.program_slug}` } : null;
   }
 
   async function processRecipient(r) {
@@ -110,7 +110,7 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
     if (r.weekly_summary && r.local_weekday === 'Mon') {
       results.push(await send(r.user_id, 'weekly_summary', `weekly:${kp}${day}`, {
         // Sin cifras de salud en la pantalla de bloqueo.
-        title: 'Tu resumen semanal está listo', url: `/progreso${q}`, tag: `weekly-${r.program_slug}`,
+        title: 'Tu resumen semanal está listo', url: `/progreso${q}`, tag: r.program_slug === 'sem-fumo' ? 'weekly' : `weekly-${r.program_slug}`,
         body: 'Mira cómo fue tu semana y qué puedes ajustar en la próxima.',
       }));
     }
@@ -121,7 +121,7 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
         where g.user_id = $1 and g.program_slug = $2 and g.superseded_at is null`, [r.user_id, r.program_slug]);
       if (g && g.done < g.goal) {
         results.push(await send(r.user_id, 'exercises', `exercises:${kp}${day}`, {
-          title: 'Un minuto para ti', url: `/respirar${q}`, tag: `exercise-${r.program_slug}`,
+          title: 'Un minuto para ti', url: `/respirar${q}`, tag: r.program_slug === 'sem-fumo' ? 'exercise' : `exercise-${r.program_slug}`,
           body: 'Un ejercicio de respiración corto puede ayudarte hoy. ¿Lo hacemos?',
         }));
       }
