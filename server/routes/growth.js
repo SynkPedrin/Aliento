@@ -47,7 +47,8 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
     const role = await staff.roleOf(user.id);
     if (!role) throw new HttpError(403, 'No autorizado.', 'FORBIDDEN');
     const enabled = await staff.twofaEnabled(user.id);
-    res.json({ user: { email: user.email }, role, canEdit: role !== 'readonly', twofa: { enabled, verified: staff.has2fa(req, user.id) } });
+    const master = Boolean(config.growth.masterEmail); // modo master: sin segundo factor
+    res.json({ user: { email: user.email }, role, canEdit: role !== 'readonly', twofa: { enabled: master ? false : enabled, verified: master ? true : staff.has2fa(req, user.id), required: !master } });
   }));
   r.post('/2fa/setup', wrap(async (req, res) => {
     const user = sessionUser(req);
