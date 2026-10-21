@@ -2,7 +2,18 @@
 // en las categorías elegidas y una sola vez por recordatorio (clave de deduplicación).
 import webpush from 'web-push';
 
-const WINDOW_MIN = 30; // el recordatorio sale si la tarea programada pasa dentro de esta ventana
+const WINDOW_MIN = 30;
+
+// Recordatorio diario de cada programa: qué registrar y adónde llevar a la persona.
+const PROGRAM_COPY = {
+  'sem-fumo': { log: 'Registra cómo va tu día: cada dato cuenta.', home: '/dashboard' },
+  alcohol: { log: 'Anota cómo va tu día y tus momentos difíciles: cada dato cuenta.', home: '/programa?p=alcohol' },
+  azucar: { log: 'Anota tus porciones dulces de hoy, sin culpa: cada dato cuenta.', home: '/programa?p=azucar' },
+  ansiedad: { log: 'Un minuto para ti: respira y anota cómo te sientes.', home: '/programa?p=ansiedad' },
+  sueno: { log: 'Esta noche, tu rutina de descanso te espera. Mañana anota cómo dormiste.', home: '/programa?p=sueno' },
+};
+// La clave de deduplicación de Sem Fumo no cambia; los demás programas llevan su slug.
+const keyPrefix = (program) => (program === 'sem-fumo' ? '' : `${program}:`); // el recordatorio sale si la tarea programada pasa dentro de esta ventana
 
 export function createNotifier({ db, config, log = console, sender = (sub, body, opts) => webpush.sendNotification(sub, body, opts) }) {
   const { publicKey, privateKey, subject } = config.push;
@@ -57,52 +68,60 @@ export function createNotifier({ db, config, log = console, sender = (sub, body,
         and (extract(epoch from ((now() at time zone n.timezone)::time - n.reminder_time))::int + 86400) % 86400 < $1
         and exists (select 1 from public.push_subscriptions s where s.user_id = n.user_id)
         and not exists (select 1 from public.notification_deliveries d where d.user_id = n.user_id and d.category = 'daily'
-                        and d.dedupe_key = 'daily:' || (now() at time zone n.timezone)::date::text)
-        and public.has_premium(n.user_id)
+                        and d.dedupe_key = 'daily:' || (case when n.program_slug = 'sem-fumo' then '' else n.program_slug || ':' end)
+                                           || (now() at time zone n.timezone)::date::text)
+        and public.has_program_access(n.user_id, n.program_slug)
       order by n.user_id
       limit $2`, [WINDOW_MIN * 60, limit]);
   }
 
   async function dailyMessage(r, day) {
+    const copy = PROGRAM_COPY[r.program_slug] ?? PROGRAM_COPY['sem-fumo'];
     const parts = [];
     if (r.tracking) {
-      const logged = await db.service.one(`select (exists (select 1 from public.smoking_entries where user_id = $1 and (smoked_at at time zone $2)::date = $3::date)
-        or exists (select 1 from public.daily_checkins where user_id = $1 and day = $3::date)) as ok`, [r.user_id, r.timezone, day]);
-      if (!logged.ok) parts.push('Registra cómo va tu día: cada dato cuenta.');
+      const logged = r.program_slug === 'sem-fumo'
+        ? await db.service.one(`select (exists (select 1 from public.smoking_entries where user_id = $1 and (smoked_at at time zone $2)::date = $3::date)
+            or exists (select 1 from public.daily_checkins where user_id = $1 and day = $3::date)) as ok`, [r.user_id, r.timezone, day])
+        : await db.service.one(`select exists (select 1 from public.program_activity_entries where user_id = $1 and program_slug = $4
+            and (occurred_at at time zone $2)::date = $3::date) as ok`, [r.user_id, r.timezone, day, r.program_slug]);
+      if (!logged.ok) parts.push(copy.log);
     }
     if (r.lessons) {
       const next = await db.service.one(`
         select l.title from public.journey_lessons l join public.journey_chapters c on c.id = l.chapter_id
+        join public.journey_programs jp on jp.id = c.program_id and jp.slug = $2
         where l.published and c.published and not exists (
           select 1 from public.user_lesson_progress p where p.user_id = $1 and p.lesson_id = l.id and p.status = 'completed')
-        order by c.number, l.position limit 1`, [r.user_id]);
+        order by c.number, l.position limit 1`, [r.user_id, r.program_slug]);
       if (next) parts.push(`Tu próxima lección: «${next.title}».`);
     }
-    return parts.length ? { title: `Hola, ${r.name.split(' ')[0]}`, body: parts.join(' '), url: '/dashboard', tag: 'daily' } : null;
+    return parts.length ? { title: `Hola, ${r.name.split(' ')[0]}`, body: parts.join(' '), url: copy.home, tag: `daily-${r.program_slug}` } : null;
   }
 
   async function processRecipient(r) {
     const results = [];
     const day = r.local_day;
+    const kp = keyPrefix(r.program_slug);
+    const q = r.program_slug === 'sem-fumo' ? '' : `?p=${r.program_slug}`;
     const daily = await dailyMessage(r, day);
     // Siempre se marca el día (aunque no haya nada que decir) para no volver a evaluarlo.
-    results.push(daily ? await send(r.user_id, 'daily', `daily:${day}`, daily)
-      : await markSkipped(r.user_id, 'daily', `daily:${day}`));
+    results.push(daily ? await send(r.user_id, 'daily', `daily:${kp}${day}`, daily)
+      : await markSkipped(r.user_id, 'daily', `daily:${kp}${day}`));
     if (r.weekly_summary && r.local_weekday === 'Mon') {
-      results.push(await send(r.user_id, 'weekly_summary', `weekly:${day}`, {
+      results.push(await send(r.user_id, 'weekly_summary', `weekly:${kp}${day}`, {
         // Sin cifras de salud en la pantalla de bloqueo.
-        title: 'Tu resumen semanal está listo', url: '/progreso', tag: 'weekly',
+        title: 'Tu resumen semanal está listo', url: `/progreso${q}`, tag: `weekly-${r.program_slug}`,
         body: 'Mira cómo fue tu semana y qué puedes ajustar en la próxima.',
       }));
     }
     if (r.exercises && r.local_weekday === 'Thu') {
       const g = await db.service.one(`select g.exercise_per_week as goal,
-        (select count(*) from public.breathing_sessions b where b.user_id = $1 and b.completed_at > now() - interval '7 days')::int as done
+        (select count(*) from public.breathing_sessions b where b.user_id = $1 and coalesce(b.program_slug, 'sem-fumo') = $2 and b.completed_at > now() - interval '7 days')::int as done
         from public.user_goals g
         where g.user_id = $1 and g.program_slug = $2 and g.superseded_at is null`, [r.user_id, r.program_slug]);
       if (g && g.done < g.goal) {
-        results.push(await send(r.user_id, 'exercises', `exercises:${day}`, {
-          title: 'Un minuto para ti', url: '/respirar', tag: 'exercise',
+        results.push(await send(r.user_id, 'exercises', `exercises:${kp}${day}`, {
+          title: 'Un minuto para ti', url: `/respirar${q}`, tag: `exercise-${r.program_slug}`,
           body: 'Un ejercicio de respiración corto puede ayudarte hoy. ¿Lo hacemos?',
         }));
       }
