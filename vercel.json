@@ -17,6 +17,17 @@
   ],
   "redirects": [
     {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "citavel.ai"
+        }
+      ],
+      "destination": "https://alento.citavel.ai/$1",
+      "permanent": false
+    },
+    {
       "source": "/panel",
       "destination": "/dashboard",
       "permanent": true

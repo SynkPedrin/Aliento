@@ -16,8 +16,8 @@
    O Vercel emite o HTTPS sozinho.
 
 ## 2. Depois que o DNS responder (peça ao Claude ou faça)
-- Vercel: `APP_URL=https://citavel.ai` (Production) e `vercel --prod`.
-- Stripe: webhook `https://citavel.ai/api/stripe/webhook` (atualizar `STRIPE_WEBHOOK_SECRET`).
-- Supabase → Authentication → URL Configuration: Site URL `https://citavel.ai`,
-  Redirect URLs `https://citavel.ai/**`.
+- Vercel: `APP_URL=https://alento.citavel.ai` (Production) e `vercel --prod`.
+- Stripe: webhook `https://alento.citavel.ai/api/stripe/webhook` (atualizar `STRIPE_WEBHOOK_SECRET`).
+- Supabase → Authentication → URL Configuration: Site URL `https://alento.citavel.ai`,
+  Redirect URLs `https://alento.citavel.ai/**`.
 - Variáveis legais: `LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_EMAIL`.
