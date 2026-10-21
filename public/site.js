@@ -6,11 +6,6 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
   }
-  // Rotas comerciais do funil: cada programa tem seu quiz (/quiz/<slug> no
-  // Vercel; o servidor local também serve essa rota). O visitante sai da
-  // homepage direto para o quiz do objetivo escolhido.
-  const QUIZ_ROUTE = '/quiz';
-  const QUIZ_PROGRAM = { cigarro: 'sem-fumo', alcool: 'alcohol', acucar: 'azucar', ansiedade: 'ansiedad', sono: 'sueno' };
 
   // Máscara da janela em curva do horizonte (mesma do símbolo)
   document.body.insertAdjacentHTML('afterbegin', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><clipPath id="clip-horizon" clipPathUnits="objectBoundingBox"><path d="M0,0.12 C0.289,0 0.711,0 1,0.12 L1,1 L0,1 Z"/></clipPath></defs></svg>');
@@ -23,12 +18,6 @@
     el.innerHTML = `<svg class="alento-symbol" viewBox="14 24 92 84">${A.SYM(C.mist, C.amber, C.waveNight)}</svg>`;
   });
   document.querySelectorAll('[data-ui-icon]').forEach(el => { el.innerHTML = A.ICONS[el.dataset.uiIcon]; });
-  // Cada hábito lleva a su quiz (/quiz/<slug>); los CTA genéricos (#comecar) bajan al selector de hábitos.
-  document.querySelectorAll('[data-quiz]').forEach(a => {
-    const slug = QUIZ_PROGRAM[a.dataset.quiz];
-    if (slug) a.setAttribute('href', QUIZ_ROUTE + '/' + slug);
-  });
-
   /* ---------- Idiomas ---------- */
   const LANGS = window.ALENTO_LANGS, DICT = window.ALENTO_I18N, DEFAULT = 'es';
   const pick = c => LANGS.find(l => l.code.toLowerCase() === String(c || '').toLowerCase());

@@ -3,6 +3,7 @@ import { $, api, h, icon } from '../ui.js';
 import { errorState, greeting, initApp, loading } from '../shell.js';
 import { dayLong } from '../program/format.js';
 import * as S from '../program/sections.js';
+import { startCard } from '../program/start-card.js';
 
 const slug = new URLSearchParams(location.search).get('p') ?? '';
 const SLUGS = ['alcohol', 'azucar', 'ansiedad', 'sueno'];
@@ -36,6 +37,7 @@ async function render() {
     ? h('div', { class: 'notice notice--warn' }, icon('info', 'notice__icon'), h('div', {}, h('strong', {}, 'No pudimos renovar tu suscripción. '), 'Actualiza tu método de pago en ', h('a', { href: '/suscripcion' }, 'Mi suscripción'), '.'))
     : null;
 
+  const start = await startCard(d.program?.slug ?? slug).catch(() => null);
   root.replaceChildren(...[
     h('div', { class: 'page-head pg-head' },
       h('div', { class: 'pg-head__main' },
@@ -49,6 +51,7 @@ async function render() {
     h('div', { class: 'dash-hero' }, S.todayCard(d, render), S.urgeCard(d, render)),
     h('div', { class: 'grid-3c u-mt-16' }, S.lessonCard(d), S.exerciseCard(d), S.achievementsCard(d)),
     h('div', { class: 'grid-2 u-mt-16' }, S.weekCard(d), S.totalsCard(d)),
+    start ? h('div', { class: 'u-mt-16' }, start) : null,
     h('div', { class: 'grid-2 u-mt-16' }, S.tasksCard(d), S.streakCard(d)),
     h('div', { class: 'grid-2 u-mt-16' }, S.recentCard(d, render), S.safetyCard(d)),
     h('div', { class: 'u-mt-16' }, S.quickLinks(d)),

@@ -122,14 +122,15 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
   // ---------------------------------------------------------------- checkout y suscripción
   r.post('/checkout', requireUser, wrap(async (req, res) => {
     const program = String(req.body?.program ?? 'sem-fumo');
+    // El cuestionario del programa (el embudo de anuncios) alimenta la app: su resultado se vincula a la cuenta
+    // al pagar y se usa en el plan y las estimaciones. Sem Fumo exige haberlo completado (embudo con oferta de salida).
     let assessment = null;
+    const quizSession = await store.current(req, program);
+    assessment = quizSession?.completed_at ? await store.assessmentFor(quizSession.id) : null;
     if (program === 'sem-fumo' && !req.body?.fromCatalog) {
-      // Embudo del cuestionario de Sem Fumo (con oferta de salida).
-      const s = await store.current(req);
-      assessment = s?.completed_at ? await store.assessmentFor(s.id) : null;
       if (!assessment) throw new HttpError(409, 'Completa el cuestionario antes de suscribirte.', 'NO_RESULT');
-      if (!s.claimed_user_id) await store.claim(req, req.user.id);
     }
+    if (assessment && quizSession && !quizSession.claimed_user_id) await store.claim(req, req.user.id);
     await programs.assertPurchasable(program);
     const att = attributionFromRequest(req);
     // El rastreo nunca puede impedir un pago: si falla (p. ej. migración pendiente), se compra igual sin atribución.

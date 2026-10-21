@@ -343,7 +343,8 @@ export function createBilling({ db, stripe, config, log = console }) {
       await q.exec('update public.questionnaire_sessions set user_id = $1, claimed_user_id = $1 where id = $2', [userId, assessment.session_id]);
     }
     // Compra desde el catálogo (sin cuestionario): el plan se crea en el onboarding del programa.
-    if (!(await q.one('select 1 from public.personalized_plans where user_id = $1 and program_slug = $2', [userId, program])) && assessment) {
+    // Sem Fumo: plan inmediato. Los demás programas crean su plan en la configuración inicial, con las respuestas del cuestionario ya vinculadas.
+    if (program === 'sem-fumo' && !(await q.one('select 1 from public.personalized_plans where user_id = $1 and program_slug = $2', [userId, program])) && assessment) {
       await buildPersonalPlan(q, userId, assessment, { reason: 'Activación de la suscripción', program });
     }
     await q.exec('insert into public.notification_preferences (user_id, program_slug) values ($1, $2) on conflict do nothing', [userId, program]);
