@@ -70,6 +70,12 @@ export function createStaff({ db, settings, config, log = console }) {
   // --- Papeles
   async function roleOf(userId) {
     if (!userId) return null;
+    // Modo master: un único correo autorizado; el resto queda fuera aunque tenga fila en el equipo o sea admin del contenido.
+    const master = config?.growth?.masterEmail;
+    if (master) {
+      const u = await db.service.one('select lower(email) as email from auth.users where id = $1', [userId]);
+      return u?.email === master ? 'admin' : null;
+    }
     const row = await db.service.one('select role from growth.staff where user_id = $1', [userId]);
     if (row) return row.role;
     const adm = await db.service.one('select 1 as ok from public.admin_users where user_id = $1', [userId]);

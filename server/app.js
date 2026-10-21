@@ -27,6 +27,12 @@ const PIXEL_SCRIPT = ' https://connect.facebook.net https://analytics.tiktok.com
 const PIXEL_IMG = ' https://www.facebook.com https://analytics.tiktok.com';
 const PIXEL_CONN = ' https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com';
 
+// Traducción de pantalla (Google Translate, solo si la persona la activa).
+const GT_SCRIPT = " https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com 'sha256-R6kjt5FwTd5vAw94Q08NLDZsSaGTzg4NsdIfKtECSp0='"; // hash del script de arranque del widget
+const GT_STYLE = ' https://www.gstatic.com https://translate.googleapis.com';
+const GT_IMG = ' https://www.gstatic.com https://fonts.gstatic.com https://translate.googleapis.com https://www.google.com';
+const GT_CONN = ' https://translate.googleapis.com https://translate-pa.googleapis.com https://translate.google.com';
+
 const NO_NOTIFIER = { enabled: false, publicKey: '', runDue: async () => ({ disabled: true }), notifyAchievements() {}, test: async () => 'disabled' };
 
 export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, storeSync = null, apple = null, googlePlay = null, growth = null, log = console }) {
@@ -45,12 +51,12 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
       'Content-Security-Policy': [
         "default-src 'self'",
-        `script-src 'self'${PIXEL_SCRIPT}`,
-        isLanding ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com" : "style-src 'self'",
+        `script-src 'self'${PIXEL_SCRIPT}${GT_SCRIPT}`,
+        isLanding ? `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com${GT_STYLE}` : `style-src 'self'${GT_STYLE}`,
         isLanding ? "font-src 'self' https://fonts.gstatic.com" : "font-src 'self'",
-        `img-src 'self' data:${PIXEL_IMG}${req.path === '/growth' ? ' https:' : ''}`, // /growth: miniaturas de anuncios (CDN de Meta/TikTok)
+        `img-src 'self' data:${PIXEL_IMG}${GT_IMG}${req.path === '/growth' ? ' https:' : ''}`, // /growth: miniaturas de anuncios (CDN de Meta/TikTok)
         "media-src 'self' data:",
-        `connect-src 'self'${PIXEL_CONN}`,
+        `connect-src 'self'${PIXEL_CONN}${GT_CONN}`,
         "worker-src 'self'",
         "manifest-src 'self'",
         "form-action 'self' https://checkout.stripe.com",

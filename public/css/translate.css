@@ -1,0 +1,19 @@
+/* Botón de traducción (flotante) y limpieza de la barra de Google Translate. */
+.gt-btn { position: fixed; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 45; display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 13px; border-radius: 999px; border: 1px solid rgba(30, 63, 255, .25); background: #fff; color: #0A0F3C; font: 500 13px/1 'Figtree', system-ui, sans-serif;
+  box-shadow: 0 10px 24px -12px rgba(10, 15, 60, .45); cursor: pointer; }
+.gt-btn:hover { border-color: #1E3FFF; }
+.gt-btn:focus-visible, .gt-menu button:focus-visible { outline: 3px solid #3EE0B5; outline-offset: 2px; }
+.gt-menu { position: fixed; right: 12px; bottom: calc(128px + env(safe-area-inset-bottom)); z-index: 46; width: min(260px, calc(100vw - 24px)); padding: 8px; background: #fff; color: #0A0F3C;
+  border-radius: 16px; border: 1px solid rgba(30, 63, 255, .18); box-shadow: 0 24px 50px -20px rgba(10, 15, 60, .5); }
+.gt-menu[hidden] { display: none; }
+.gt-menu button { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; border-radius: 10px; background: none; color: inherit; font: 500 14px/1.2 'Figtree', system-ui, sans-serif; cursor: pointer; }
+.gt-menu button:hover { background: #EEF3FF; }
+.gt-menu button[aria-checked='true'] { background: #EEF3FF; font-weight: 700; }
+.gt-note { margin: 6px 10px 4px; font: 400 11.5px/1.45 'Figtree', system-ui, sans-serif; color: #4B5287; }
+/* Google Translate: sin barra superior ni resaltados. */
+.goog-te-banner-frame, .skiptranslate > iframe, #goog-gt-tt, .goog-te-balloon-frame { display: none !important; }
+body { top: 0 !important; }
+.goog-text-highlight { background: none !important; box-shadow: none !important; }
+#gt-root, .skiptranslate { display: none; }
+body > .skiptranslate { display: none !important; }

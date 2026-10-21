@@ -62,6 +62,8 @@ export function loadConfig(env = process.env) {
       encryptionKey: env.GROWTH_ENCRYPTION_KEY || '',
       anthropicApiKey: env.ANTHROPIC_API_KEY || '',
       timezone: env.GROWTH_TIMEZONE || 'Europe/Madrid',
+      // Si se define, SOLO esta cuenta puede entrar al panel /growth (usuario master); nadie más, aunque figure en la tabla de equipo.
+      masterEmail: (env.GROWTH_MASTER_EMAIL || '').trim().toLowerCase(),
       customerio: { siteId: env.CUSTOMERIO_SITE_ID || '', apiKey: env.CUSTOMERIO_API_KEY || '', appApiKey: env.CUSTOMERIO_APP_API_KEY || '', region: (env.CUSTOMERIO_REGION || 'eu').toLowerCase() },
     },
     // Facturación nativa: App Store (StoreKit 2) y Google Play Billing.
