@@ -21,7 +21,8 @@
     "growth:staff": "node --env-file-if-exists=.env scripts/growth-staff.js",
     "prod:finish": "node scripts/finish-production.js",
     "access:grant": "node --env-file-if-exists=.env scripts/create-comp-account.js",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "stripe:programs": "node --env-file-if-exists=.env scripts/stripe-programs.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
