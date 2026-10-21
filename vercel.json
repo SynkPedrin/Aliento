@@ -21,10 +21,21 @@
       "has": [
         {
           "type": "host",
-          "value": "citavel.ai"
+          "value": "alento.citavel.ai"
         }
       ],
-      "destination": "https://alento.citavel.ai/$1",
+      "destination": "https://alentohealth.com/$1",
+      "permanent": false
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.alentohealth.com"
+        }
+      ],
+      "destination": "https://alentohealth.com/$1",
       "permanent": false
     },
     {

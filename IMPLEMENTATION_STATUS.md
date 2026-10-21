@@ -43,7 +43,7 @@ Além dos testes automatizados:
 
 ## Estado atual (atualizado)
 1. **Banco de produção:** um Supabase novo, dedicado, criado pela integração da Vercel. Falta só o responsável aceitar os termos da integração; depois disso, `npm run prod:finish` termina tudo. Veja `PRODUCTION_CHECKLIST.md`.
-2. **Deploy:** feito na Vercel (https://alento.citavel.ai), com deploy automático a partir do GitHub.
+2. **Deploy:** feito na Vercel (https://alentohealth.com), com deploy automático a partir do GitHub.
 3. **Notificações:** canal Web Push implementado e testado. A recuperação de senha usa o e-mail do Supabase Auth; para volume real, configure SMTP próprio.
 4. **Revisões:** conteúdo e documentos legais revisados e completos. Os pontos que exigem um profissional de saúde e um advogado estão listados abaixo.
 

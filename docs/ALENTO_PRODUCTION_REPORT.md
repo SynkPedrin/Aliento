@@ -2,12 +2,12 @@
 
 **Date:** 2026-10-19  
 **Status:** SUCCESS  
-**Deploy URL:** https://alento.citavel.ai/  
+**Deploy URL:** https://alentohealth.com/  
 **Project:** Alento (Vercel project `pgvenegeroles09-9629s-projects/alento`)
 
 ## 1. Landing principal
 
-**SITE-HOME** is now the official homepage served at `https://alento.citavel.ai/`.
+**SITE-HOME** is now the official homepage served at `https://alentohealth.com/`.
 
 - **Structure:** 11 sections (navegação, comecar, objetivos, stats, press, manifesto, quem, historias, perguntas, rodapé)
 - **Hero headline:** "Respira de novo." (grammatically correct Spanish; two `<span>` elements inside `<h1>` with `data-i18n="hero.l1"` = "Respira" + `data-i18n="hero.l2"` = "de novo.")
@@ -20,7 +20,7 @@
 
 ## 2. URL pública
 
-`https://alento.citavel.ai/`
+`https://alentohealth.com/`
 
 - Verificada: HTTP 200, HTML renderiza SITE-HOME completa.
 - `/api/plans` returns `{ plans, paymentsEnabled: true }` — commercial guard active.
@@ -29,10 +29,10 @@
 
 ## 3. URL pública da nova logo ALENTO
 
-`https://alento.citavel.ai/assets/brand/og-alento.png` (imagem OG 1200×630 PNG)  
-`https://alento.citavel.ai/assets/brand/alento-icone-app.svg` (favicon SVG)  
-`https://alento.citavel.ai/assets/brand/ios-180.png` (apple-touch-icon)  
-`https://alento.citavel.ai/assets/icons/favicon-32.png` (PNG fallback)
+`https://alentohealth.com/assets/brand/og-alento.png` (imagem OG 1200×630 PNG)  
+`https://alentohealth.com/assets/brand/alento-icone-app.svg` (favicon SVG)  
+`https://alentohealth.com/assets/brand/ios-180.png` (apple-touch-icon)  
+`https://alentohealth.com/assets/icons/favicon-32.png` (PNG fallback)
 
 - `og-alento.png`: 1200×630px, fundo #1E3FFF, logo branco + tagline "Respira de novo." + 5 ícones de programas em cores.
 - Favicon SVG (`alento-icone-app.svg`) com `rel="icon"` no `<head>`.
@@ -191,7 +191,7 @@
 | Suíte automatizada passa | ✅ PASS (54/54) |
 | Build passa | ✅ PASS (xcodebuild succeed) |
 | Deploy concluído | ✅ PASS (Vercel α deploy SUCCESS) |
-| URL pública validada | ✅ PASS (https://alento.citavel.ai/) |
+| URL pública validada | ✅ PASS (https://alentohealth.com/) |
 | Nenhuma regressão crítica | ✅ PASS |
 
 ## 17. ENTREGA FINAL
@@ -201,6 +201,6 @@ ALENTO — PRODUCTION RELEASE REPORT concluído com sucesso.
 Todos os critérios de aceite estão verificados. A landing page oficial (SITE-HOME) está ativa como rota raiz, a nova identidade visual ALENTO está totalmente propagada (ícones, OG image, metadados, iOS assets), a integração Stripe TEST mode está validada com guards comerciais ativos, e todos os 5 programas tecnologicamente completos com acesso premium protegido.
 
 **Deploy:** SUCCESS  
-**URL:** https://alento.citavel.ai/  
+**URL:** https://alentohealth.com/  
 **Data:** 2026-10-19  
 **Engineer:** Principal Engineer (Pedro)

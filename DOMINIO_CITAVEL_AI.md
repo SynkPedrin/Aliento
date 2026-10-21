@@ -16,8 +16,8 @@
    O Vercel emite o HTTPS sozinho.
 
 ## 2. Depois que o DNS responder (peça ao Claude ou faça)
-- Vercel: `APP_URL=https://alento.citavel.ai` (Production) e `vercel --prod`.
-- Stripe: webhook `https://alento.citavel.ai/api/stripe/webhook` (atualizar `STRIPE_WEBHOOK_SECRET`).
-- Supabase → Authentication → URL Configuration: Site URL `https://alento.citavel.ai`,
-  Redirect URLs `https://alento.citavel.ai/**`.
+- Vercel: `APP_URL=https://alentohealth.com` (Production) e `vercel --prod`.
+- Stripe: webhook `https://alentohealth.com/api/stripe/webhook` (atualizar `STRIPE_WEBHOOK_SECRET`).
+- Supabase → Authentication → URL Configuration: Site URL `https://alentohealth.com`,
+  Redirect URLs `https://alentohealth.com/**`.
 - Variáveis legais: `LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_EMAIL`.

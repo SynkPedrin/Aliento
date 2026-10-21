@@ -26,7 +26,7 @@ Arquitetura real: **Express + Supabase (Postgres) + front vanilla** no mesmo pro
 6. **UTMs nos anúncios** (para o ROAS por anúncio):
    - Meta: `utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.id}}&utm_term={{adset.id}}&utm_content={{ad.id}}`
    - TikTok: `utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_ID__&utm_term=__AID__&utm_content=__CID__`
-7. **Customer.io**: crie os 8 fluxos de `docs/GROWTH_EMAIL_FLOWS.md`; webhook de relatórios → `https://alento.citavel.ai/api/webhooks/customerio` (segredo em Configurações → Customer.io).
+7. **Customer.io**: crie os 8 fluxos de `docs/GROWTH_EMAIL_FLOWS.md`; webhook de relatórios → `https://alentohealth.com/api/webhooks/customerio` (segredo em Configurações → Customer.io).
 
 ## Regras de privacidade implementadas
 - Consentimento explícito de dados de saúde antes da 1ª pergunta e no e-mail; marketing por e-mail separado e desmarcado.

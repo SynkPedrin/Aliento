@@ -30,7 +30,7 @@ try {
   run('node', ['scripts/create-comp-account.js', email, password, 'Admin', '--admin'], prodEnv);
 
   console.log('5/6 Recordatorios (pg_cron + pg_net)…');
-  const appUrl = env.APP_URL || 'https://alento.citavel.ai';
+  const appUrl = env.APP_URL || 'https://alentohealth.com';
   const { createDb } = await import('../server/db.js');
   const db = createDb(direct, { max: 1 });
   try {

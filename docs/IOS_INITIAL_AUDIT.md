@@ -17,7 +17,7 @@ Root: `/Users/pedro/Downloads/focus`; Xcode navigator: `Files/focus`. Existing c
 | Transaction backend | BROKEN | Missing expiration creates 30-day entitlement; ownership binding absent; notification owner selects user_id but reads id; environment case mismatch |
 | Web/backend | IMPLEMENTED | Existing Express/Supabase/Stripe; no frontend bundler required |
 | Five programs | PARTIAL | Five engines and journeys exist; four are drafts pending clinical review |
-| Native navigation | PARTIAL | Remote URL https://alento.citavel.ai points to root landing; needs app entry and runtime verification |
+| Native navigation | PARTIAL | Remote URL https://alentohealth.com points to root landing; needs app entry and runtime verification |
 | Notifications | PARTIAL | Web Push exists; APNs implementation not established |
 | Privacy/account | PARTIAL | Existing export/delete; deletion blocked by active subscriptions; privacy review outstanding |
 | Current tests | NOT_TESTED | npm initially unavailable on shell PATH; historical 54 tests not counted |

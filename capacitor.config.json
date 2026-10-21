@@ -3,9 +3,9 @@
   "appName": "Alento",
   "webDir": "public",
   "server": {
-    "url": "https://alento.citavel.ai/programas?catalogo",
+    "url": "https://alentohealth.com/programas?catalogo",
     "cleartext": false,
-    "allowNavigation": ["alento.citavel.ai"]
+    "allowNavigation": ["alentohealth.com", "www.alentohealth.com"]
   },
   "ios": {
     "contentInset": "always",
