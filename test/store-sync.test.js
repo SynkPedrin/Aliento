@@ -202,7 +202,7 @@ test('store-sync: restore devuelve los programas con acceso vigente', async () =
 // ---------------------------------------------------------------- 3. rutas /api/store
 test('rutas store: registro de transacción firmada, replay e aislamiento', async () => {
   const owner = await user('rutas-owner');
-  const tx = appleTx();
+  const tx = appleTx({ appAccountToken: owner.id });
   const result = await owner.client('/api/store/transactions', { method: 'POST', body: { provider: 'apple', signedTransaction: forgeJws(tx) } });
   assert.equal(result.status, 200, JSON.stringify(result.body));
   assert.equal(result.body.program, 'sem-fumo');
@@ -237,7 +237,7 @@ test('rutas store: google sin credenciales responde 503 y no inventa acceso', as
 
 test('rutas store: notificación de servidor de Apple (JWS v2) reembolsa con seguridad', async () => {
   const owner = await user('notify-owner');
-  const tx = appleTx();
+  const tx = appleTx({ appAccountToken: owner.id });
   await owner.client('/api/store/transactions', { method: 'POST', body: { provider: 'apple', signedTransaction: forgeJws(tx) } });
   assert.equal((await owner.client('/api/store/restore')).body.purchases.length, 1);
 
@@ -254,4 +254,87 @@ test('rutas store: notificación de servidor de Apple (JWS v2) reembolsa con seg
   // Payload sin estructura JWS se rechaza: no se procesa nada.
   const fake = await owner.client('/api/store/notifications/apple', { method: 'POST', body: { signedPayload: 'abc.def.ghi' } });
   assert.equal(fake.status, 400);
+});
+
+test('store: signed purchase cannot be claimed by another Alento account', async () => {
+  const owner = await user('token-owner');
+  const stranger = await user('token-stranger');
+  const tx = appleTx({ appAccountToken: owner.id, environment: 'Production' });
+  const body = { provider: 'apple', signedTransaction: forgeJws(tx) };
+  assert.equal((await stranger.client('/api/store/transactions', { method: 'POST', body })).status, 403);
+  assert.equal((await owner.client('/api/store/transactions', { method: 'POST', body })).status, 200);
+  assert.equal((await stranger.client('/api/store/transactions', { method: 'POST', body })).status, 403);
+  assert.equal((await entitlements.getEntitlement(stranger.id, 'sem-fumo')).has_access, false);
+});
+
+test('store: missing expiration and missing account binding fail closed', async () => {
+  const owner = await user('invalid-expiry');
+  for (const tx of [appleTx({ appAccountToken: owner.id, expiresDate: null }), appleTx()]) {
+    const r = await owner.client('/api/store/transactions', { method: 'POST', body: { provider: 'apple', signedTransaction: forgeJws(tx) } });
+    assert.ok(r.status >= 400);
+  }
+  assert.equal((await entitlements.getEntitlement(owner.id, 'sem-fumo')).has_access, false);
+});
+
+test('store: expiration of one program preserves the other program', async () => {
+  const owner = await user('independent-expiry');
+  for (const [program, expiry] of [['sem_fumo', Date.now() + 86400000], ['sueno', Date.now() - 86400000]]) {
+    const tx = appleTx({ productId: `app.alento.${program}.mensual` });
+    await storeSync.syncStorePurchase({ userId: owner.id, provider: 'apple', productId: tx.productId,
+      transactionId: tx.transactionId, originalTransactionId: tx.originalTransactionId, expiresAt: expiry });
+  }
+  assert.equal((await entitlements.getEntitlement(owner.id, 'sem-fumo')).has_access, true);
+  assert.equal((await entitlements.getEntitlement(owner.id, 'sueno')).has_access, false);
+});
+
+test('store: renewal notification resolves the original owner', async () => {
+  const owner = await user('renew-owner');
+  const tx = appleTx({ appAccountToken: owner.id });
+  await owner.client('/api/store/transactions', { method: 'POST', body: { provider: 'apple', signedTransaction: forgeJws(tx) } });
+  const renewal = { ...tx, transactionId: randomUUID(), expiresDate: Date.now() + 60 * 86400000 };
+  const r = await owner.client('/api/store/notifications/apple', { method: 'POST', body: {
+    signedPayload: forgeJws({ notificationUUID: randomUUID(), notificationType: 'DID_RENEW',
+      data: { environment: 'Production', signedTransactionInfo: forgeJws(renewal) } })
+  } });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(new Date((await entitlements.getEntitlement(owner.id, 'sem-fumo')).current_period_end).getTime(), renewal.expiresDate);
+});
+
+test('store: revoked entitlement rejects an older renewal notification', async () => {
+  const owner = await user('ordered');
+  const tx = appleTx();
+  const purchase = { userId: owner.id, provider: 'apple', productId: tx.productId,
+    transactionId: tx.transactionId, originalTransactionId: tx.originalTransactionId,
+    expiresAt: tx.expiresDate, signedAt: 100 };
+  await storeSync.syncStorePurchase(purchase);
+  await storeSync.syncStoreRevocation({ provider: 'apple', originalTransactionId: tx.originalTransactionId,
+    transactionId: tx.transactionId, signedAt: 300 });
+  const stale = await storeSync.syncStorePurchase({ ...purchase, transactionId: randomUUID(), signedAt: 200 });
+  assert.equal(stale.status, 'stale');
+  assert.equal((await entitlements.getEntitlement(owner.id, 'sem-fumo')).has_access, false);
+  await storeSync.syncStorePurchase({ ...purchase, eventKey: randomUUID(), signedAt: 400 });
+  assert.equal((await entitlements.getEntitlement(owner.id, 'sem-fumo')).has_access, true);
+});
+
+test('store: concurrent ownership claims cannot transfer a subscription', async () => {
+  const a = await user('claim-a'), b = await user('claim-b');
+  const tx = appleTx();
+  const purchase = { provider: 'apple', productId: tx.productId, transactionId: tx.transactionId,
+    originalTransactionId: tx.originalTransactionId, expiresAt: tx.expiresDate };
+  const outcomes = await Promise.allSettled([storeSync.syncStorePurchase({ ...purchase, userId: a.id }),
+    storeSync.syncStorePurchase({ ...purchase, userId: b.id })]);
+  assert.equal(outcomes.filter((r) => r.status === 'fulfilled').length, 1);
+  const access = await Promise.all([a,b].map((u) => entitlements.getEntitlement(u.id, 'sem-fumo')));
+  assert.equal(access.filter((e) => e.has_access).length, 1);
+});
+
+test('store: purchase context prevents duplicate and unpublished purchases', async () => {
+  const owner = await user('context');
+  assert.equal((await owner.client('/api/store/purchase-context', { method: 'POST', body: { program: 'sueno', plan: 'mensual' } })).status, 409);
+  const context = await owner.client('/api/store/purchase-context', { method: 'POST', body: { program: 'sem-fumo', plan: 'mensual' } });
+  assert.equal(context.status, 200);
+  assert.equal(context.body.appAccountToken, owner.id);
+  const tx = appleTx({ appAccountToken: owner.id });
+  await owner.client('/api/store/transactions', { method: 'POST', body: { provider: 'apple', signedTransaction: forgeJws(tx) } });
+  assert.equal((await owner.client('/api/store/purchase-context', { method: 'POST', body: { program: 'sem-fumo', plan: 'mensual' } })).status, 409);
 });

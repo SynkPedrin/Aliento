@@ -3,9 +3,9 @@
   "appName": "Alento",
   "webDir": "public",
   "server": {
-    "url": "https://citavel.ai",
+    "url": "https://citavel.ai/programas?catalogo",
     "cleartext": false,
-    "allowNavigation": ["citavel.ai", "*.citavel.ai"]
+    "allowNavigation": ["citavel.ai"]
   },
   "ios": {
     "contentInset": "always",

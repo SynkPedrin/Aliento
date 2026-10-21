@@ -1,7 +1,7 @@
 // «Mis programas»: catálogo de los cinco programas con el estado de acceso del usuario.
 import { $, api, h, money, mountSplash, splashReady, toast } from '../ui.js';
 import { installAction, installState } from '../install.js';
-import { isNativeApp, nativePurchase, nativeRestore, listenNativeUpdates } from '../native-iap.js';
+import { isNativeApp, nativePurchase, nativeRestore, listenNativeUpdates, loadNativePlans } from '../native-iap.js';
 
 listenNativeUpdates();
 
@@ -31,7 +31,8 @@ function programHome(p) {
 }
 
 async function buy(p) {
-  const plans = (await api(`/api/plans?program=${p.slug}`)).plans.filter((x) => x.available);
+  const data = isNativeApp() ? await loadNativePlans(p.slug) : await api(`/api/plans?program=${p.slug}`);
+  const plans = data.plans.filter((x) => x.available);
   if (!plans.length) { toast('Este programa no tiene planes disponibles ahora mismo.'); return; }
   const overlay = h('div', { class: 'modal-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': `Elegir plan de ${p.name}` });
   const close = () => overlay.remove();
@@ -41,25 +42,26 @@ async function buy(p) {
     h('div', { class: 'stack u-mt-16' }, plans.map((pl) => h('button', {
       class: 'plan-row', type: 'button',
       onclick: async (e) => {
-        e.currentTarget.disabled = true;
+        const button = e.currentTarget;
+        button.disabled = true;
         try {
           if (isNativeApp()) {
             const r = await nativePurchase(p.slug, pl.id);
             if (r.status === 'success') return location.assign(programHome(p));
             if (r.status === 'pending') toast('Tu compra está pendiente de aprobación. Te avisaremos cuando se active.', 6000);
-            e.currentTarget.disabled = false; return;
+            button.disabled = false; return;
           }
           const { url } = await api('/api/checkout', { method: 'POST', body: { program: p.slug, plan: pl.id, fromCatalog: true } });
           location.assign(url);
         } catch (err) {
           if (err?.code === 'AUTH_REQUIRED') { close(); location.assign('/acceso'); }
           else if (err?.data?.code === 'ALREADY_SUBSCRIBED') { close(); toast('Ya tienes este programa activo.'); load(); }
-          else { toast(err.message); e.currentTarget.disabled = false; }
+          else { toast(err.message); button.disabled = false; }
         }
       },
     },
-    h('span', { class: 'plan-row__name' }, pl.name),
-    h('span', { class: 'plan-row__price' }, money(pl.amount, pl.currency), h('small', { class: 'muted' }, ` ${pl.periodLabel}`))))),
+    h('span', { class: 'plan-row__name' }, pl.title ?? pl.name),
+    h('span', { class: 'plan-row__price' }, pl.displayPrice ?? money(pl.amount, pl.currency), h('small', { class: 'muted' }, ` ${pl.periodLabel}`))))),
     h('p', { class: 'u-mt-16' }, h('button', { class: 'link', onclick: close }, 'Ahora no')));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
   overlay.append(card);
@@ -109,28 +111,21 @@ function card(p, i) {
 async function load() {
   let me;
   try { me = await api('/api/me'); } catch { me = { user: null }; }
-  if (!me.user) { location.replace(`/acceso?modo=entrar&next=${encodeURIComponent('/programas')}`); return; }
+  // La cuenta es la puerta de entrada: sin sesión se pide el acceso (el quiz del embudo vive en su propia ruta).
+  if (!me.user) { location.replace('/acceso?modo=entrar&next=%2Fprogramas%3Fcatalogo'); return; }
   const cat = await api('/api/programs');
-  // Tras el primer acceso, la app abre el último programa usado; el catálogo
-  // siempre queda a un toque con «Mis programas».
-  const params = new URLSearchParams(location.search);
-  if (!params.has('catalogo') && !params.has('pago') && cat.lastProgram) {
-    const last = cat.programs.find((x) => x.slug === cat.lastProgram);
-    if (last && (last.state === 'active' || last.state === 'canceled_but_active')) {
-      location.replace(programHome(last));
-      return;
-    }
-  }
+  if (!me.user) cat.programs = cat.programs.map((p) => ({ ...p, state: p.purchasable ? 'locked' : 'coming_soon' }));
+  // «Mis programas» es siempre la primera pantalla de la cuenta: desde aquí se entra a cada programa.
   root.replaceChildren(
     h('header', { class: 'page-head catalog-head' },
       h('p', { class: 'eyebrow' }, 'Mis programas'),
       h('h1', { class: 'title-lg' }, 'Un espacio para cada nuevo comienzo.'),
       h('p', { class: 'muted' }, 'Elige el camino que quieres continuar.')),
     h('div', { class: 'program-grid' }, cat.programs.map(card)),
-    installState() !== 'installed' ? h('p', { class: 'catalog-install muted small' },
+    !isNativeApp() && installState() !== 'installed' ? h('p', { class: 'catalog-install muted small' },
       h('button', { class: 'link', onclick: () => installAction(() => {}) }, 'Instala Alento en tu pantalla de inicio')) : null,
     h('p', { class: 'catalog-account muted small' },
-      h('a', { href: '/suscripcion' }, 'Mis suscripciones'), ' · ', h('a', { href: '/perfil' }, 'Mi cuenta')));
+      me.user ? h('a', { href: '/suscripcion' }, 'Mis suscripciones') : h('a', { href: '/acceso?modo=entrar&next=/programas' }, 'Iniciar sesión'), ' · ', h('a', { href: me.user ? '/perfil' : '/acceso?next=/programas' }, me.user ? 'Mi cuenta' : 'Crear cuenta')));
   splashReady();
 }
 

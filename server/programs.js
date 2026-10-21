@@ -52,10 +52,13 @@ export function createPrograms({ db, billing }) {
       db.service.one('select last_program_slug from public.profiles where user_id = $1', [userId]),
     ]);
     const cards = programs.map((p) => {
-      const sub = subs.filter((s) => s.program_slug === p.slug).sort((a, b) => b.updated_at - a.updated_at)[0];
+      const programSubs = subs.filter((s) => s.program_slug === p.slug).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+      // Stripe manda el estado (incluida la gracia de past_due); las tiendas solo valen mientras no venza el periodo.
+      const valid = (s) => ACCESS_STATUSES.includes(s.status) && (!s.billing_provider || s.billing_provider === 'stripe' || (s.current_period_end && new Date(s.current_period_end) > new Date()));
+      const sub = programSubs.find(valid) ?? programSubs[0];
       const grant = grants.find((g) => g.program_slug === p.slug);
       let state;
-      if (sub && ACCESS_STATUSES.includes(sub.status)) {
+      if (sub && valid(sub)) {
         state = sub.cancel_at_period_end ? 'canceled_but_active' : 'active';
       } else if (grant) {
         state = 'active';

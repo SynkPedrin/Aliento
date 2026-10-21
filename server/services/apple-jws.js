@@ -51,7 +51,7 @@ const ms = (value) => {
  * Verificador de JWS de Apple. `verify(jws)` devuelve el payload decodificado
  * solo si la firma y la cadena son válidas.
  */
-export function createAppleJwsVerifier({ rootCaPem = null, bundleId = null, now = new Date() } = {}) {
+export function createAppleJwsVerifier({ rootCaPem = null, bundleId = null, now = null } = {}) {
   const pinnedFingerprint = rootCaPem
     ? new X509Certificate(rootCaPem).fingerprint256.replaceAll(':', '').toUpperCase()
     : APPLE_ROOT_CA_G3_SHA256;
@@ -81,7 +81,7 @@ export function createAppleJwsVerifier({ rootCaPem = null, bundleId = null, now 
 
     // Vigencia de cada certificado de la cadena.
     for (const cert of chain) {
-      if (Date.parse(cert.validFrom) > now.getTime() || Date.parse(cert.validTo) < now.getTime()) {
+      if (Date.parse(cert.validFrom) > (now ?? new Date()).getTime() || Date.parse(cert.validTo) < (now ?? new Date()).getTime()) {
         throw new AppleJwsError('Certificado fuera de su periodo de validez.');
       }
     }
@@ -94,7 +94,7 @@ export function createAppleJwsVerifier({ rootCaPem = null, bundleId = null, now 
     if (!ok) throw new AppleJwsError('Firma del JWS no válida.');
 
     // 3. Bundle id: obligatorio cuando está configurado (nunca se confía en el cliente sin él).
-    if (bundleId && payload.bundleId && payload.bundleId !== bundleId) {
+    if (bundleId && (payload.transactionId || payload.bundleId) && payload.bundleId !== bundleId) {
       throw new AppleJwsError(`Bundle id no válido: ${payload.bundleId}.`);
     }
     return payload;
@@ -108,7 +108,7 @@ export function createAppleJwsVerifier({ rootCaPem = null, bundleId = null, now 
       originalTransactionId: t.originalTransactionId ?? t.transactionId,
       bundleId: t.bundleId,
       productId: t.productId,
-      environment: t.environment,
+      environment: typeof t.environment === 'string' ? t.environment.toLowerCase() : null,
       expiresAt: ms(t.expiresDate),
       purchasedAt: ms(t.purchaseDate),
       revokedAt: ms(t.revocationDate),
@@ -119,6 +119,8 @@ export function createAppleJwsVerifier({ rootCaPem = null, bundleId = null, now 
 
   /** Notificación de servidor v2 → acciones de negocio equivalentes. */
   function notificationFromPayload(n) {
+    if (bundleId && n?.data?.bundleId && n.data.bundleId !== bundleId) throw new AppleJwsError('Bundle id no válido.');
+    const renewal = n?.data?.signedRenewalInfo ? verifyGws(n.data.signedRenewalInfo) : null;
     const transaction = n?.data?.signedTransactionInfo ? transactionFromPayload(verifyGws(n.data.signedTransactionInfo)) : null;
     return {
       notificationUUID: n?.notificationUUID ?? null,
@@ -127,6 +129,8 @@ export function createAppleJwsVerifier({ rootCaPem = null, bundleId = null, now 
       environment: n?.data?.environment ?? n?.summary?.environment ?? transaction?.environment ?? null,
       transaction,
       status: n?.data?.status,
+      renewal,
+      signedDate: n?.signedDate,
     };
   }
 

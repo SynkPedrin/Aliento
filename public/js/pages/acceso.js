@@ -1,6 +1,8 @@
 import { $, api, h, renderHeader, setBusy } from '../ui.js';
 import { goToCheckout, planList, rememberPlan } from '../paywall.js';
 
+import { isNativeApp, loadNativePlans } from '../native-iap.js';
+
 renderHeader($('[data-header]'));
 const params = new URLSearchParams(location.search);
 let plan = params.get('plan');
@@ -32,7 +34,8 @@ async function afterAuth() {
     } catch { /* destino no válido: se ignora */ }
   }
   const me = await api('/api/me');
-  window.location.assign(me.access ? (me.onboardingCompleted ? '/dashboard' : '/configuracion') : me.hasResult ? '/planes' : '/perfil');
+  // Tras entrar, la persona ve sus productos (activos, por empezar o por renovar) y desde ahí compra o continúa cada uno.
+  window.location.assign('/programas?catalogo');
 }
 
 form.addEventListener('submit', async (e) => {
@@ -56,11 +59,11 @@ form.addEventListener('submit', async (e) => {
 
 if (plan) {
   $('[data-subtitle]').textContent = 'Último paso antes del pago seguro. Así guardamos tu plan y tus resultados.';
-  api(`/api/plans?program=${encodeURIComponent(program)}`).then(({ plans }) => {
+  (isNativeApp() ? loadNativePlans(program) : api(`/api/plans?program=${encodeURIComponent(program)}`)).then(({ plans }) => {
     if (!plans.some((x) => x.id === plan && x.available)) return;
     const box = $('[data-plan-summary]');
     box.hidden = false;
-    if (params.has('oferta')) {
+    if (params.has('oferta') && !isNativeApp()) {
       const p = plans.find((x) => x.id === plan);
       box.replaceChildren(h('p', { class: 'plan-pick__label' }, 'Tu plan'), h('div', { class: 'notice' },
         h('div', {}, h('strong', {}, `${p.title} · regalo aplicado`), h('br'), 'Verás el descuento del primer pago en la página segura de Stripe.')));

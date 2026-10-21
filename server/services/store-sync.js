@@ -27,6 +27,8 @@ export function createStoreSync({ db, billing, log = console }) {
     environment = 'production',
     bundleId = null,
     payload = {},
+    eventKey = null,
+    signedAt = Number(payload.signedDate) || Date.now(),
   }) {
     if (!userId || !provider || !productId || !transactionId) {
       throw new Error('Parámetros de compra nativa incompletos.');
@@ -41,10 +43,20 @@ export function createStoreSync({ db, billing, log = console }) {
     const plan = mapping.plan;
     const origTx = originalTransactionId || transactionId;
     const subId = `sub_${provider}_${origTx}`;
-    const eventId = `evt_${provider}_tx_${transactionId}`;
+    const eventId = `evt_${provider}_${eventKey || `tx_${transactionId}`}`;
+
+    // Serialize the entire subscription stream, including first ownership claim.
+    return db.tx(async (q) => {
+    await q.exec('select pg_advisory_xact_lock(hashtextextended($1, 0))', [subId]);
+    const owner = await q.one('select user_id, store_event_at from public.subscriptions where id = $1', [subId]);
+    if (owner && owner.user_id !== userId) throw new Error('La compra pertenece a otra cuenta.');
+    const auditOwner = await q.one('select user_id from public.store_transactions where provider = $1 and original_transaction_id = $2 and user_id is not null limit 1', [provider, origTx]);
+    if (auditOwner && auditOwner.user_id !== userId) throw new Error('La compra pertenece a otra cuenta.');
+
+    if (owner && Number(owner.store_event_at) > signedAt) return { status: 'stale', programSlug };
 
     // 1. Idempotencia en billing_events
-    const claimed = await db.service.one(`
+    const claimed = await q.one(`
       insert into public.billing_events (id, type, object_id, status, received_at)
       values ($1, $2, $3, 'processing', now())
       on conflict (id) do update set status = 'processing', error = null
@@ -53,95 +65,101 @@ export function createStoreSync({ db, billing, log = console }) {
       returning id`, [eventId, `${provider}.purchase`, transactionId]);
 
     if (!claimed) {
-      const existing = await db.service.one('select status from public.billing_events where id = $1', [eventId]);
+      const existing = await q.one('select status from public.billing_events where id = $1', [eventId]);
       if (existing?.status === 'processed') return { status: 'already_processed', programSlug };
       if (existing?.status === 'processing') throw new Error('Transacción en proceso de verificación.');
     }
 
     try {
-      const periodEnd = expiresAt ? new Date(expiresAt).toISOString() : new Date(Date.now() + 30 * 86400 * 1000).toISOString();
+      if (!expiresAt || !Number.isFinite(new Date(expiresAt).getTime())) throw new Error('Falta la expiración verificada.');
+      const periodEnd = new Date(expiresAt).toISOString();
 
-      await db.service.exec(`
+      await q.exec(`
         insert into public.subscriptions (
           id, user_id, stripe_customer_id, program_slug, plan, price_id,
           billing_provider, store_transaction_id, store_original_transaction_id,
-          status, current_period_end, cancel_at_period_end, updated_at
+          status, current_period_end, cancel_at_period_end, updated_at, store_event_at, last_verified_at
         ) values (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', $10, $11, now()
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, 'active', $10, $11, now(), $12, now()
         )
         on conflict (id) do update set
           status = 'active',
           current_period_end = excluded.current_period_end,
           cancel_at_period_end = excluded.cancel_at_period_end,
           store_transaction_id = excluded.store_transaction_id,
-          updated_at = now()`,
+          updated_at = now(), store_event_at = excluded.store_event_at, last_verified_at = now()
+        where public.subscriptions.user_id = excluded.user_id
+          and public.subscriptions.current_period_end <= excluded.current_period_end`,
       [
         subId, userId, `${provider}_cust_${userId}`, programSlug, plan, productId,
-        provider, transactionId, origTx, periodEnd, Boolean(cancelAtPeriodEnd)
+        provider, transactionId, origTx, periodEnd, Boolean(cancelAtPeriodEnd), signedAt
       ]);
 
       // Desbloquear el logro de bienvenida, igual que la vía Stripe.
-      await unlockAchievement(db.service, userId, 'primer-paso').catch(() => {});
+      await unlockAchievement(q, userId, 'primer-paso');
 
       // Auditoría de la transacción (tabla store_transactions, migración 20261018100000).
-      await db.service.exec(`
+      await q.exec(`
         insert into public.store_transactions
           (provider, transaction_id, original_transaction_id, bundle_id, product_id, program_slug, plan, environment, user_id, payload, status, processed_at)
         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, 'processed', now())
         on conflict (transaction_id) do update set
-          status = 'processed', processed_at = now(), user_id = excluded.user_id,
+          status = 'processed', processed_at = now(), user_id = public.store_transactions.user_id,
           environment = excluded.environment, original_transaction_id = excluded.original_transaction_id`,
-      [provider, String(transactionId), origTx, bundleId, productId, programSlug, plan, environment, userId, JSON.stringify(payload ?? {})]).catch(() => {});
+      [provider, String(transactionId), origTx, bundleId, productId, programSlug, plan, environment, userId, JSON.stringify(payload ?? {})]);
 
       // Igual que la vía Stripe: vincula la suscripción y activa el programa
       // (plan, preferencias y logro), aunque no hubo evaluación previa.
       if (billing?.ensureActivated) {
-        await db.tx(async (q) => {
-          await billing.ensureActivated(q, userId, null, programSlug);
-        });
+        await billing.ensureActivated(q, userId, null, programSlug);
       }
 
       // Marcar evento procesado
-      await db.service.exec(`
+      await q.exec(`
         update public.billing_events
         set status = 'processed', processed_at = now()
         where id = $1`, [eventId]);
 
       return { status: 'success', programSlug, subId };
     } catch (err) {
-      await db.service.exec(`
+      await q.exec(`
         update public.billing_events
         set status = 'failed', error = $2
         where id = $1`, [eventId, String(err.message).slice(0, 500)]);
       throw err;
     }
+    });
   }
 
   /**
    * Procesa revocación o reembolso en tiendas nativas.
    */
-  async function syncStoreRevocation({ provider, originalTransactionId, reason = 'refund', transactionId = null, payload = {} }) {
+  async function syncStoreRevocation({ provider, originalTransactionId, reason = 'refund', transactionId = null, payload = {}, signedAt = Number(payload.signedDate) || Date.now() }) {
     const subId = `sub_${provider}_${originalTransactionId}`;
-    const sub = await db.service.one('select * from public.subscriptions where id = $1', [subId]);
+    return db.tx(async (q) => {
+    await q.exec('select pg_advisory_xact_lock(hashtextextended($1, 0))', [subId]);
+    const sub = await q.one('select * from public.subscriptions where id = $1', [subId]);
     if (!sub) return { status: 'not_found' };
+    if (Number(sub.store_event_at) > signedAt) return { status: 'stale' };
+    if (transactionId && sub.store_transaction_id !== String(transactionId) && reason !== 'REVOKE') return { status: 'stale' };
 
-    await db.service.exec(`
+    await q.exec(`
       update public.subscriptions
-      set status = 'canceled', cancel_at_period_end = false, updated_at = now()
-      where id = $1`, [subId]);
+      set status = 'canceled', cancel_at_period_end = false, updated_at = now(), store_event_at = $2, last_verified_at = now()
+      where id = $1`, [subId, signedAt]);
 
     if (transactionId) {
       // La fila del producto exacto vive en billing_product_mappings; para la auditoría
       // de revocación basta provider + ids + sub afectada.
-      await db.service.exec(`
+      await q.exec(`
         insert into public.store_transactions
           (provider, transaction_id, original_transaction_id, product_id, program_slug, environment, user_id, payload, status, error, processed_at)
-        values ($1, $2, $3, null, $4, 'production', $5, $6::jsonb, 'processed', $7, now())
+        values ($1, $2, $3, $8, $4, 'production', $5, $6::jsonb, 'processed', $7, now())
         on conflict (transaction_id) do update set status = 'processed', processed_at = now()`,
-      [provider, String(transactionId), originalTransactionId, sub.program_slug, sub.user_id, JSON.stringify(payload ?? {}), `revocación en ${provider}: ${reason}`]).catch(() => {});
+      [provider, String(transactionId), originalTransactionId, sub.program_slug, sub.user_id, JSON.stringify(payload ?? {}), `revocación en ${provider}: ${reason}`, sub.price_id]);
     }
 
-    await db.service.exec(`
+    await q.exec(`
       insert into public.billing_reconciliation_reviews (stripe_subscription_id, stripe_customer_id, reason)
       values ($1, $2, $3)
       on conflict (stripe_subscription_id) do update
@@ -149,6 +167,7 @@ export function createStoreSync({ db, billing, log = console }) {
     [subId, sub.stripe_customer_id, `Revocación / Reembolso en ${provider}: ${reason}`]);
 
     return { status: 'revoked', programSlug: sub.program_slug };
+    });
   }
 
   /**

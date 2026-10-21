@@ -92,6 +92,13 @@ export function adminRoutes({ db }) {
     if (!COMMERCIAL.includes(status)) throw new HttpError(422, 'Estado no válido.', 'INVALID', { field: 'commercial_status' });
     if (slug === 'sem-fumo' && status === 'archived') throw new HttpError(409, 'Sem Fumo no se puede archivar.');
     await db.tx(async (qq) => {
+      if (status === 'active') {
+        const readiness = await qq.one(`select count(*)::int as total,
+          count(*) filter (where l.clinical_review = 'approved' and l.published)::int as approved
+          from public.journey_lessons l join public.journey_chapters c on c.id = l.chapter_id
+          join public.journey_programs p on p.id = c.program_id where p.slug = $1`, [slug]);
+        if (!readiness.total || readiness.approved !== readiness.total) throw new HttpError(409, 'El contenido requiere revisión clínica y publicación.', 'CLINICAL_REVIEW_REQUIRED');
+      }
       const n = await qq.exec('update public.journey_programs set commercial_status = $1 where slug = $2', [status, slug]);
       if (!n) throw new HttpError(404, 'Programa no encontrado.');
       await audit(qq, req, 'program.commercial_status', 'program', slug, { status });
@@ -106,6 +113,12 @@ export function adminRoutes({ db }) {
     await db.tx(async (qq) => {
       const p = await qq.one('select id, commercial_status from public.journey_programs where slug = $1', [slug]);
       if (!p) throw new HttpError(404, 'Programa no encontrado.');
+      if (publish) {
+        const readiness = await qq.one(`select count(*)::int as total,
+          count(*) filter (where clinical_review = 'approved')::int as approved
+          from public.journey_lessons where chapter_id in (select id from public.journey_chapters where program_id = $1)`, [p.id]);
+        if (!readiness.total || readiness.approved !== readiness.total) throw new HttpError(409, 'Hay lecciones pendientes de revisión clínica.', 'CLINICAL_REVIEW_REQUIRED');
+      }
       await qq.exec('update public.journey_chapters set published = $2, updated_at = now() where program_id = $1', [p.id, publish]);
       await qq.exec(`update public.journey_lessons set published = $2, updated_at = now()
         where chapter_id in (select id from public.journey_chapters where program_id = $1)`, [p.id, publish]);
@@ -188,9 +201,12 @@ export function adminRoutes({ db }) {
       if (!cur) throw new HttpError(404, 'Lección no encontrada.');
       const draft = lessonInput(req.body, { slug: cur.slug });
       const changed = await replaceBlocks(qq, id, draft.blocks);
+      const contentChanged = changed || draft.title !== cur.title || draft.description !== cur.description;
+      if (req.body?.published === true && !cur.published && (contentChanged || cur.clinical_review !== 'approved')) throw new HttpError(409, 'Guarda el borrador y solicita revisión antes de publicar.', 'CLINICAL_REVIEW_REQUIRED');
+      if (contentChanged) await qq.exec("update public.journey_lessons set clinical_review = 'pending', clinical_reviewer = null, clinical_reviewed_at = null where id = $1", [id]);
       const l = await qq.one(`update public.journey_lessons set title = $2, description = $3, minutes = $4,
         published = $5, version = version + $6, updated_at = now() where id = $1 returning *`,
-      [id, draft.title, draft.description, draft.minutes, req.body?.published === true, changed ? 1 : 0]);
+      [id, draft.title, draft.description, draft.minutes, req.body?.published === true, contentChanged ? 1 : 0]);
       await audit(qq, req, 'lesson.updated', 'lesson', id, { blocksChanged: changed, published: l.published });
       return l;
     });
@@ -204,7 +220,8 @@ export function adminRoutes({ db }) {
     const reviewer = text(req.body?.reviewer, { max: 120, required: approved, field: 'reviewer' });
     await db.tx(async (qq) => {
       const n = await qq.exec(`update public.journey_lessons set clinical_review = $2, clinical_reviewer = $3,
-        clinical_reviewed_at = case when $2 = 'approved' then now() end where id = $1`, [id, approved ? 'approved' : 'pending', approved ? reviewer : null]);
+        clinical_reviewed_at = case when $2 = 'approved' then now() end,
+        published = case when $2 = 'approved' then published else false end where id = $1`, [id, approved ? 'approved' : 'pending', approved ? reviewer : null]);
       if (!n) throw new HttpError(404, 'Lección no encontrada.');
       await audit(qq, req, approved ? 'lesson.clinical_approved' : 'lesson.clinical_pending', 'lesson', id, { reviewer });
     });

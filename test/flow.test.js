@@ -722,14 +722,16 @@ test('multiprograma: admin gestiona estados comerciales y publicación', async (
   assert.equal((await c('/api/admin/programs/azucar', { method: 'PATCH', body: { commercial_status: 'ready_for_review' } })).status, 200);
   assert.equal((await c('/api/admin/programs/azucar', { method: 'PATCH', body: { commercial_status: 'invalid' } })).status, 422);
   assert.equal((await c('/api/admin/programs/sem-fumo', { method: 'PATCH', body: { commercial_status: 'archived' } })).status, 409);
-  // Publicar contenido de azucar de una vez.
-  assert.equal((await c('/api/admin/programs/azucar/publish-content', { method: 'POST', body: { publish: true } })).status, 200);
+  // Un administrador no puede publicar ni vender contenido pendiente de revisión.
+  await c('/api/admin/programs/azucar/publish-content', { method: 'POST', body: { publish: false } });
+  assert.equal((await c('/api/admin/programs/azucar/publish-content', { method: 'POST', body: { publish: true } })).status, 409);
+  assert.equal((await c('/api/admin/programs/azucar', { method: 'PATCH', body: { commercial_status: 'active' } })).status, 409);
   const row = await db.service.one(`select p.published as prog,
     (select count(*) from public.journey_lessons l join public.journey_chapters ch on ch.id = l.chapter_id
      where ch.program_id = p.id and l.published)::int as pub
     from public.journey_programs p where p.slug = 'azucar'`);
-  assert.equal(row.prog, true);
-  assert.equal(row.pub, 30);
+  assert.equal(row.prog, false);
+  assert.equal(row.pub, 0);
   // El contenido por programa se filtra.
   const content = (await c('/api/admin/content?program=azucar')).body;
   assert.equal(content.chapters.length, 10);

@@ -30,7 +30,7 @@ try {
   // Los 5 programas a la venta, con todo su contenido publicado (solo en la base local).
   await db.service.exec(`update public.journey_programs set commercial_status = 'active', published = true`);
   await db.service.exec(`update public.journey_chapters set published = true`);
-  await db.service.exec(`update public.journey_lessons set published = true, clinical_review = 'approved' where clinical_review is distinct from 'approved'`).catch(() => {});
+  await db.service.exec('update public.journey_lessons set published = true');
 
   for (const a of ACCOUNTS) {
     let user = await db.service.one('select id from auth.users where lower(email) = $1', [a.email]);

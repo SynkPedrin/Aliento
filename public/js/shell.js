@@ -1,6 +1,9 @@
 // Estructura común del área privada: protección de acceso, navegación y componentes compartidos.
 import { $, api, h, ICONS, MARK_SVG, mountSplash, splashReady, toast } from './ui.js';
 
+import { listenNativeUpdates } from './native-iap.js';
+listenNativeUpdates();
+
 export const NAV = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
   { href: '/jornada', label: 'Jornada', icon: 'path' },

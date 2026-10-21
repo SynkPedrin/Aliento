@@ -97,8 +97,9 @@ function deleteAccount() {
       }
     } },
     h('h2', { class: 'title-md' }, 'Eliminar mi cuenta'),
-    h('p', { class: 'muted small' }, 'Se borrarán tu perfil, tus registros, tu progreso y tus respuestas. No se puede deshacer. Si tienes una suscripción que se renueva, cancélala antes.'),
+    h('p', { class: 'muted small' }, 'Se borrarán tu perfil, tus registros, tu progreso y tus respuestas. No se puede deshacer. Eliminar tu cuenta no cancela las suscripciones de Apple. La facturación continuará hasta que canceles en App Store. Puedes eliminar tu cuenta ahora. Cancela las suscripciones web antes de continuar.'),
     h('div', { class: 'field' }, h('label', { for: 'delpw' }, 'Tu contraseña'), pw),
+    h('p', {}, h('a', { href: 'https://apps.apple.com/account/subscriptions', target: '_blank', rel: 'noopener' }, 'Gestionar suscripciones de Apple')),
     h('div', { class: 'field' }, h('label', { for: 'delconf' }, 'Escribe ELIMINAR para confirmar'), confirmIn),
     err, btn, h('button', { type: 'button', class: 'link', onclick: close }, 'Cancelar'))];
   }, { label: 'Eliminar mi cuenta' });
