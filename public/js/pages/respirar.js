@@ -46,7 +46,7 @@ async function load() {
 function render() {
   page(root, { eyebrow: 'Ejercicio', title: 'Respirar', intro: INTRO[SLUG] ?? 'Un minuto de respiración lenta ayuda a atravesar las ganas y a bajar el ritmo. Sigue el círculo.' });
   if (META) root.prepend(programRibbon(META));
-  let ex = exercises.find((e) => e.slug === params.get('ejercicio')) ?? (SLUG === 'sueno' && exercises.find((e) => e.slug === 'sueno-4-7-8')) ?? exercises[0];
+  let ex = exercises.find((e) => e.slug === params.get('ejercicio')) || (SLUG === 'sueno' ? exercises.find((e) => e.slug === 'sueno-4-7-8') : null) || exercises[0];
   let minutes = 1;
   let sound = false;
 
