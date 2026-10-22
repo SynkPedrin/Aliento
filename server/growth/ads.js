@@ -37,7 +37,7 @@ export function createAds({ db, settings, config, fetchImpl = globalThis.fetch, 
 
   async function http(url, init = {}) {
     let res;
-    try { res = await fetchImpl(url, init); } catch (e) { throw new Error(`Sin conexión con la plataforma de anuncios: ${e.message}`); }
+    try { res = await fetchImpl(url, init); } catch (e) { throw new Error(`Sem conexão com a plataforma de anúncios: ${e.message}`); }
     let body = null;
     try { body = await res.json(); } catch { /* cuerpo vacío */ }
     return { res, body };
@@ -209,12 +209,12 @@ export function createAds({ db, settings, config, fetchImpl = globalThis.fetch, 
   /** Ejecuta una acción aprobada. Devuelve { ok, result, undo_data }. */
   async function execute(action) {
     const platform = action?.platform;
-    if (!['meta', 'tiktok'].includes(platform)) throw new Error('Plataforma de anuncios no soportada');
+    if (!['meta', 'tiktok'].includes(platform)) throw new Error('Plataforma de anúncios não suportada');
     const c = await creds(platform);
-    if (!c) throw new Error(`${platform === 'meta' ? 'Meta' : 'TikTok'} Ads no está configurado`);
+    if (!c) throw new Error(`${platform === 'meta' ? 'Meta' : 'TikTok'} Ads não está configurado`);
     const data = action.data ?? {};
     const id = String(action.target_id ?? '');
-    if (!id) throw new Error('Falta el identificador del objetivo');
+    if (!id) throw new Error('Falta o identificador do alvo');
 
     if (action.kind === 'pause_ad') {
       const prev = await db.service.one('select status from growth.ads where platform = $1 and ad_id = $2', [platform, id]);
@@ -228,28 +228,28 @@ export function createAds({ db, settings, config, fetchImpl = globalThis.fetch, 
       const next = int(data.new_budget_cents);
       let current = data.current_budget_cents != null ? int(data.current_budget_cents) : null;
       if (current == null) current = (await db.service.one('select max(daily_budget_cents) as b from growth.ads where platform = $1 and adset_id = $2', [platform, id]))?.b ?? null;
-      if (!current) throw new Error('No se conoce el presupuesto actual del conjunto; sincroniza los anuncios antes');
-      if (next <= current) throw new Error('El nuevo presupuesto debe ser mayor que el actual');
+      if (!current) throw new Error('O orçamento atual do conjunto é desconhecido; sincronize os anúncios antes');
+      if (next <= current) throw new Error('O novo orçamento deve ser maior que o atual');
       const lim = await limits();
-      if (next > Math.floor(current * (1 + lim.step / 100)) + 1) throw new Error(`El aumento supera el máximo del ${lim.step}% diario`);
-      if (lim.cap != null && next > lim.cap) throw new Error('El presupuesto supera el tope diario configurado');
+      if (next > Math.floor(current * (1 + lim.step / 100)) + 1) throw new Error(`O aumento supera o máximo de ${lim.step}% ao dia`);
+      if (lim.cap != null && next > lim.cap) throw new Error('O orçamento supera o teto diário configurado');
       const today = await db.service.one(`select count(*)::int as n from growth.ai_actions where kind = 'scale_budget' and platform = $1 and target_id = $2
         and status = 'executed' and executed_at >= date_trunc('day', now()) and id is distinct from $3::uuid`, [platform, id, action.id ?? null]);
-      if (today.n > 0) throw new Error('Este conjunto ya subió de presupuesto hoy (máximo un aumento al día)');
+      if (today.n > 0) throw new Error('Este conjunto já teve o orçamento aumentado hoje (máximo de um aumento por dia)');
       if (platform === 'meta') await metaPost(id, c.token, { daily_budget: String(next) });
       else await tkPost('/adgroup/update/', c.token, { advertiser_id: c.advertiserId, adgroup_id: id, budget: next / 100 });
       await db.service.exec('update growth.ads set daily_budget_cents = $3, updated_at = now() where platform = $1 and adset_id = $2', [platform, id, next]);
       return { ok: true, result: { adset_id: id, budget_cents: next }, undo_data: { platform, adset_id: id, previous_budget_cents: current } };
     }
-    throw new Error(`Acción no soportada por la plataforma: ${action.kind}`);
+    throw new Error(`Ação não suportada pela plataforma: ${action.kind}`);
   }
 
   /** Revierte una acción ejecutada con su undo_data. */
   async function undo(action) {
     const u = action?.undo_data;
-    if (!u?.platform) throw new Error('Esta acción no se puede deshacer');
+    if (!u?.platform) throw new Error('Esta ação não pode ser desfeita');
     const c = await creds(u.platform);
-    if (!c) throw new Error(`${u.platform === 'meta' ? 'Meta' : 'TikTok'} Ads no está configurado`);
+    if (!c) throw new Error(`${u.platform === 'meta' ? 'Meta' : 'TikTok'} Ads não está configurado`);
     if (action.kind === 'pause_ad') {
       if (u.platform === 'meta') await metaPost(u.ad_id, c.token, { status: 'ACTIVE' });
       else await tkPost('/ad/status/update/', c.token, { advertiser_id: c.advertiserId, ad_ids: [u.ad_id], operation_status: 'ENABLE' });
@@ -263,7 +263,7 @@ export function createAds({ db, settings, config, fetchImpl = globalThis.fetch, 
       await db.service.exec('update growth.ads set daily_budget_cents = $3, updated_at = now() where platform = $1 and adset_id = $2', [u.platform, u.adset_id, prev]);
       return { ok: true, result: { adset_id: u.adset_id, budget_cents: prev } };
     }
-    throw new Error(`No se puede deshacer: ${action.kind}`);
+    throw new Error(`Não é possível desfazer: ${action.kind}`);
   }
 
   return { configured, sync, execute, undo };

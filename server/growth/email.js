@@ -86,7 +86,7 @@ export function createEmail({ db, settings, config, fetchImpl = globalThis.fetch
       }),
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(`Customer.io ${res.status}: ${body?.meta?.error ?? 'error'}`);
+    if (!res.ok) throw new Error(`Customer.io ${res.status}: ${body?.meta?.error ?? 'erro'}`);
     return { ok: true, delivery_id: body.delivery_id ?? null };
   }
 
@@ -106,9 +106,9 @@ export function createEmail({ db, settings, config, fetchImpl = globalThis.fetch
     const c = await creds();
     if (c.webhookSecret) {
       const raw = rawBody ?? (typeof body === 'string' ? body : Buffer.isBuffer(body) ? body.toString('utf8') : JSON.stringify(body));
-      if (!verifySignature(c.webhookSecret, headers, raw)) return { ok: false, status: 401, error: 'firma inválida' };
+      if (!verifySignature(c.webhookSecret, headers, raw)) return { ok: false, status: 401, error: 'assinatura inválida' };
     } else if (config.isProduction) {
-      return { ok: false, status: 401, error: 'webhook sin secreto configurado' };
+      return { ok: false, status: 401, error: 'webhook sem segredo configurado' };
     }
     let evt = body;
     if (typeof evt === 'string' || Buffer.isBuffer(evt)) { try { evt = JSON.parse(String(evt)); } catch { return { ok: false, status: 400, error: 'JSON inválido' }; } }

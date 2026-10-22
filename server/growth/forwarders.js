@@ -1,5 +1,6 @@
 // Envío de la bandeja de salida (growth.outbox) a Meta CAPI, TikTok Events API y Customer.io.
 // Solo viaja lo que ya está en el payload (sin respuestas del quiz ni hábito).
+import { randomUUID } from 'node:crypto';
 import { sha256 } from './context.js';
 
 const META_EVENTS = {
@@ -71,7 +72,7 @@ export function createForwarders({ db, settings, config, email, fetchImpl = glob
       method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(buildMetaBody(payload, cfg)),
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(`Meta ${res.status}: ${body?.error?.message ?? 'error'}`);
+    if (!res.ok) throw new Error(`Meta ${res.status}: ${body?.error?.message ?? 'erro'}`);
     return { response: { events_received: body.events_received ?? null, fbtrace_id: body.fbtrace_id ?? null } };
   }
 
@@ -84,7 +85,7 @@ export function createForwarders({ db, settings, config, email, fetchImpl = glob
     });
     const body = await res.json().catch(() => ({}));
     // TikTok responde 200 con code != 0 en error.
-    if (!res.ok || (body.code !== undefined && body.code !== 0)) throw new Error(`TikTok ${res.status}: ${body?.message ?? 'error'}`);
+    if (!res.ok || (body.code !== undefined && body.code !== 0)) throw new Error(`TikTok ${res.status}: ${body?.message ?? 'erro'}`);
     return { response: { code: body.code ?? 0, request_id: body.request_id ?? null } };
   }
 
@@ -134,5 +135,24 @@ export function createForwarders({ db, settings, config, email, fetchImpl = glob
     return out;
   }
 
-  return { processOutbox };
+  /** Teste de conexão pelo painel: envia um PageView com o código de eventos de teste (não conta como evento real). */
+  async function sendTest(dest) {
+    if (!['meta', 'tiktok'].includes(dest)) return { ok: false, message: 'Integração desconhecida.' };
+    const cfg = await settings.get(`pixels.${dest}`);
+    const nome = dest === 'meta' ? 'Meta' : 'TikTok';
+    if (!cfg?.pixelId || !cfg?.accessToken) return { ok: false, message: `Preencha o ID do pixel e o token de acesso do ${nome} e salve antes de testar.` };
+    if (!cfg.testEventCode) return { ok: false, message: `Informe o "Código de eventos de teste" do ${nome} e salve. Assim o teste não conta como evento real.` };
+    const payload = { event_name: 'page_view', event_id: randomUUID(), time: Math.floor(Date.now() / 1000), url: `${config.appUrl}/`,
+      user: { ip: '203.0.113.10', user_agent: 'AlentoPainel/1.0 (teste de conexão)' } };
+    try {
+      const r = dest === 'meta' ? await sendMeta(payload) : await sendTikTok(payload);
+      if (r.skipped) return { ok: false, message: 'Nada foi enviado: configuração incompleta.' };
+      const detalhe = dest === 'meta' ? `eventos recebidos: ${r.response.events_received ?? '?'}` : `código ${r.response.code}`;
+      return { ok: true, message: `Conexão OK com ${nome} (${detalhe}). Abra "Testar eventos" no ${dest === 'meta' ? 'Gerenciador de Eventos' : 'TikTok Events Manager'} com o código ${cfg.testEventCode} para ver o PageView de teste.` };
+    } catch (err) {
+      return { ok: false, message: `Falha na conexão com ${nome}: ${String(err.message).replace(/access_token=[^&\s]+/g, 'access_token=***')}` };
+    }
+  }
+
+  return { processOutbox, sendTest };
 }

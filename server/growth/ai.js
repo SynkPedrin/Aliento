@@ -15,23 +15,27 @@ const DEFAULTS = {
   auto: { promote_variant: true, email_variant: true, creative_brief: true, pause_ad: false, scale_budget: false },
   minSample: 100,
 };
-const eur = (c) => (c == null ? '-' : `${(Number(c) / 100).toFixed(2)}`);
+// Formatação pt-BR: moeda conforme a configuração (R$/US$/€), vírgula decimal e datas dd/mm.
+let CUR = 'USD';
+const eur = (c) => (c == null ? '-' : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: CUR }).format(Number(c) / 100));
+const br = (n) => (n == null || n === '' ? '-' : Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 }));
+const dm = (ymd) => { const m = /^\d{4}-(\d{2})-(\d{2})/.exec(String(ymd ?? '')); return m ? `${m[2]}/${m[1]}` : String(ymd ?? ''); };
 const pct = (a, b) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
 const userId = (u) => { const v = u?.id ?? u; return isUuid(v) ? v : null; };
 
 // ---------------------------------------------------------------------- validación SQL (capa 1)
 /** Valida que sea UN solo select/with sobre vistas growth.v_*. Devuelve el SQL limpio o lanza error. */
 export function validateReadonlySql(sql) {
-  if (typeof sql !== 'string' || !sql.trim()) throw new Error('Consulta vacía');
-  if (sql.length > 8000) throw new Error('Consulta demasiado larga');
+  if (typeof sql !== 'string' || !sql.trim()) throw new Error('Consulta vazia');
+  if (sql.length > 8000) throw new Error('Consulta longa demais');
   let s = sql.trim().replace(/;\s*$/, '');
-  if (s.replace(/'(?:[^']|'')*'/g, "''").includes(';')) throw new Error('Solo se permite una instrucción');
-  if (/--|\/\*|\*\/|"|\\|\$\$|\$[a-z_0-9]*\$/i.test(s)) throw new Error('Comentarios, identificadores entre comillas y escapes no están permitidos');
+  if (s.replace(/'(?:[^']|'')*'/g, "''").includes(';')) throw new Error('Só é permitida uma instrução');
+  if (/--|\/\*|\*\/|"|\\|\$\$|\$[a-z_0-9]*\$/i.test(s)) throw new Error('Comentários, identificadores entre aspas e caracteres de escape não são permitidos');
   const scan = s.replace(/'(?:[^']|'')*'/g, "''").toLowerCase();
-  if (!/^\s*(select|with)\b/.test(scan)) throw new Error('Solo se permiten consultas select');
-  if (FORBIDDEN.test(scan)) throw new Error('La consulta usa palabras o funciones no permitidas');
-  if (/\bgrowth\s*\.\s*(?!v_)\w+/.test(scan)) throw new Error('Solo se pueden consultar las vistas growth.v_*');
-  if (/\bpg_catalog\b|\bsys\w*\b/.test(scan)) throw new Error('Consulta no permitida');
+  if (!/^\s*(select|with)\b/.test(scan)) throw new Error('Só são permitidas consultas select');
+  if (FORBIDDEN.test(scan)) throw new Error('A consulta usa palavras ou funções não permitidas');
+  if (/\bgrowth\s*\.\s*(?!v_)\w+/.test(scan)) throw new Error('Só é possível consultar as views growth.v_*');
+  if (/\bpg_catalog\b|\bsys\w*\b/.test(scan)) throw new Error('Consulta não permitida');
   // Relaciones tras from/join: solo growth.v_* o CTEs declaradas.
   const ctes = new Set([...scan.matchAll(/\b([a-z_][a-z0-9_]*)\s+as\s*\(/g)].map((m) => m[1]));
   const flat = scan
@@ -39,14 +43,15 @@ export function validateReadonlySql(sql) {
     .replace(/\bdistinct\s+from\b/g, 'distinct_');
   for (const m of flat.matchAll(/\b(?:from|join)\s+([a-z_][a-z0-9_.]*)\s*(\(|,)?/g)) {
     const rel = m[1];
-    if (m[2] === '(') throw new Error('No se permiten funciones como origen de datos');
-    if (m[2] === ',') throw new Error('Usa JOIN explícito en lugar de listas separadas por comas');
-    if (!/^growth\.v_[a-z0-9_]+$/.test(rel) && !ctes.has(rel)) throw new Error(`Relación no permitida: ${rel}`);
+    if (m[2] === '(') throw new Error('Não são permitidas funções como origem de dados');
+    if (m[2] === ',') throw new Error('Use JOIN explícito em vez de listas separadas por vírgulas');
+    if (!/^growth\.v_[a-z0-9_]+$/.test(rel) && !ctes.has(rel)) throw new Error(`Relação não permitida: ${rel}`);
   }
   return s;
 }
 
 export function createAi({ db, settings, config, ads, email, experiments, fetchImpl = globalThis.fetch, log = console } = {}) {
+  CUR = String(config?.currency || 'USD').toUpperCase();
   // ---------------------------------------------------------------------- ajustes
   async function conf() {
     const [goals, ai, alerts, tz] = await Promise.all([
@@ -90,13 +95,13 @@ export function createAi({ db, settings, config, ads, email, experiments, fetchI
 
   // ---------------------------------------------------------------------- Claude: bucle de herramientas
   const TOOLS = [
-    { name: 'consultar_banco', description: 'Ejecuta un SELECT de solo lectura sobre las vistas growth.v_* (v_funil_diario, v_quiz_preguntas, v_quiz_respuestas, v_atribuicao, v_desempenho_anuncios, v_coortes, v_ventas_diarias, v_emails). Máximo 200 filas.',
+    { name: 'consultar_banco', description: 'Executa um SELECT somente leitura sobre as views growth.v_* (v_funil_diario, v_quiz_preguntas, v_quiz_respuestas, v_atribuicao, v_desempenho_anuncios, v_coortes, v_ventas_diarias, v_emails). Máximo de 200 linhas.',
       input_schema: { type: 'object', properties: { sql: { type: 'string' } }, required: ['sql'] } },
-    { name: 'ler_anuncios', description: 'Lee el rendimiento de anuncios (vista v_desempenho_anuncios) de los últimos N días.',
+    { name: 'ler_anuncios', description: 'Lê o desempenho dos anúncios (view v_desempenho_anuncios) dos últimos N dias.',
       input_schema: { type: 'object', properties: { days: { type: 'integer' }, platform: { type: 'string' } } } },
-    { name: 'propor_acao', description: 'Propone una acción (queda pendiente de aprobación salvo que las reglas permitan automática). kind: pause_ad, scale_budget, promote_variant, email_variant, creative_brief, price_change.',
+    { name: 'propor_acao', description: 'Propõe uma ação (fica pendente de aprovação, a menos que as regras permitam execução automática). kind: pause_ad, scale_budget, promote_variant, email_variant, creative_brief, price_change.',
       input_schema: { type: 'object', properties: { kind: { type: 'string' }, platform: { type: 'string' }, target_id: { type: 'string' }, reason: { type: 'string' }, data: { type: 'object' }, confidence: { type: 'string', enum: CONF } }, required: ['kind', 'reason', 'confidence'] } },
-    { name: 'publicar_relatorio', description: 'Publica el informe final (título y cuerpo en texto plano) y cierra el trabajo.',
+    { name: 'publicar_relatorio', description: 'Publica o relatório final (título e corpo em texto simples, em português do Brasil) e encerra o trabalho.',
       input_schema: { type: 'object', properties: { title: { type: 'string' }, body: { type: 'string' } }, required: ['title', 'body'] } },
   ];
 
@@ -152,7 +157,7 @@ export function createAi({ db, settings, config, ads, email, experiments, fetchI
       state.report = await saveReport({ kind: ctx.kind ?? 'daily', period_start: ctx.periodStart, period_end: ctx.periodEnd, title: input.title, body: input.body, numbers: ctx.numbers ?? {}, model: ctx.model, llm: true, at: ctx.now });
       return { ok: true, id: state.report.id };
     }
-    throw new Error(`Herramienta desconocida: ${name}`);
+    throw new Error(`Ferramenta desconhecida: ${name}`);
   }
 
   async function saveReport({ kind, period_start = null, period_end = null, title, body, numbers = {}, model = null, llm = false, at = null }) {
@@ -161,10 +166,12 @@ export function createAi({ db, settings, config, ads, email, experiments, fetchI
     [kind, period_start, period_end, title, body, JSON.stringify(numbers), model, llm, at]);
   }
 
-  const SYSTEM = `Eres el analista de growth de Alento (app para dejar malos hábitos). Trabajas con datos agregados, sin datos personales ni de salud individuales.
-Usa las herramientas para verificar cifras antes de afirmar nada. Nunca inventes números. Sé concreto, breve y en el idioma de quien pregunta.
-No tienes acceso de escritura: solo puedes proponer acciones con propor_acao (un humano las aprueba) y publicar el informe con publicar_relatorio.
-Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios de precio como automáticos.`;
+  const SYSTEM = `Você é o analista de growth da Alento (app para largar maus hábitos). Trabalha com dados agregados, sem dados pessoais nem de saúde individuais.
+Responda SEMPRE em português do Brasil, em tom profissional e direto. Redija relatórios, alertas e justificativas de ações (reason) em português do Brasil, com números no formato brasileiro (vírgula decimal, datas dd/mm, valores em R$ ou US$ conforme a moeda do dado).
+Mantenha os nomes das ferramentas, colunas e views exatamente como estão (consultar_banco, ler_anuncios, propor_acao, publicar_relatorio, v_funil_diario etc.).
+Use as ferramentas para verificar os números antes de afirmar qualquer coisa. Nunca invente números. Seja concreto e breve.
+Você não tem acesso de escrita: só pode propor ações com propor_acao (um humano as aprova) e publicar o relatório com publicar_relatorio.
+Marque confidence 'low' quando a amostra for pequena. Nunca proponha mudanças de preço como automáticas.`;
 
   /** Intenta con LLM; si falla o no hay clave, usa el informe por reglas (llm=false). */
   async function report({ kind, model, title, rulesBody, numbers, periodStart, periodEnd, instruction, now }) {
@@ -172,13 +179,13 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
       try {
         const st = await runTools({
           model, system: SYSTEM, ctx: { kind, periodStart, periodEnd, numbers, model, now },
-          prompt: `${instruction}\n\nDatos calculados por reglas (fiables):\n${JSON.stringify(numbers)}\n\nBorrador por reglas:\n${rulesBody}\n\nCuando termines, llama a publicar_relatorio.`,
+          prompt: `${instruction}\n\nDados calculados por regras (confiáveis):\n${JSON.stringify(numbers)}\n\nRascunho por regras:\n${rulesBody}\n\nQuando terminar, chame publicar_relatorio. Redija o título e o corpo em português do Brasil.`,
         });
         if (st.report) return st.report;
         if (st.text) return saveReport({ kind, period_start: periodStart, period_end: periodEnd, title, body: st.text, numbers, model, llm: true, at: now });
-      } catch (e) { log.warn?.(`[ai] LLM no disponible, informe por reglas: ${e.message}`); }
+      } catch (e) { log.warn?.(`[ai] LLM indisponível, relatório por regras: ${e.message}`); }
     }
-    return saveReport({ kind, period_start: periodStart, period_end: periodEnd, title, body: `Informe automático por reglas.\n\n${rulesBody}`, numbers, llm: false, at: now });
+    return saveReport({ kind, period_start: periodStart, period_end: periodEnd, title, body: `Relatório automático por regras.\n\n${rulesBody}`, numbers, llm: false, at: now });
   }
 
   // ---------------------------------------------------------------------- métricas (vistas, días UTC)
@@ -213,15 +220,15 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
 
   /** Crea una propuesta (nunca ejecuta). Aplica límites y decide si es elegible a automática. */
   async function propose({ kind, platform = null, target_id = null, reason, data = {}, confidence = 'low' }) {
-    if (!KINDS.includes(kind)) throw new Error(`Tipo de acción no válido: ${kind}`);
-    if (!reason) throw new Error('Falta el motivo');
+    if (!KINDS.includes(kind)) throw new Error(`Tipo de ação inválido: ${kind}`);
+    if (!reason) throw new Error('Falta o motivo');
     if (!CONF.includes(confidence)) confidence = 'low';
     const c = await conf();
     if (kind === 'scale_budget') {
       const cur = Number(data?.current_budget_cents); const next = Number(data?.new_budget_cents);
-      if (!(next > 0) || !(cur > 0) || next <= cur) throw new Error('scale_budget necesita current_budget_cents y new_budget_cents (mayor)');
-      if (next > Math.floor(cur * (1 + c.ai.limits.budget_max_step_pct / 100)) + 1) throw new Error(`El aumento supera el máximo del ${c.ai.limits.budget_max_step_pct}% diario`);
-      if (c.ai.limits.daily_cap_cents != null && next > c.ai.limits.daily_cap_cents) throw new Error('El presupuesto supera el tope diario');
+      if (!(next > 0) || !(cur > 0) || next <= cur) throw new Error('scale_budget precisa de current_budget_cents e new_budget_cents (maior)');
+      if (next > Math.floor(cur * (1 + c.ai.limits.budget_max_step_pct / 100)) + 1) throw new Error(`O aumento supera o máximo de ${c.ai.limits.budget_max_step_pct}% ao dia`);
+      if (c.ai.limits.daily_cap_cents != null && next > c.ai.limits.daily_cap_cents) throw new Error('O orçamento supera o teto diário');
     }
     if (target_id != null) {
       const dup = await db.service.one("select * from growth.ai_actions where kind = $1 and target_id = $2 and status = 'proposed' and coalesce(platform,'') = coalesce($3,'') limit 1", [kind, String(target_id), platform]);
@@ -236,15 +243,15 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
     if (a.kind === 'pause_ad' || a.kind === 'scale_budget') return ads.execute(a);
     if (a.kind === 'promote_variant' || a.kind === 'email_variant') {
       const variant = a.data?.variant;
-      if (!a.target_id || !variant) throw new Error('Faltan experimento o variante');
+      if (!a.target_id || !variant) throw new Error('Faltam o experimento ou a variante');
       const prev = await db.service.one('select status, winner, ended_at from growth.experiments where key = $1', [a.target_id]);
-      if (!prev) throw new Error('Experimento no encontrado');
+      if (!prev) throw new Error('Experimento não encontrado');
       await experiments.promote(a.target_id, variant);
       return { ok: true, result: { promoted: variant }, undo_data: { experiment: a.target_id, previous: prev } };
     }
     if (a.kind === 'creative_brief') return { ok: true, result: { brief: a.data?.brief ?? a.reason }, undo_data: null };
-    if (a.kind === 'price_change') return { ok: true, result: { manual: true, note: 'Cambio de precio: aplicar a mano en Stripe/tiendas' }, undo_data: null };
-    throw new Error(`Acción no soportada: ${a.kind}`);
+    if (a.kind === 'price_change') return { ok: true, result: { manual: true, note: 'Mudança de preço: aplicar manualmente no Stripe/lojas' }, undo_data: null };
+    throw new Error(`Ação não suportada: ${a.kind}`);
   }
 
   async function runAction(a, { by = null, auto = false } = {}) {
@@ -259,25 +266,25 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
 
   async function approve(id, user) {
     const a = await db.service.one("update growth.ai_actions set status = 'approved', decided_by = $2, decided_at = now() where id = $1 and status = 'proposed' returning *", [id, userId(user)]);
-    if (!a) throw new Error('La acción no está pendiente de aprobación');
+    if (!a) throw new Error('A ação não está pendente de aprovação');
     return runAction(a, { by: userId(user), auto: false });
   }
   async function reject(id, user) {
     const a = await db.service.one("update growth.ai_actions set status = 'rejected', decided_by = $2, decided_at = now() where id = $1 and status = 'proposed' returning *", [id, userId(user)]);
-    if (!a) throw new Error('La acción no está pendiente');
+    if (!a) throw new Error('A ação não está pendente');
     return a;
   }
   async function undo(id, user) {
     const a = await db.service.one("select * from growth.ai_actions where id = $1 and status = 'executed'", [id]);
-    if (!a) throw new Error('Solo se pueden deshacer acciones ejecutadas');
+    if (!a) throw new Error('Só é possível desfazer ações executadas');
     if (a.kind === 'pause_ad' || a.kind === 'scale_budget') {
       await ads.undo(a);
     } else if (a.kind === 'promote_variant' || a.kind === 'email_variant') {
-      if (!a.undo_data?.experiment) throw new Error('No hay datos para deshacer');
+      if (!a.undo_data?.experiment) throw new Error('Não há dados para desfazer');
       const p = a.undo_data.previous ?? {};
       await db.service.exec('update growth.experiments set status = $2, winner = $3, ended_at = $4 where key = $1', [a.undo_data.experiment, p.status ?? 'running', p.winner ?? null, p.ended_at ?? null]);
     } else if (a.kind === 'price_change') {
-      throw new Error('El cambio de precio se revierte a mano');
+      throw new Error('A mudança de preço deve ser revertida manualmente');
     }
     return db.service.one("update growth.ai_actions set status = 'undone', decided_by = coalesce($2, decided_by), decided_at = now() where id = $1 returning *", [id, userId(user)]);
   }
@@ -285,7 +292,7 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
   /** Ejecuta solo lo elegible a automático, y solo con el interruptor general encendido. */
   async function autoExecute() {
     const c = await conf();
-    if (!c.ai.auto_enabled) return { skipped: true, reason: 'interruptor general apagado', executed: 0, failed: 0 };
+    if (!c.ai.auto_enabled) return { skipped: true, reason: 'chave geral desligada', executed: 0, failed: 0 };
     const rows = await db.service.rows("select * from growth.ai_actions where status = 'proposed' and auto = true order by proposed_at limit 50");
     let executed = 0; let failed = 0; let blocked = 0;
     for (const a of rows) {
@@ -314,19 +321,19 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
         out.push(await propose({
           kind: 'pause_ad', platform: r.platform, target_id: r.ad_id, confidence: conf,
           reason: r.purchases === 0
-            ? `Gastó ${eur(r.spend_cents)} (más de ${L.pause_spend_multiple}x la meta de CAC de ${eur(cac)}) sin ninguna venta en 7 días.`
-            : `CPA de ${eur(cpa)}, más de ${L.pause_cpa_multiple}x la meta de ${eur(cac)}, con ${eur(r.spend_cents)} gastados.`,
+            ? `Gastou ${eur(r.spend_cents)} (mais de ${L.pause_spend_multiple}x a meta de CAC de ${eur(cac)}) sem nenhuma venda em 7 dias.`
+            : `CPA de ${eur(cpa)}, mais de ${L.pause_cpa_multiple}x a meta de ${eur(cac)}, com ${eur(r.spend_cents)} gastos.`,
           data: { ad_name: r.ad_name, spend_cents: r.spend_cents, purchases: r.purchases, cpa_cents: cpa && Math.round(cpa), cac_max: cac, clicks: r.clicks },
-        }).catch((e) => { log.warn?.(`[ai] propuesta pause_ad: ${e.message}`); return null; }));
+        }).catch((e) => { log.warn?.(`[ai] proposta pause_ad: ${e.message}`); return null; }));
       } else if (r.purchases >= 2 && cpa <= cac && r.adset_id && (c.goals.roas_min == null || r.revenue_cents / r.spend_cents >= c.goals.roas_min)) {
         const bud = await db.service.one('select max(daily_budget_cents) b from growth.ads where platform = $1 and adset_id = $2', [r.platform, r.adset_id]);
         if (bud?.b > 0) {
           const next = Math.floor(bud.b * (1 + L.budget_max_step_pct / 100));
           out.push(await propose({
             kind: 'scale_budget', platform: r.platform, target_id: r.adset_id, confidence: conf,
-            reason: `CPA de ${eur(cpa)} por debajo de la meta (${eur(cac)}) con ${r.purchases} ventas en 7 días.`,
+            reason: `CPA de ${eur(cpa)} abaixo da meta (${eur(cac)}) com ${r.purchases} vendas em 7 dias.`,
             data: { current_budget_cents: bud.b, new_budget_cents: next, ad_id: r.ad_id, cpa_cents: Math.round(cpa), purchases: r.purchases },
-          }).catch((e) => { log.warn?.(`[ai] propuesta scale_budget: ${e.message}`); return null; }));
+          }).catch((e) => { log.warn?.(`[ai] proposta scale_budget: ${e.message}`); return null; }));
         }
       }
     }
@@ -346,7 +353,7 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
         const kind = e.kind === 'price' ? 'price_change' : e.kind === 'email' ? 'email_variant' : 'promote_variant';
         out.push(await propose({
           kind, target_id: e.key, confidence: enough ? 'high' : 'low',
-          reason: `La variante ${best.variant} gana en "${e.name}" con significancia del 95% (p=${st.p_value}).`,
+          reason: `A variante ${best.variant} vence em "${e.name}" com significância de 95% (p=${br(st.p_value)}).`,
           data: { variant: best.variant, stats: variants, p_value: st.p_value },
         }));
       }
@@ -364,7 +371,7 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
       if (c.alerts.webhookUrl) {
         await fetchImpl(c.alerts.webhookUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text, content: text, code: alert.code }) });
       }
-    } catch (e) { log.warn?.(`[ai] notificación de alerta: ${e.message}`); }
+    } catch (e) { log.warn?.(`[ai] notificação de alerta: ${e.message}`); }
     await db.service.exec('update growth.alerts set notified_at = now() where id = $1', [alert.id]);
   }
 
@@ -386,32 +393,32 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
     const t = await kpis(today, today); const w = await kpis(addDay(today, -7), addDay(today, -1));
     if (t.visits >= c.goals.min_sample && w.visits > 0 && w.purchases > 0) {
       const rt = t.purchases / t.visits; const rw = w.purchases / w.visits;
-      if (rt < rw * 0.5) found.push({ code: 'conversion_drop', severity: 'critical', message: `La conversión de hoy (${pct(t.purchases, t.visits)}%) cae más de la mitad frente a la media de 7 días (${pct(w.purchases, w.visits)}%).`, data: { today: { visits: t.visits, purchases: t.purchases }, avg7: { visits: w.visits, purchases: w.purchases } } });
+      if (rt < rw * 0.5) found.push({ code: 'conversion_drop', severity: 'critical', message: `A conversão de hoje (${br(pct(t.purchases, t.visits))}%) caiu mais da metade em relação à média de 7 dias (${br(pct(w.purchases, w.visits))}%).`, data: { today: { visits: t.visits, purchases: t.purchases }, avg7: { visits: w.visits, purchases: w.purchases } } });
     }
     // 2) CAC por encima de 2x la meta (7 días)
     const k7 = await kpis(addDay(today, -6), today);
     if (c.goals.cac_max && k7.spend_cents >= c.goals.cac_max && (k7.new_customers === 0 || k7.spend_cents / k7.new_customers > 2 * c.goals.cac_max)) {
-      found.push({ code: 'cac_high', severity: 'critical', message: `El CAC de 7 días (${k7.cac_cents == null ? 'sin ventas' : eur(k7.cac_cents)}) supera 2x la meta (${eur(c.goals.cac_max)}). Gasto: ${eur(k7.spend_cents)}.`, data: { spend_cents: k7.spend_cents, new_customers: k7.new_customers, cac_max: c.goals.cac_max } });
+      found.push({ code: 'cac_high', severity: 'critical', message: `O CAC de 7 dias (${k7.cac_cents == null ? 'sem vendas' : eur(k7.cac_cents)}) supera 2x a meta (${eur(c.goals.cac_max)}). Gasto: ${eur(k7.spend_cents)}.`, data: { spend_cents: k7.spend_cents, new_customers: k7.new_customers, cac_max: c.goals.cac_max } });
     }
     // 3) pixel/outbox
     const ob = await db.service.one(`select count(*) filter (where status = 'pending' and next_attempt_at < now() - interval '30 minutes')::int stalled,
       count(*) filter (where status = 'failed' and created_at > now() - interval '24 hours')::int failed from growth.outbox`);
-    if (ob.stalled > 0) found.push({ code: 'outbox_stalled', severity: 'critical', message: `${ob.stalled} eventos llevan más de 30 minutos sin enviarse a los píxeles/Customer.io.`, data: ob });
-    if (ob.failed > 0) found.push({ code: 'outbox_failed', severity: 'warn', message: `${ob.failed} eventos fallaron definitivamente en las últimas 24 h.`, data: ob });
+    if (ob.stalled > 0) found.push({ code: 'outbox_stalled', severity: 'critical', message: `${ob.stalled} eventos estão há mais de 30 minutos sem ser enviados aos pixels/Customer.io.`, data: ob });
+    if (ob.failed > 0) found.push({ code: 'outbox_failed', severity: 'warn', message: `${ob.failed} eventos falharam definitivamente nas últimas 24 h.`, data: ob });
     // 4) errores de checkout
     const ce = await db.service.one("select count(*)::int n from growth.checkouts where status = 'failed' and opened_at > now() - interval '1 hour'");
-    if (ce.n >= 3) found.push({ code: 'checkout_errors', severity: 'critical', message: `${ce.n} checkouts fallidos en la última hora.`, data: ce });
+    if (ce.n >= 3) found.push({ code: 'checkout_errors', severity: 'critical', message: `${ce.n} checkouts com falha na última hora.`, data: ce });
     // 5) pagos fallidos en alza
     const pf = await db.service.one(`select count(*) filter (where occurred_at > now() - interval '24 hours')::int d1,
       count(*) filter (where occurred_at <= now() - interval '24 hours' and occurred_at > now() - interval '8 days')::int d7 from growth.events where name = 'payment_failed'`);
-    if (pf.d1 >= 3 && pf.d1 > 2 * (pf.d7 / 7)) found.push({ code: 'payment_failed_spike', severity: 'warn', message: `Pagos fallidos en alza: ${pf.d1} en 24 h (media diaria previa: ${(pf.d7 / 7).toFixed(1)}).`, data: pf });
+    if (pf.d1 >= 3 && pf.d1 > 2 * (pf.d7 / 7)) found.push({ code: 'payment_failed_spike', severity: 'warn', message: `Pagamentos com falha em alta: ${pf.d1} em 24 h (média diária anterior: ${br(Math.round((pf.d7 / 7) * 10) / 10)}).`, data: pf });
     // 6) gasto sobre el ritmo
     const budget = c.goals.daily_budget_cents;
     if (budget) {
       const spent = (await db.service.one('select coalesce(sum(spend_cents),0) s from growth.ad_spend_daily where day = $1', [today])).s;
       const frac = (now.getUTCHours() * 60 + now.getUTCMinutes()) / 1440;
       const projected = frac >= 0.25 ? spent / frac : spent;
-      if (spent > 0 && projected > budget * 1.25) found.push({ code: 'spend_pace', severity: 'warn', message: `Gasto de hoy ${eur(spent)} sobre el ritmo del presupuesto diario (${eur(budget)}); proyección ${eur(Math.round(projected))}.`, data: { spent, budget, projected: Math.round(projected) } });
+      if (spent > 0 && projected > budget * 1.25) found.push({ code: 'spend_pace', severity: 'warn', message: `Gasto de hoje ${eur(spent)} acima do ritmo do orçamento diário (${eur(budget)}); projeção ${eur(Math.round(projected))}.`, data: { spent, budget, projected: Math.round(projected) } });
     }
     return found;
   }
@@ -430,8 +437,8 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
     let rep = null;
     if (created.length) {
       const body = created.map((a) => `- (${a.severity}) ${a.message}`).join('\n');
-      rep = await report({ kind: 'monitor', model: MODELS.fast, title: `Monitor: ${created.length} alerta(s) nueva(s)`, rulesBody: body, numbers: { alerts: created.map((a) => ({ code: a.code, data: a.data })) },
-        instruction: 'Explica brevemente las alertas nuevas, su posible causa y qué revisar primero.' });
+      rep = await report({ kind: 'monitor', model: MODELS.fast, title: `Monitor: ${created.length} alerta(s) nova(s)`, rulesBody: body, numbers: { alerts: created.map((a) => ({ code: a.code, data: a.data })) },
+        instruction: 'Explique brevemente os alertas novos, a possível causa e o que verificar primeiro. Responda em português do Brasil.' });
     }
     const auto = await autoExecute();
     return { alerts: found, created: created.length, resolved: resolved.length, proposals: proposals.length, report: rep, auto };
@@ -466,15 +473,15 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
       funnel: { yesterday: { quiz: y.quiz_started, leads: y.leads, checkouts: y.checkouts, purchases: y.purchases }, avg7: { quiz: avg(w.quiz_started), leads: avg(w.leads), checkouts: avg(w.checkouts), purchases: avg(w.purchases) } },
       pending_actions: pending.length };
     const lines = [
-      `Ayer (${yday}): ${y.visits} visitas, ${y.quiz_started} quizzes, ${y.leads} leads, ${y.checkouts} checkouts, ${y.purchases} compras.`,
-      `Media 7 días: ${avg(w.visits)} visitas, ${avg(w.quiz_started)} quizzes, ${avg(w.leads)} leads, ${avg(w.checkouts)} checkouts, ${avg(w.purchases)} compras.`,
-      `Ingresos netos: ${eur(y.revenue_cents)} (media 7d: ${eur(Math.round(w.revenue_cents / 7))}). Gasto: ${eur(y.spend_cents)} (media 7d: ${eur(Math.round(w.spend_cents / 7))}). CAC: ${y.cac_cents == null ? '-' : eur(y.cac_cents)}. ROAS: ${y.roas ?? '-'}.`,
-      winners.length ? `Anuncios que ganaron: ${winners.map((r) => `${r.ad_name ?? r.ad_id} (${r.purchases} ventas, CPA ${eur(r.cpa)})`).join('; ')}.` : 'Sin anuncios con ventas ayer.',
-      losers.length ? `Anuncios que perdieron: ${losers.map((r) => `${r.ad_name ?? r.ad_id} (${eur(r.spend_cents)} sin ventas)`).join('; ')}.` : 'Ningún anuncio gastó sin vender.',
-      pending.length ? `Acciones propuestas (${pending.length}):\n${pending.map((p) => `- ${p.kind} [confianza ${p.confidence}${p.auto ? ', automática' : ''}]: ${p.reason}`).join('\n')}` : 'Sin acciones propuestas.',
+      `Ontem (${dm(yday)}): ${br(y.visits)} visitas, ${br(y.quiz_started)} quizzes, ${br(y.leads)} leads, ${br(y.checkouts)} checkouts, ${br(y.purchases)} compras.`,
+      `Média de 7 dias: ${br(avg(w.visits))} visitas, ${br(avg(w.quiz_started))} quizzes, ${br(avg(w.leads))} leads, ${br(avg(w.checkouts))} checkouts, ${br(avg(w.purchases))} compras.`,
+      `Receita líquida: ${eur(y.revenue_cents)} (média 7d: ${eur(Math.round(w.revenue_cents / 7))}). Gasto: ${eur(y.spend_cents)} (média 7d: ${eur(Math.round(w.spend_cents / 7))}). CAC: ${y.cac_cents == null ? '-' : eur(y.cac_cents)}. ROAS: ${br(y.roas)}.`,
+      winners.length ? `Anúncios que se destacaram: ${winners.map((r) => `${r.ad_name ?? r.ad_id} (${r.purchases} vendas, CPA ${eur(r.cpa)})`).join('; ')}.` : 'Nenhum anúncio com vendas ontem.',
+      losers.length ? `Anúncios que perderam: ${losers.map((r) => `${r.ad_name ?? r.ad_id} (${eur(r.spend_cents)} sem vendas)`).join('; ')}.` : 'Nenhum anúncio gastou sem vender.',
+      pending.length ? `Ações propostas (${pending.length}):\n${pending.map((p) => `- ${p.kind} [confiança ${p.confidence}${p.auto ? ', automática' : ''}]: ${p.reason}`).join('\n')}` : 'Nenhuma ação proposta.',
     ];
-    const rep = await report({ kind: 'daily', model: MODELS.fast, title: `Informe diario ${yday}`, rulesBody: lines.join('\n'), numbers, periodStart: `${yday}T00:00:00Z`, periodEnd: `${yday}T23:59:59Z`, now: ref,
-      instruction: 'Redacta el informe diario: ayer vs media de 7 días, anuncios que ganaron/perdieron, cambios en el embudo y las acciones propuestas con su impacto y confianza.' });
+    const rep = await report({ kind: 'daily', model: MODELS.fast, title: `Relatório diário ${dm(yday)}`, rulesBody: lines.join('\n'), numbers, periodStart: `${yday}T00:00:00Z`, periodEnd: `${yday}T23:59:59Z`, now: ref,
+      instruction: 'Redija o relatório diário em português do Brasil: ontem vs média de 7 dias, anúncios que se destacaram/perderam, mudanças no funil e as ações propostas com seu impacto e confiança.' });
     return { report: rep, proposals: proposals.length };
   }
 
@@ -498,32 +505,32 @@ Marca confidence 'low' cuando la muestra sea pequeña. Nunca propongas cambios d
     const briefs = [];
     for (const f of fatigued.slice(0, 3)) {
       briefs.push(await propose({ kind: 'creative_brief', platform: f.platform, target_id: f.ad_id, confidence: f.impressions >= 5000 ? 'medium' : 'low',
-        reason: `El CTR de "${f.name ?? f.ad_id}" cayó de ${f.ctr_prior_pct}% a ${f.ctr_recent_pct}%: preparar un creativo de relevo.`,
-        data: { brief: `Nuevo creativo para sustituir a "${f.name ?? f.ad_id}": mantener el mensaje que funcionaba, cambiar gancho (primeros 3 s) y formato. Tono Alento: acogedor, sin culpa ni promesas de cura.`, ...f } }).catch(() => null));
+        reason: `O CTR de "${f.name ?? f.ad_id}" caiu de ${br(f.ctr_prior_pct)}% para ${br(f.ctr_recent_pct)}%: preparar um criativo substituto.`,
+        data: { brief: `Novo criativo para substituir "${f.name ?? f.ad_id}": manter a mensagem que funcionava, trocar o gancho (primeiros 3 s) e o formato. Tom Alento: acolhedor, sem culpa nem promessas de cura.`, ...f } }).catch(() => null));
     }
     const exp = await proposeExperiments(c); const ads_ = await proposeAdActions(c);
     const numbers = { cohorts, by_source: bySource, fatigued, weak_questions: questions, proposals: briefs.filter(Boolean).length + exp.length + ads_.length };
     const lines = [
-      cohorts.length ? `LTV por cohorte:\n${cohorts.map((r) => `- ${r.cohort} (${r.currency}): ${r.payers ?? 0} clientes, ${eur(r.ltv_cents)} neto acumulado`).join('\n')}` : 'Aún no hay cohortes de pago.',
-      bySource.length ? `LTV por fuente:\n${bySource.map((r) => `- ${r.source}: ${eur(r.ltv_cents)}`).join('\n')}` : '',
-      fatigued.length ? `Creativos con cansancio:\n${fatigued.map((f) => `- ${f.name ?? f.ad_id}: CTR ${f.ctr_prior_pct}% -> ${f.ctr_recent_pct}%`).join('\n')}` : 'Sin creativos cansados.',
-      questions.length ? `Preguntas del quiz con menos retención:\n${questions.map((q) => `- ${q.program}: "${q.question}" (${q.retention_pct ?? '-'}%)`).join('\n')}` : '',
-      `Propuestas nuevas: ${numbers.proposals} (tests de precio/quiz y briefs de creativos incluidos).`,
+      cohorts.length ? `LTV por coorte:\n${cohorts.map((r) => `- ${dm(r.cohort)} (${r.currency}): ${r.payers ?? 0} clientes, ${eur(r.ltv_cents)} líquido acumulado`).join('\n')}` : 'Ainda não há coortes de pagamento.',
+      bySource.length ? `LTV por fonte:\n${bySource.map((r) => `- ${r.source}: ${eur(r.ltv_cents)}`).join('\n')}` : '',
+      fatigued.length ? `Criativos com fadiga:\n${fatigued.map((f) => `- ${f.name ?? f.ad_id}: CTR ${br(f.ctr_prior_pct)}% -> ${br(f.ctr_recent_pct)}%`).join('\n')}` : 'Nenhum criativo com fadiga.',
+      questions.length ? `Perguntas do quiz com menor retenção:\n${questions.map((q) => `- ${q.program}: "${q.question}" (${br(q.retention_pct)}%)`).join('\n')}` : '',
+      `Novas propostas: ${numbers.proposals} (incluindo testes de preço/quiz e briefings de criativos).`,
     ].filter(Boolean);
-    const rep = await report({ kind: 'weekly', model: MODELS.deep, title: `Informe semanal ${today}`, rulesBody: lines.join('\n'), numbers, periodStart: `${addDay(today, -7)}T00:00:00Z`, periodEnd: `${today}T00:00:00Z`,
-      instruction: 'Redacta el informe semanal: LTV por cohorte/fuente, cansancio de creativos, preguntas del quiz que más abandonan, propuestas de test de precio/quiz y briefs de creativos.' });
+    const rep = await report({ kind: 'weekly', model: MODELS.deep, title: `Relatório semanal ${dm(today)}`, rulesBody: lines.join('\n'), numbers, periodStart: `${addDay(today, -7)}T00:00:00Z`, periodEnd: `${today}T00:00:00Z`,
+      instruction: 'Redija o relatório semanal em português do Brasil: LTV por coorte/fonte, fadiga de criativos, perguntas do quiz com mais abandono, propostas de teste de preço/quiz e briefings de criativos.' });
     return { report: rep, proposals: numbers.proposals };
   }
 
   /** Pregunta libre sobre los datos. Devuelve { answer, sql, rows, llm }. */
   async function ask(question, { user = null } = {}) {
     const q = String(question ?? '').trim();
-    if (!q) throw new Error('Falta la pregunta');
+    if (!q) throw new Error('Falta a pergunta');
     if (!(await llmAvailable())) {
-      return { answer: 'La IA conversacional no está activa (falta la clave de Anthropic en Ajustes). Mientras tanto, el panel muestra informes automáticos por reglas.', sql: null, rows: [], llm: false };
+      return { answer: 'A IA conversacional não está ativa (falta a chave da Anthropic em Configurações). Enquanto isso, o painel mostra relatórios automáticos por regras.', sql: null, rows: [], llm: false };
     }
-    const st = await runTools({ model: MODELS.fast, system: `${SYSTEM}\nResponde la pregunta usando consultar_banco; no hace falta publicar informe.`, tools: ['consultar_banco', 'ler_anuncios'], prompt: q, ctx: { kind: 'question' } });
-    const answer = st.text || 'No pude obtener una respuesta.';
+    const st = await runTools({ model: MODELS.fast, system: `${SYSTEM}\nResponda à pergunta usando consultar_banco; não é preciso publicar relatório.`, tools: ['consultar_banco', 'ler_anuncios'], prompt: q, ctx: { kind: 'question' } });
+    const answer = st.text || 'Não consegui obter uma resposta.';
     const sql = st.sqls.length ? st.sqls.join(';\n') : null;
     await saveReport({ kind: 'question', title: q.slice(0, 120), body: answer, numbers: { sql, asked_by: userId(user) }, model: MODELS.fast, llm: true }).catch(() => {});
     return { answer, sql, rows: st.lastRows, llm: true };

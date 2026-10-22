@@ -44,6 +44,7 @@ function apply(lang) {
 
 function mount() {
   if (window.ALENTO_I18N) return; // landing: ya tiene su selector de idioma
+  if (location.pathname.startsWith('/growth')) return; // panel de gestión: solo portugués
   if (document.getElementById('gt-btn')) return;
   const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = '/css/translate.css'; document.head.append(css);
   const current = store.get();

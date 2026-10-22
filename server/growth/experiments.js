@@ -56,21 +56,21 @@ export function createExperiments({ db, log = console, settings = null }) {
   }
 
   async function create({ key, name, kind, variants, goal_event = 'purchase', status = 'running' }) {
-    if (!KEY_RE.test(String(key ?? ''))) throw invalid('Clave no válida (minúsculas, números, - y _).', 'key');
-    if (!String(name ?? '').trim()) throw invalid('Indica un nombre.', 'name');
-    if (!KINDS.includes(kind)) throw invalid('Tipo no válido.', 'kind');
-    if (!STATUSES.includes(status)) throw invalid('Estado no válido.', 'status');
-    if (!Array.isArray(variants) || variants.length < 2) throw invalid('Se necesitan al menos 2 variantes.', 'variants');
+    if (!KEY_RE.test(String(key ?? ''))) throw invalid('Chave inválida (minúsculas, números, - e _).', 'key');
+    if (!String(name ?? '').trim()) throw invalid('Informe um nome.', 'name');
+    if (!KINDS.includes(kind)) throw invalid('Tipo inválido.', 'kind');
+    if (!STATUSES.includes(status)) throw invalid('Status inválido.', 'status');
+    if (!Array.isArray(variants) || variants.length < 2) throw invalid('São necessárias pelo menos 2 variantes.', 'variants');
     const seen = new Set();
     const clean = variants.map((v) => {
       const k = String(v?.key ?? '');
       const weight = v?.weight == null ? 50 : Number(v.weight);
-      if (!VARIANT_RE.test(k) || seen.has(k)) throw invalid('Variantes no válidas o repetidas.', 'variants');
-      if (!(weight > 0)) throw invalid('El peso debe ser mayor que 0.', 'variants');
+      if (!VARIANT_RE.test(k) || seen.has(k)) throw invalid('Variantes inválidas ou repetidas.', 'variants');
+      if (!(weight > 0)) throw invalid('O peso deve ser maior que 0.', 'variants');
       seen.add(k);
       return { key: k, weight };
     });
-    if (await get(key)) throw new HttpError(409, 'Ya existe un experimento con esa clave.', 'EXISTS');
+    if (await get(key)) throw new HttpError(409, 'Já existe um experimento com essa chave.', 'EXISTS');
     await db.service.exec(`insert into growth.experiments (key, name, kind, variants, goal_event, status) values ($1, $2, $3, $4::jsonb, $5, $6)`,
       [key, String(name).trim(), kind, JSON.stringify(clean), String(goal_event || 'purchase'), status]);
     return get(key);
@@ -114,7 +114,7 @@ export function createExperiments({ db, log = console, settings = null }) {
 
   async function stats(key) {
     const exp = await get(key);
-    if (!exp) throw new HttpError(404, 'No existe ese experimento.', 'NOT_FOUND');
+    if (!exp) throw new HttpError(404, 'Esse experimento não existe.', 'NOT_FOUND');
     const rows = await db.service.rows(`
       select a.variant, count(*)::int as visitors,
         count(*) filter (where exists (
@@ -151,8 +151,8 @@ export function createExperiments({ db, log = console, settings = null }) {
   }
 
   async function setStatus(key, status) {
-    if (!STATUSES.includes(status)) throw invalid('Estado no válido.', 'status');
-    if (!(await get(key))) throw new HttpError(404, 'No existe ese experimento.', 'NOT_FOUND');
+    if (!STATUSES.includes(status)) throw invalid('Status inválido.', 'status');
+    if (!(await get(key))) throw new HttpError(404, 'Esse experimento não existe.', 'NOT_FOUND');
     await db.service.exec(
       `update growth.experiments set status = $2, ended_at = case when $2 in ('stopped', 'won') then coalesce(ended_at, now()) else null end where key = $1`,
       [key, status]);
@@ -161,8 +161,8 @@ export function createExperiments({ db, log = console, settings = null }) {
 
   async function promote(key, variant) {
     const exp = await get(key);
-    if (!exp) throw new HttpError(404, 'No existe ese experimento.', 'NOT_FOUND');
-    if (!exp.variants.some((v) => v.key === variant)) throw invalid('Esa variante no existe en el experimento.', 'variant');
+    if (!exp) throw new HttpError(404, 'Esse experimento não existe.', 'NOT_FOUND');
+    if (!exp.variants.some((v) => v.key === variant)) throw invalid('Essa variante não existe no experimento.', 'variant');
     await db.service.exec(`update growth.experiments set status = 'won', winner = $2, ended_at = now() where key = $1`, [key, variant]);
     log.info?.('growth.experiment.promoted', key, variant);
     return get(key);

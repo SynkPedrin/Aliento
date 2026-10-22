@@ -93,7 +93,7 @@ export function createStaff({ db, settings, config, log = console }) {
   async function assertNotLastAdmin(userId) {
     if ((await roleOf(userId)) !== 'admin') return;
     const others = (await adminIds()).filter((id) => id !== userId);
-    if (others.length === 0) throw new HttpError(409, 'No puedes quitar al último administrador.', 'LAST_ADMIN');
+    if (others.length === 0) throw new HttpError(409, 'Você não pode remover o último administrador.', 'LAST_ADMIN');
   }
 
   async function list() {
@@ -112,9 +112,9 @@ export function createStaff({ db, settings, config, log = console }) {
   }
 
   async function grantUser(userId, role, actor = null) {
-    if (!ROLES.includes(role)) throw new HttpError(422, 'Papel no válido.', 'INVALID', { field: 'role' });
+    if (!ROLES.includes(role)) throw new HttpError(422, 'Perfil inválido.', 'INVALID', { field: 'role' });
     const user = await db.service.one('select id from auth.users where id = $1', [userId]);
-    if (!user) throw new HttpError(404, 'No existe esa cuenta.', 'NOT_FOUND');
+    if (!user) throw new HttpError(404, 'Essa conta não existe.', 'NOT_FOUND');
     if (role !== 'admin') await assertNotLastAdmin(userId);
     await db.service.exec(`
       insert into growth.staff (user_id, role) values ($1, $2)
@@ -126,7 +126,7 @@ export function createStaff({ db, settings, config, log = console }) {
 
   async function grantByEmail(email, role, actor = null) {
     const user = await db.service.one('select id from auth.users where lower(email) = lower($1)', [String(email ?? '').trim()]);
-    if (!user) throw new HttpError(404, 'No existe una cuenta con ese correo.', 'NOT_FOUND');
+    if (!user) throw new HttpError(404, 'Não existe uma conta com esse e-mail.', 'NOT_FOUND');
     return grantUser(user.id, role, actor);
   }
 
@@ -168,9 +168,9 @@ export function createStaff({ db, settings, config, log = console }) {
 
   async function totpSetup(userId, email = null) {
     const role = await roleOf(userId);
-    if (!role) throw new HttpError(403, 'No autorizado.', 'FORBIDDEN');
+    if (!role) throw new HttpError(403, 'Não autorizado.', 'FORBIDDEN');
     const cur = await db.service.one('select totp_enabled from growth.staff where user_id = $1', [userId]);
-    if (cur?.totp_enabled) throw new HttpError(409, 'El 2FA ya está activo.', 'TWOFA_ALREADY');
+    if (cur?.totp_enabled) throw new HttpError(409, 'O 2FA já está ativo.', 'TWOFA_ALREADY');
     const secret = base32Encode(randomBytes(20));
     await db.service.exec(`
       insert into growth.staff (user_id, role, totp_secret, totp_enabled) values ($1, $2, $3, false)
@@ -243,12 +243,12 @@ export function createStaff({ db, settings, config, log = console }) {
 
   function requireStaff({ roles = ROLES } = {}) {
     return wrap(async (req, res, next) => {
-      if (!req.user) return res.status(401).json({ error: 'Inicia sesión para continuar.', code: 'AUTH_REQUIRED' });
+      if (!req.user) return res.status(401).json({ error: 'Faça login para continuar.', code: 'AUTH_REQUIRED' });
       const role = await roleOf(req.user.id);
-      if (!role || !roles.includes(role)) return res.status(403).json({ error: 'No autorizado.', code: 'FORBIDDEN' });
+      if (!role || !roles.includes(role)) return res.status(403).json({ error: 'Não autorizado.', code: 'FORBIDDEN' });
       // Modo master: el acceso lo limita el correo único autorizado; no se pide segundo factor.
       if (!config?.growth?.masterEmail && !has2fa(req, req.user.id)) {
-        return res.status(428).json({ error: 'Verifica tu segundo factor.', code: 'TWOFA_REQUIRED' });
+        return res.status(428).json({ error: 'Confirme o seu segundo fator de autenticação.', code: 'TWOFA_REQUIRED' });
       }
       req.staff = { userId: req.user.id, role };
       next();

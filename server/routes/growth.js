@@ -41,40 +41,40 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
   };
 
   // ---------------------------------------------------------------- sesión de equipo y 2FA
-  const sessionUser = (req) => { if (!req.user) throw new HttpError(401, 'Inicia sesión para continuar.', 'AUTH_REQUIRED'); return req.user; };
+  const sessionUser = (req) => { if (!req.user) throw new HttpError(401, 'Faça login para continuar.', 'AUTH_REQUIRED'); return req.user; };
   r.get('/me', wrap(async (req, res) => {
     const user = sessionUser(req);
     const role = await staff.roleOf(user.id);
-    if (!role) throw new HttpError(403, 'No autorizado.', 'FORBIDDEN');
+    if (!role) throw new HttpError(403, 'Não autorizado.', 'FORBIDDEN');
     const enabled = await staff.twofaEnabled(user.id);
     const master = Boolean(config.growth.masterEmail); // modo master: sin segundo factor
     res.json({ user: { email: user.email }, role, canEdit: role !== 'readonly', twofa: { enabled: master ? false : enabled, verified: master ? true : staff.has2fa(req, user.id), required: !master } });
   }));
   r.post('/2fa/setup', wrap(async (req, res) => {
     const user = sessionUser(req);
-    if (!(await staff.roleOf(user.id))) throw new HttpError(403, 'No autorizado.', 'FORBIDDEN');
-    if (await staff.twofaEnabled(user.id) && !staff.has2fa(req, user.id)) throw new HttpError(428, 'Verifica tu código 2FA actual.', 'TWOFA_REQUIRED');
+    if (!(await staff.roleOf(user.id))) throw new HttpError(403, 'Não autorizado.', 'FORBIDDEN');
+    if (await staff.twofaEnabled(user.id) && !staff.has2fa(req, user.id)) throw new HttpError(428, 'Confirme o seu código 2FA atual.', 'TWOFA_REQUIRED');
     res.json(await staff.totpSetup(user.id, user.email));
   }));
   r.post('/2fa/enable', wrap(async (req, res) => {
     const user = sessionUser(req);
-    if (!(await staff.roleOf(user.id))) throw new HttpError(403, 'No autorizado.', 'FORBIDDEN');
-    if (!(await staff.totpEnable(user.id, String(req.body?.code ?? '')))) throw new HttpError(422, 'Código no válido.', 'INVALID');
+    if (!(await staff.roleOf(user.id))) throw new HttpError(403, 'Não autorizado.', 'FORBIDDEN');
+    if (!(await staff.totpEnable(user.id, String(req.body?.code ?? '')))) throw new HttpError(422, 'Código inválido.', 'INVALID');
     staff.issue2fa(res, user.id);
     res.json({ ok: true });
   }));
   r.post('/2fa/verify', wrap(async (req, res) => {
     const user = sessionUser(req);
-    if (!(await staff.roleOf(user.id))) throw new HttpError(403, 'No autorizado.', 'FORBIDDEN');
-    if (!(await staff.verifyTotp(user.id, String(req.body?.code ?? '')))) throw new HttpError(422, 'Código no válido.', 'INVALID');
+    if (!(await staff.roleOf(user.id))) throw new HttpError(403, 'Não autorizado.', 'FORBIDDEN');
+    if (!(await staff.verifyTotp(user.id, String(req.body?.code ?? '')))) throw new HttpError(422, 'Código inválido.', 'INVALID');
     staff.issue2fa(res, user.id);
     res.json({ ok: true });
   }));
 
   // A partir de aquí: equipo con 2FA verificado.
   r.use(staff.requireStaff());
-  const canEdit = (req) => { if (req.staff.role === 'readonly') throw new HttpError(403, 'Tu rol es de solo lectura.', 'FORBIDDEN'); };
-  const adminOnly = (req) => { if (req.staff.role !== 'admin') throw new HttpError(403, 'Solo administradores.', 'FORBIDDEN'); };
+  const canEdit = (req) => { if (req.staff.role === 'readonly') throw new HttpError(403, 'Seu perfil é somente leitura.', 'FORBIDDEN'); };
+  const adminOnly = (req) => { if (req.staff.role !== 'admin') throw new HttpError(403, 'Apenas administradores.', 'FORBIDDEN'); };
   const audit = (req, action, entity, id, details) => staff.audit(req, action, entity, id, details).catch(() => {});
 
   // ---------------------------------------------------------------- visión general
@@ -124,8 +124,8 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
         coalesce(sum(purchases),0) purchases, coalesce(sum(activated),0) activated
       from growth.v_funil_diario where day between $1 and $2 and ($3::text is null or language = $3) and ($4::text is null or country = $4)
         and ($5::text is null or device = $5) and ($6::text is null or source = $6) and ($7::text is null or program = $7)`, p);
-    const labels = [['visits', 'Visitas'], ['quiz_started', 'Quiz iniciado'], ['leads', 'E-mail dejado'], ['plan_viewed', 'Plan visto'],
-      ['plan_selected', 'Plan elegido'], ['checkouts', 'Checkout abierto'], ['purchases', 'Compra'], ['activated', 'Primer acceso a la app']];
+    const labels = [['visits', 'Visitas'], ['quiz_started', 'Quiz iniciado'], ['leads', 'E-mail deixado'], ['plan_viewed', 'Plano visto'],
+      ['plan_selected', 'Plano escolhido'], ['checkouts', 'Checkout aberto'], ['purchases', 'Compra'], ['activated', 'Primeiro acesso ao app']];
     const steps = labels.map(([key, label], i) => ({ key, label, count: num(t[key]), drop_pct: i && num(t[labels[i - 1][0]]) ? pct(num(t[labels[i - 1][0]]) - num(t[key]), num(t[labels[i - 1][0]])) : 0 }));
     const qrows = await q.rows(`
       select program_slug as program, question, count(distinct coalesce(lead_id::text, visitor_id::text)) as people, count(*) as answers,
@@ -250,7 +250,7 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
     adminOnlyOrMarketing(req);
     const data = await people.export(String(req.params.key));
     await audit(req, 'person.export', 'person', String(req.params.key));
-    res.set('Content-Disposition', 'attachment; filename="datos-persona.json"').json(data);
+    res.set('Content-Disposition', 'attachment; filename="dados-pessoa.json"').json(data);
   }));
   const adminOnlyOrMarketing = (req) => canEdit(req);
   r.delete('/people/:key', wrap(async (req, res) => {
@@ -266,7 +266,7 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
         count(*) filter (where event = 'clicked')::int clicked, count(*) filter (where event = 'unsubscribed')::int unsubscribed, count(*) filter (where event = 'converted')::int converted
       from growth.email_events where occurred_at::date between $1 and $2 group by 1, 2, 3`, [f.from, f.to]);
     const agg = (list) => list.reduce((a, x) => ({ sent: a.sent + x.sent, opened: a.opened + x.opened, clicked: a.clicked + x.clicked, unsubscribed: a.unsubscribed + x.unsubscribed, converted: a.converted + x.converted }), { sent: 0, opened: 0, clicked: 0, unsubscribed: 0, converted: 0 });
-    const flows = Object.entries(Object.groupBy(rows, (x) => x.flow ?? '(sin flujo)')).map(([flow, list]) => {
+    const flows = Object.entries(Object.groupBy(rows, (x) => x.flow ?? '(sem fluxo)')).map(([flow, list]) => {
       const a = agg(list);
       return { flow, ...a, revenue_cents: 0, open_rate: pct(a.opened, a.sent), click_rate: pct(a.clicked, a.sent),
         by_language: Object.entries(Object.groupBy(list, (x) => x.language)).map(([language, l]) => ({ language, ...agg(l) })),
@@ -307,13 +307,13 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
   }
   r.post('/ai/ask', wrap(async (req, res) => {
     const question = String(req.body?.question ?? '').trim().slice(0, 600);
-    if (!question) throw new HttpError(422, 'Escribe una pregunta.', 'INVALID');
+    if (!question) throw new HttpError(422, 'Escreva uma pergunta.', 'INVALID');
     res.json(await ai.ask(question, { user: { id: req.staff.userId } }));
   }));
   r.post('/ai/run', wrap(async (req, res) => {
     canEdit(req);
     const routine = { monitor: 'runMonitor', daily: 'runDaily', weekly: 'runWeekly' }[req.body?.routine];
-    if (!routine) throw new HttpError(422, 'Rutina no válida.', 'INVALID');
+    if (!routine) throw new HttpError(422, 'Rotina inválida.', 'INVALID');
     res.json({ ok: true, result: await ai[routine]({ force: true }) });
   }));
   r.post('/ai/kill-switch', wrap(async (req, res) => {
@@ -334,8 +334,8 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
   r.put('/settings/:key', wrap(async (req, res) => {
     adminOnly(req);
     const key = String(req.params.key);
-    if (!SETTING_KEYS.includes(key)) throw new HttpError(404, 'Configuración desconocida.');
-    if (typeof req.body !== 'object' || req.body === null || Array.isArray(req.body)) throw new HttpError(422, 'Valor no válido.', 'INVALID');
+    if (!SETTING_KEYS.includes(key)) throw new HttpError(404, 'Configuração desconhecida.');
+    if (typeof req.body !== 'object' || req.body === null || Array.isArray(req.body)) throw new HttpError(422, 'Valor inválido.', 'INVALID');
     await settings.set(key, req.body, { by: req.staff.userId });
     await audit(req, 'settings.update', 'settings', key); // nunca se registran los valores
     res.json({ ok: true });
@@ -346,27 +346,32 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
     try {
       if (what === 'ads') {
         const c = await ads.configured();
-        return res.json({ ok: c.meta || c.tiktok, message: `Meta: ${c.meta ? 'configurado' : 'sin configurar'} · TikTok: ${c.tiktok ? 'configurado' : 'sin configurar'}` });
+        return res.json({ ok: c.meta || c.tiktok, message: `Meta: ${c.meta ? 'configurado' : 'não configurado'} · TikTok: ${c.tiktok ? 'configurado' : 'não configurado'}` });
       }
-      if (what === 'customerio') { const on = await email.enabled(); return res.json({ ok: on, message: on ? 'Customer.io configurado.' : 'Customer.io sin configurar.' }); }
-      if (what === 'meta' || what === 'tiktok') {
-        const c = await settings.get(`pixels.${what}`);
-        return res.json({ ok: Boolean(c.pixelId && c.accessToken), message: c.pixelId && c.accessToken ? `Pixel ${c.pixelId} y token guardados. Usa el código de evento de prueba para verificar en el Administrador de eventos.` : 'Falta el ID del pixel o el token.' });
-      }
+      if (what === 'customerio') { const on = await email.enabled(); return res.json({ ok: on, message: on ? 'Customer.io configurado.' : 'Customer.io não configurado.' }); }
+      if (what === 'meta' || what === 'tiktok') return res.json(await forwarders.sendTest(what));
     } catch (err) { return res.json({ ok: false, message: err.message }); }
-    throw new HttpError(404, 'Integración desconocida.');
+    throw new HttpError(404, 'Integração desconhecida.');
   }));
 
   // ---------------------------------------------------------------- equipo y salud
-  r.get('/staff', wrap(async (req, res) => { res.json({ rows: await staff.list() }); }));
+  // Modo master: o acesso é de uma única conta; a lista de equipe mostra só ela e não há concessão nem remoção.
+  const masterOnly = () => { if (config.growth.masterEmail) throw new HttpError(403, 'Modo master: apenas a conta master tem acesso ao painel.', 'FORBIDDEN'); };
+  r.get('/staff', wrap(async (req, res) => {
+    if (config.growth.masterEmail) {
+      const u = await q.one('select id as user_id, email, created_at from auth.users where lower(email) = $1', [config.growth.masterEmail]);
+      return res.json({ rows: u ? [{ user_id: u.user_id, email: u.email, role: 'admin', totp_enabled: false, created_at: u.created_at }] : [] });
+    }
+    res.json({ rows: await staff.list() });
+  }));
   r.post('/staff', wrap(async (req, res) => {
-    adminOnly(req);
+    adminOnly(req); masterOnly();
     const out = await staff.grant({ email: String(req.body?.email ?? ''), role: String(req.body?.role ?? '') });
     await audit(req, 'staff.grant', 'staff', out?.userId ?? req.body?.email, { role: req.body?.role });
     res.json({ ok: true });
   }));
   r.delete('/staff/:userId', wrap(async (req, res) => {
-    adminOnly(req);
+    adminOnly(req); masterOnly();
     await staff.revoke(String(req.params.userId));
     await audit(req, 'staff.revoke', 'staff', req.params.userId);
     res.json({ ok: true });
@@ -431,7 +436,7 @@ export function growthCron({ config, growth, log = console }) {
         if (local.getDay() === 1 && local.getHours() >= 9 && (await due('weekly', 6 * 86400_000))) { out.weekly = await JOBS.weekly().catch((e) => ({ error: e.message })); await mark('weekly'); }
         return res.json(out);
       }
-      if (!JOBS[job]) return res.status(404).json({ error: 'Tarea desconocida.' });
+      if (!JOBS[job]) return res.status(404).json({ error: 'Tarefa desconhecida.' });
       res.json({ [job]: await JOBS[job]() });
     } catch (err) {
       log.error('[cron] growth:', err.message);

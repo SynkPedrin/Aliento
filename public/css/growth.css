@@ -28,6 +28,7 @@
 .mono, .code { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .code { background: var(--surface-2); padding: 12px; border-radius: 12px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 .is-high { color: var(--danger); font-weight: 600; }
+.is-ok { color: var(--ok); font-weight: 600; }
 .notice { background: color-mix(in srgb, var(--menta) 20%, var(--surface)); border: 1px solid color-mix(in srgb, var(--menta) 50%, var(--line)); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; font-size: 14.5px; }
 .pill--bad { background: color-mix(in srgb, var(--danger) 16%, var(--surface)); color: var(--danger); }
 .btn--danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }

@@ -77,7 +77,7 @@ test('configured() refleja los ajustes', async () => {
   const none = createAds({ db, settings: { get: async (k, f = {}) => f }, config: cfg, fetchImpl: fakeFetch, log: silent });
   assert.deepEqual(await none.configured(), { meta: false, tiktok: false });
   assert.equal((await none.sync()).skipped, true);
-  await assert.rejects(none.execute({ kind: 'pause_ad', platform: 'meta', target_id: AD1 }), /no está configurado/);
+  await assert.rejects(none.execute({ kind: 'pause_ad', platform: 'meta', target_id: AD1 }), /não está configurado/);
 });
 
 test('sync Meta: estructura, paginación, ad_id de la plataforma y upsert idempotente', async () => {
@@ -153,10 +153,10 @@ test('execute/undo pause_ad en Meta y TikTok', async () => {
 test('scale_budget respeta el paso máximo, el tope diario y un solo aumento por día', async () => {
   const ads = make();
   await db.service.exec("update growth.ads set daily_budget_cents = 5000 where platform = 'meta' and adset_id = $1", [ADSET]);
-  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 6500 } }), /máximo del 20%/);
-  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 5000 } }), /mayor/);
+  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 6500 } }), /máximo de 20%/);
+  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 5000 } }), /maior/);
   store.ai = { limits: { budget_max_step_pct: 300, daily_cap_cents: 5500 } };
-  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 6000 } }), /tope diario/);
+  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 6000 } }), /teto diário/);
   store.ai = { limits: { budget_max_step_pct: 20, daily_cap_cents: 10000 } };
   assert.equal(calls.filter((c) => c.method === 'POST').length, 0, 'ninguna llamada a la plataforma al rechazar');
   const r = await ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 6000 } });
@@ -166,7 +166,7 @@ test('scale_budget respeta el paso máximo, el tope diario y un solo aumento por
   // un aumento ejecutado hoy bloquea otro
   const a = await db.service.one("insert into growth.ai_actions (kind, platform, target_id, reason, status, executed_at) values ('scale_budget','meta',$1,'t','executed',now()) returning id", [ADSET]);
   actionIds.push(a.id);
-  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 7000 } }), /ya subió/);
+  await assert.rejects(ads.execute({ kind: 'scale_budget', platform: 'meta', target_id: ADSET, data: { new_budget_cents: 7000 } }), /já teve o orçamento aumentado/);
   await ads.undo({ kind: 'scale_budget', undo_data: r.undo_data });
   assert.match(calls.at(-1).body, /daily_budget=5000/);
   // TikTok: presupuesto en unidades de moneda

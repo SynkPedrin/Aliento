@@ -106,7 +106,7 @@ test('sin clave de Anthropic: informes por reglas con llm=false (diario, semanal
   reset();
   const d = await ai.runDaily({ now: '2031-03-10T07:00:00Z' });
   reportIds.push(d.report.id);
-  assert.equal(d.report.llm, false); assert.equal(d.report.kind, 'daily'); assert.match(d.report.body, /por reglas/); assert.equal(anthropicCalls.length, 0);
+  assert.equal(d.report.llm, false); assert.equal(d.report.kind, 'daily'); assert.match(d.report.body, /por regras/); assert.equal(anthropicCalls.length, 0);
   const w = await ai.runWeekly(); reportIds.push(w.report.id);
   assert.equal(w.report.llm, false); assert.equal(w.report.kind, 'weekly');
   const ask = await ai.ask('¿cuántas ventas hubo?', { user: { id: randomUUID() } });
@@ -205,7 +205,7 @@ test('acciones: precio nunca automático; baja confianza nunca automática', asy
   // aprobar un cambio de precio sí es posible (manual) pero no toca nada externo
   const ok = await ai.approve(price.id, { id: randomUUID() });
   assert.equal(ok.status, 'executed'); assert.equal(ok.result.manual, true);
-  await assert.rejects(ai.undo(price.id), /a mano/);
+  await assert.rejects(ai.undo(price.id), /manualmente/);
 });
 
 test('acciones: interruptor general apagado impide toda ejecución automática; encendido ejecuta solo las elegibles', async () => {
@@ -236,10 +236,10 @@ test('acciones: pausar exige aprobación; aprobar ejecuta, undo revierte; fallos
   assert.equal((await ai.reject(( await mk({ kind: 'pause_ad', platform: 'meta', target_id: `adr${U}`, confidence: 'low', reason: 'r' })).id, null)).status, 'rejected');
   const ex = await ai.approve(p.id, { id: randomUUID() });
   assert.equal(ex.status, 'executed'); assert.deepEqual(adCalls[0], ['execute', 'pause_ad', `ad${U}`]); assert.equal(ex.undo_data.ad_id, `ad${U}`); assert.ok(ex.decided_by);
-  await assert.rejects(ai.approve(p.id, null), /pendiente/, 'no se aprueba dos veces');
+  await assert.rejects(ai.approve(p.id, null), /pendente/, 'no se aprueba dos veces');
   const un = await ai.undo(p.id, null);
   assert.equal(un.status, 'undone'); assert.deepEqual(adCalls[1], ['undo', 'pause_ad', `ad${U}`]);
-  await assert.rejects(ai.undo(p.id), /ejecutadas/);
+  await assert.rejects(ai.undo(p.id), /executadas/);
   const bad = await mk({ kind: 'pause_ad', platform: 'meta', target_id: `adb${U}`, confidence: 'high', reason: 'x', data: { boom: true } });
   const fl = await ai.approve(bad.id, null);
   assert.equal(fl.status, 'failed'); assert.match(fl.result.error, /token inválido/);
@@ -250,7 +250,7 @@ test('acciones: con histórico humano suficiente, escalar pasa a ser elegible a 
   const data = { current_budget_cents: 5000, new_budget_cents: 6000 };
   const before_ = await mk({ kind: 'scale_budget', platform: 'meta', target_id: `st0${U}`, confidence: 'high', reason: 'x', data });
   assert.equal(before_.auto, false);
-  await assert.rejects(ai.propose({ kind: 'scale_budget', platform: 'meta', target_id: `st${U}`, confidence: 'high', reason: 'x', data: { current_budget_cents: 5000, new_budget_cents: 7000 } }), /máximo del 20%/);
+  await assert.rejects(ai.propose({ kind: 'scale_budget', platform: 'meta', target_id: `st${U}`, confidence: 'high', reason: 'x', data: { current_budget_cents: 5000, new_budget_cents: 7000 } }), /máximo de 20%/);
   for (let i = 0; i < 5; i++) {
     const h = await db.service.one("insert into growth.ai_actions (kind, platform, target_id, reason, status, auto, executed_at) values ('scale_budget','meta',$1,'hist','executed',false,now()) returning id", [`h${i}${U}`]);
     actionIds.push(h.id);

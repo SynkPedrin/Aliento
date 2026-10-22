@@ -67,6 +67,9 @@ test('master: el panel responde sin segundo factor (sin 428) y la API de configu
     assert.equal(got.body.settings['pixels.meta'].accessToken, '********');
     assert.equal((await call('/api/track/config')).body.meta.pixelId, '123456789', 'el navegador recibe solo el ID del pixel');
     assert.ok(!JSON.stringify((await call('/api/track/config')).body).includes('tok-secreto'));
+    const eq = await call('/api/growth/staff');
+    assert.equal(eq.body.rows.length, 1); assert.equal(eq.body.rows[0].email, master);
+    assert.equal((await call('/api/growth/staff', { method: 'POST', body: { email: other, role: 'admin' } })).status, 403);
     // otro admin sigue fuera
     const jar2 = new Map(); jar.clear();
     assert.equal((await call('/api/auth/login', { method: 'POST', body: { email: other, password: 'secreta123' } })).status, 200);

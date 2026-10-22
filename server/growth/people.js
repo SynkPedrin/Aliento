@@ -128,7 +128,7 @@ export function createPeople({ db, tracker, auth, log = console, settings = null
 
   async function erase(key, actor = null) {
     const id = await resolve(key);
-    if (!id) throw new HttpError(404, 'No existe esa persona.', 'NOT_FOUND');
+    if (!id) throw new HttpError(404, 'Essa pessoa não existe.', 'NOT_FOUND');
     const cioIds = [...new Set([id.userId, ...id.leadIds].filter(Boolean))];
     const counts = { leads: id.leadIds.length, visitors: id.visitorIds.length, user: !!id.userId };
     const calls = id.leads.map((l) => [l.lead_id, id.userId, l.visitor_id]);
