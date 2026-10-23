@@ -80,6 +80,20 @@ export async function goToCheckout(plan, btn, { exitOffer = false, program = 'se
   } catch (err) {
     if (btn) setBusy(btn, false);
     if (err.code === 'AUTH_REQUIRED') {
+      // Sem cadastro antes da compra: usa o e-mail e o nome do quiz (a senha vem depois do pagamento).
+      const lead = (() => { try { return { email: localStorage.getItem('alento-email'), name: localStorage.getItem('alento-name'), terms: sessionStorage.getItem('alento-terms') === '1' }; } catch { return {}; } })();
+      if (lead.email && lead.terms) {
+        try {
+          if (btn) setBusy(btn, true, 'Preparando el pago seguro…');
+          const { url } = await api('/api/checkout/guest', { method: 'POST', body: { plan, exitOffer, program, email: lead.email, name: lead.name, acceptTerms: true, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } });
+          busyBtn = btn;
+          return window.location.assign(url);
+        } catch (e2) {
+          if (btn) setBusy(btn, false);
+          if (e2.code === 'LOGIN_REQUIRED') return window.location.assign(`/acceso?modo=entrar&email=${encodeURIComponent(lead.email)}&plan=${encodeURIComponent(plan)}&program=${encodeURIComponent(program)}${exitOffer ? '&oferta=1' : ''}`);
+          return toast(e2.message, 6000);
+        }
+      }
       return window.location.assign(`/acceso?plan=${encodeURIComponent(plan)}&program=${encodeURIComponent(program)}${exitOffer ? '&oferta=1' : ''}`);
     }
     if (err.code === 'ALREADY_SUBSCRIBED') return window.location.assign(program === 'sem-fumo' ? '/dashboard' : `/programa?p=${program}`);
@@ -151,12 +165,28 @@ window.addEventListener('pageshow', async () => {
   if (offer) showExitOffer(offer, left.program);
 });
 
+/** Abre um diálogo modal (fecha com Esc ou clique fora; o Tab fica preso dentro). */
+function openModal(card, labelledBy, onClose) {
+  const overlay = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': labelledBy }, card);
+  const close = () => { overlay.remove(); onClose?.(); };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+    if (e.key === 'Tab') {
+      const f = [...card.querySelectorAll('button, a[href]')];
+      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f.at(-1).focus(); }
+      else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
+    }
+  });
+  document.body.append(overlay);
+  return close;
+}
+
 function showExitOffer(offer, program = 'sem-fumo') {
   const price = moneyCents(offer.amount, offer.currency);
   const discounted = moneyCents(offer.discountedAmount, offer.currency);
   const card = h('div', { class: 'card modal__card', style: 'text-align:center' });
-  const overlay = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'offer-title' }, card);
-  const close = () => overlay.remove();
+  let close = () => {};
   const accept = h('button', { class: 'btn btn--lg btn--block' }, 'Aprovechar mi regalo');
   accept.addEventListener('click', () => goToCheckout(offer.plan, accept, { exitOffer: true, program }));
   card.append(
@@ -167,18 +197,40 @@ function showExitOffer(offer, program = 'sem-fumo') {
       h('p', { class: 'u-mt-8' }, h('s', {}, price), h('strong', {}, discounted)),
       h('p', { class: 'help u-mt-8' }, `Primer pago: ${discounted}. Después, ${offer.renewalAmount ? moneyCents(offer.renewalAmount, offer.currency) : price} ${offer.periodLabel} hasta que canceles.`)),
     h('p', { class: 'help' }, 'Esta oferta solo se muestra una vez.'),
-    h('div', { class: 'stack u-mt-16' }, accept, h('button', { class: 'link', onclick: close }, 'No, gracias')));
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-  overlay.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') close();
-    if (e.key === 'Tab') { // mantiene el foco dentro del diálogo
-      const f = [...card.querySelectorAll('button, a[href]')];
-      if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f.at(-1).focus(); }
-      else if (!e.shiftKey && document.activeElement === f.at(-1)) { e.preventDefault(); f[0].focus(); }
-    }
-  });
-  document.body.append(overlay);
+    h('div', { class: 'stack u-mt-16' }, accept, h('button', { class: 'link', onclick: () => close() }, 'No, gracias')));
+  close = openModal(card, 'offer-title');
   accept.focus();
+}
+
+// Quem escolhe a semana de teste vê, uma vez por sessão, quanto o plano de 3 meses compensa.
+const UPSELL_KEY = 'alento-upsell-3m';
+function weeklyUpsell(plans, program, onChoose) {
+  const week = plans.find((p) => p.id === 'semanal'), q = plans.find((p) => p.id === 'trimestral');
+  let seen = false;
+  try { seen = sessionStorage.getItem(UPSELL_KEY) === '1'; } catch { /* modo privado */ }
+  if (!week?.available || !q?.available || seen) return false;
+  try { sessionStorage.setItem(UPSELL_KEY, '1'); } catch { /* modo privado */ }
+  const less = Math.round((1 - (q.amount / q.days) / (week.amount / week.days)) * 100);
+  const choose = (id, btn) => { close(); track('results_step', { program, step: id === 'trimestral' ? 'upsell_3m_accept' : 'upsell_3m_decline' }, { pixel: false }); onChoose(id, btn); };
+  const upgrade = h('button', { type: 'button', class: 'btn btn--lg btn--block upsell__cta', onclick: (e) => choose('trimestral', e.currentTarget) }, 'Cambia al plan de 3 meses');
+  const card = h('div', { class: 'card modal__card upsell' },
+    h('button', { type: 'button', class: 'upsell__close', 'aria-label': 'Cerrar', onclick: () => close() }, '×'),
+    h('div', { class: 'upsell__hero' },
+      h('img', { src: '/assets/quiz/man-breathes.webp', alt: '' }),
+      h('div', {}, h('span', {}, 'Recomendado para ti'), h('strong', {}, 'Plan de 3 meses'))),
+    h('h2', { class: 'upsell__title', id: 'upsell-title' }, 'Espera… ¿una semana es suficiente?'),
+    h('p', { class: 'upsell__hook' }, `Pagas un ${less} % menos cada día`),
+    h('p', { class: 'upsell__text' }, 'Dejar de fumar no se decide en 7 días: tu cerebro necesita unas semanas para desaprender los gestos automáticos. Con 3 meses recorres el método completo, a tu ritmo.'),
+    h('div', { class: 'upsell__compare' },
+      h('div', {}, h('span', {}, 'Una semana'), h('b', {}, perDay(week)), h('small', {}, 'al día')),
+      h('div', { class: 'is-best' }, h('span', {}, '3 meses'), h('b', {}, perDay(q)), h('small', {}, 'al día'))),
+    h('p', { class: 'upsell__bold' }, 'Más tiempo para crear el hábito. Menos por cada día.'),
+    upgrade,
+    h('button', { type: 'button', class: 'link upsell__no', onclick: (e) => choose('semanal', e.currentTarget) }, 'No, gracias'));
+  const close = openModal(card, 'upsell-title');
+  track('results_step', { program, step: 'upsell_3m_shown' }, { pixel: false });
+  upgrade.focus();
+  return true;
 }
 
 export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo', purchasable = true, variant = 'default' } = {}) {
@@ -267,7 +319,14 @@ const SALES_CTA = 'Empieza sin ningún riesgo';
 function renderSalesPlans(root, { plans, selected, canPurchase, program, pendingCheckout }) {
   const legal = h('p', { class: 'sales-plans__legal' });
   const terms = h('input', { type: 'checkbox', id: 'sales-terms' });
-  const cta = h('button', { type: 'button', class: 'btn btn--lg btn--block sales-plans__cta', disabled: true, onclick: () => goToCheckout(selected, cta, { program }) }, SALES_CTA);
+  const choose = (id, btn) => {
+    selected = id; rememberPlan(id);
+    root.querySelectorAll('.plan-row').forEach((r) => r.setAttribute('aria-checked', String(r.dataset.id === id)));
+    update();
+    goToCheckout(id, btn ?? cta, { program });
+  };
+  const cta = h('button', { type: 'button', class: 'btn btn--lg btn--block sales-plans__cta', disabled: true,
+    onclick: () => { if (!(selected === 'semanal' && weeklyUpsell(plans, program, (id) => choose(id, cta)))) goToCheckout(selected, cta, { program }); } }, SALES_CTA);
   const update = () => {
     const p = plans.find((x) => x.id === selected);
     cta.disabled = !canPurchase || !terms.checked || !p?.available;
@@ -276,7 +335,7 @@ function renderSalesPlans(root, { plans, selected, canPurchase, program, pending
     const renewal = moneyCents(p.renewalAmount ?? p.amount, p.currency);
     legal.textContent = `Al hacer clic en «${SALES_CTA}», acepto pagar ${first} ${FIRST_PERIOD[p.id] ?? ''}. Si no cancelo antes de que termine este periodo introductorio, Alento me cobrará automáticamente ${renewal} ${p.periodLabel} a través de mi método de pago a partir de entonces, hasta que cancele. Puedo cancelar en cualquier momento a través de la web, entrando en la página de suscripción de mi cuenta.`;
   };
-  terms.addEventListener('change', update);
+  terms.addEventListener('change', () => { try { sessionStorage.setItem('alento-terms', terms.checked ? '1' : '0'); } catch { /* modo privado */ } update(); });
   root.replaceChildren(
     pendingCheckout ? h('div', { class: 'notice notice--wide' }, h('strong', {}, 'Tu pago quedó pendiente. '), 'Puedes retomarlo cuando quieras.') : '',
     planList(plans, selected, (id) => { selected = id; rememberPlan(id); update(); }, { titles: SALES_TITLES, discountBadge: true }),
@@ -284,9 +343,9 @@ function renderSalesPlans(root, { plans, selected, canPurchase, program, pending
     legal,
     h('label', { class: 'check sales-plans__terms', for: 'sales-terms' }, terms,
       h('span', {}, 'Al marcar esta casilla, acepto los ', h('a', { href: '/terminos', target: '_blank' }, 'Términos y condiciones'), ' de Alento.')),
+    h('div', { class: 'sales-plans__pay', 'aria-label': 'Métodos de pago' }, ['paypal', 'applepay', 'visa', 'mastercard', 'maestro', 'discover', 'amex'].map((n) => h('img', { src: `/assets/quiz/pay/${n}.svg`, alt: n, width: 32, height: 20 }))),
     cta,
-    h('p', { class: 'sales-plans__refund' }, 'Solo se pueden solicitar reembolsos dentro del plazo de garantía de devolución del dinero de 14 días, siempre y cuando el producto se haya utilizado de forma activa durante al menos 7 días (o 4 días en el caso de los planes semanales) y se pueda demostrar su uso con pruebas verificables.'),
-    h('div', { class: 'sales-plans__pay', 'aria-label': 'Métodos de pago' }, ['paypal', 'applepay', 'visa', 'mastercard', 'maestro', 'discover', 'amex'].map((n) => h('img', { src: `/assets/quiz/pay/${n}.svg`, alt: n, width: 32, height: 20 }))));
+    h('p', { class: 'sales-plans__refund' }, 'Solo se pueden solicitar reembolsos dentro del plazo de garantía de devolución del dinero de 14 días, siempre y cuando el producto se haya utilizado de forma activa durante al menos 7 días (o 4 días en el caso de los planes semanales) y se pueda demostrar su uso con pruebas verificables.'));
   update();
   if (canPurchase && !isNativeApp()) armExitOffer(program);
 }

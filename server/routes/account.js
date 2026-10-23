@@ -1,4 +1,5 @@
 // Cuenta: identificación, sesión, recuperación de contraseña, perfil, suscripción, exportación y baja.
+import { randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import {
   AuthError, ACCESS_COOKIE, clearSessionCookies, isValidEmail, setSessionCookies, sharedRateLimiter,
@@ -94,7 +95,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
       .filter((x) => ['active', 'trialing', 'past_due'].includes(x.status)).map((x) => x.program_slug);
     const grants = await db.service.rows(`select program_slug from public.access_grants where user_id = $1
       and revoked_at is null and (expires_at is null or expires_at > now())`, [req.user.id]);
-    const onboarded = await db.service.one('select onboarded_at from public.profiles where user_id = $1', [req.user.id]);
+    const onboarded = await db.service.one('select onboarded_at, needs_password from public.profiles where user_id = $1', [req.user.id]);
     const s = await store.current(req);
     res.json({
       user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: req.user.is_admin },
@@ -103,6 +104,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
       subscription: subscriptionView(active ?? await billing.latestSubscription(req.user.id)),
       pendingCheckout: active ? null : await billing.pendingCheckout(req.user.id),
       onboardingCompleted: Boolean(onboarded?.onboarded_at),
+      needsPassword: Boolean(onboarded?.needs_password),
       hasResult: Boolean(s?.completed_at),
     });
   }));
@@ -120,7 +122,40 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
   }));
 
   // ---------------------------------------------------------------- checkout y suscripción
-  r.post('/checkout', requireUser, wrap(async (req, res) => {
+  r.post('/checkout', requireUser, wrap((req, res) => startCheckoutFor(req, res)));
+
+  // Compra direto do quiz, sem tela de cadastro: a conta é criada com o e-mail e o nome do quiz
+  // e a senha é definida depois do pagamento (/bienvenida). Se o e-mail já tem conta, pede login.
+  r.post('/checkout/guest', wrap(async (req, res) => {
+    if (req.user) return startCheckoutFor(req, res);
+    if (!(await ipLimiter(`register:${req.ip}`))) throw tooMany();
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
+    if (req.body?.acceptTerms !== true) throw new HttpError(422, 'Debes aceptar los términos y condiciones.', 'INVALID', { field: 'acceptTerms' });
+    if (await db.service.one('select 1 from auth.users where lower(email) = $1', [email])) {
+      throw new HttpError(409, 'Ya tienes una cuenta con este correo. Inicia sesión para continuar.', 'LOGIN_REQUIRED', { email });
+    }
+    const name = String(req.body?.name ?? '').trim().slice(0, 80) || email.split('@')[0];
+    const session = await auth.register({ name, email, password: `${randomUUID()}${randomUUID()}`, timezone: isValidTimezone(req.body?.timezone) ? req.body.timezone : 'UTC' });
+    await db.service.exec('update public.profiles set needs_password = true where user_id = $1', [session.user.id]);
+    setSessionCookies(res, config, session);
+    req.user = { id: session.user.id, email, name };
+    return startCheckoutFor(req, res);
+  }));
+
+  // Primeira senha de quem comprou sem cadastro (só enquanto needs_password = true).
+  r.post('/auth/first-password', requireUser, wrap(async (req, res) => {
+    const row = await db.service.one('select needs_password from public.profiles where user_id = $1', [req.user.id]);
+    if (!row?.needs_password) throw new HttpError(409, 'Tu cuenta ya tiene contraseña.', 'ALREADY_SET');
+    const pass = password(req.body?.password);
+    await auth.setPassword(req.user.id, pass);
+    await db.service.exec('update public.profiles set needs_password = false where user_id = $1', [req.user.id]);
+    // Trocar a senha encerra a sessão: entra de novo com a senha nova para seguir sem pedir login.
+    setSessionCookies(res, config, await auth.signIn({ email: req.user.email, password: pass }));
+    res.json({ ok: true });
+  }));
+
+  async function startCheckoutFor(req, res) {
     const program = String(req.body?.program ?? 'sem-fumo');
     // El cuestionario del programa (el embudo de anuncios) alimenta la app: su resultado se vincula a la cuenta
     // al pagar y se usa en el plan y las estimaciones. Sem Fumo exige haberlo completado (embudo con oferta de salida).
@@ -143,7 +178,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
     });
     const eventId = growth && !reused ? await growth.hooks.onCheckoutStarted({ user: req.user, program, plan: req.body?.plan, url, tracking, ctx: { ...clientInfo(req), page: '/planes' } }) : null;
     res.json({ url, reused, eventId });
-  }));
+  }
 
   r.get('/checkout/status', requireUser, wrap(async (req, res) => {
     const sessionId = String(req.query.session_id ?? '');

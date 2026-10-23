@@ -9,6 +9,14 @@ Ordered by priority. Everything here is planned; nothing in this list has been e
 - [x] Verify the remaining non-program-scoped premium endpoints are intentional (they are transversal features: mood, breathing sessions, push subscriptions, support). Every route that depends on a program's data is program-scoped.
 - [x] Regression check after changes (2026-10-19): `npm test` = **54/54**; multiprograma access tests in `test/flow.test.js` keep passing. Funnel: `e2e/embudo.spec.js` **2/2** real-Stripe passing, plus **full combined Playwright run 22/22** (`app`+`embudo`+`pwa`, 3.3 m).
 
+## P1 — funil Sem Fumo (próximo)
+
+- [x] **Popup «downsell reverso» no plano semanal** (feito em 2026-10-23, sem brinde; quando houver brinde, trocar imagem/texto em `weeklyUpsell`, `public/js/paywall.js`). Na tela final do quiz, se a pessoa estiver com o plano «Prueba de una semana» selecionado e clicar em «Empieza sin ningún riesgo», abrir um popup (modelo visual do Calmio: imagem no topo, título, texto, botão principal laranja, link «No, gracias») reforçando o quanto compensa o plano de 3 meses (preço por dia menor, tempo para criar o hábito). Sem brinde por enquanto: o Calmio oferece o «Pack de Hipnoterapia», o Alento ainda não tem o que dar.
+  - Botão principal: «Cambia al plan de 3 meses» → troca a seleção para 3 meses e segue para o checkout.
+  - «No, gracias» → segue para o checkout com o plano semanal.
+  - Mostrar uma única vez por sessão; registrar `results_step` (ou evento próprio) para medir quantos trocam.
+  - Onde: `renderSalesPlans` / `goToCheckout` em `public/js/paywall.js`.
+
 ## P1 — complete the five programs
 
 - [ ] Clinical review of the four draft journeys (Alcohol, Azúcar, Ansiedad, Sueño). Only after review may they be published/commercialized.

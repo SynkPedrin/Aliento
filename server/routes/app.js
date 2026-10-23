@@ -167,6 +167,9 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
       const since = await dailySeries(q, userId, tz(req), ctx.goal.start_date < today ? ctx.goal.start_date : today, today);
       const journey = await JourneyEngine.getJourneyState(q, userId, 'sem-fumo');
       const todayRow = week.at(-1);
+      // Metas do plano são do sistema: uma semana encerrada fecha as metas dela.
+      await q.exec('update public.daily_goals set done_at = now() where user_id = $1 and program_slug = $2 and done_at is null and week <= $3',
+        [userId, 'sem-fumo', Math.floor(daysBetween(ctx.goal.start_date, today) / 7)]);
       const tasks = await q.rows(`select id, week, title, detail, done_at from public.daily_goals
         where user_id = $1 and program_slug = $2 order by week, created_at`, [userId, 'sem-fumo']);
       const exercisesThisWeek = week.reduce((a, d) => a + d.breathing, 0);

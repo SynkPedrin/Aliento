@@ -102,25 +102,18 @@ export function streakCard(d) {
 }
 
 export function tasksCard(d) {
-  const row = (g) => {
-    const cb = h('input', { type: 'checkbox', checked: g.done });
-    const lab = h('label', { class: `goal${g.done ? ' is-done' : ''}` }, cb,
-      h('span', {}, h('span', { class: 'goal__title' }, g.title), g.detail ? h('p', { class: 'goal__detail' }, g.detail) : null));
-    cb.addEventListener('change', async () => {
-      lab.classList.toggle('is-done', cb.checked);
-      try {
-        const r = await api(`${base(d)}/tasks/${g.id}`, { method: 'PATCH', body: { done: cb.checked } });
-        celebrate(r.achievements);
-      } catch (err) { cb.checked = !cb.checked; lab.classList.toggle('is-done', cb.checked); toast(err.message); }
-    });
-    return lab;
-  };
+  // Metas do sistema: o lead só acompanha, quem marca é o plano.
+  const row = (g) => h('div', { class: `goal${g.done ? ' is-done' : ''}` },
+    h('span', { class: 'goal__mark', 'aria-hidden': 'true' }, g.done ? '✓' : ''),
+    h('span', {}, h('span', { class: 'goal__title' }, g.title, h('span', { class: 'sr-only' }, g.done ? ' (cumplida)' : '')),
+      g.detail ? h('p', { class: 'goal__detail' }, g.detail) : null));
   const wk = d.weekNumber ?? 1;
   const current = d.tasks.filter((x) => x.week === wk);
   const others = d.tasks.filter((x) => x.week !== wk);
   const weeks = [...new Set(others.map((x) => x.week))].sort((a, b) => a - b);
   return h('section', { class: 'card', 'aria-labelledby': 'pg-tasks' },
     h('h2', { class: 'title-md', id: 'pg-tasks' }, `Metas de tu plan · semana ${wk}`),
+    h('p', { class: 'card__sub' }, 'Se marcan solas a medida que avanzas en tu plan.'),
     current.length ? h('div', { class: 'u-mt-8' }, current.map(row)) : h('p', { class: 'muted u-mt-8' }, 'No hay metas para esta semana.'),
     weeks.length ? h('details', { class: 'pg-more' }, h('summary', {}, 'Ver otras semanas'),
       weeks.map((w) => h('div', {}, h('p', { class: 'kicker pg-week-title' }, `Semana ${w}`), others.filter((x) => x.week === w).map(row)))) : null);

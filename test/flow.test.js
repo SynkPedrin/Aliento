@@ -756,3 +756,23 @@ test('multiprograma: admin gestiona estados comerciales y publicación', async (
   const content = (await c('/api/admin/content?program=azucar')).body;
   assert.equal(content.chapters.length, 10);
 });
+
+test('compra sem cadastro: quiz → checkout com o e-mail do quiz → senha depois; e-mail existente pede login', async () => {
+  await db.service.exec('delete from public.rate_limits'); // a bateria já criou muitas contas deste IP
+  const c = client();
+  await completeQuiz(c);
+  const mail = email();
+  assert.equal((await c('/api/checkout/guest', { method: 'POST', body: { plan: 'trimestral', email: mail, name: 'Lucía' } })).body.code, 'INVALID', 'exige aceitar os termos');
+  const r = await c('/api/checkout/guest', { method: 'POST', body: { plan: 'trimestral', email: mail, name: 'Lucía', acceptTerms: true } });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.ok(r.body.url);
+  const me = (await c('/api/me')).body;
+  assert.equal(me.user.email, mail); assert.equal(me.needsPassword, true);
+  assert.equal((await c('/api/auth/first-password', { method: 'POST', body: { password: 'nueva-clave-123' } })).status, 200);
+  assert.equal((await c('/api/me')).body.needsPassword, false);
+  assert.equal((await c('/api/auth/first-password', { method: 'POST', body: { password: 'otra-clave-123' } })).body.code, 'ALREADY_SET');
+  const d = client();
+  await completeQuiz(d);
+  const again = await d('/api/checkout/guest', { method: 'POST', body: { plan: 'trimestral', email: mail, acceptTerms: true } });
+  assert.equal(again.status, 409); assert.equal(again.body.code, 'LOGIN_REQUIRED');
+});

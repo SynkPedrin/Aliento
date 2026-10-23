@@ -1,6 +1,6 @@
 // La activación la hace el webhook de Stripe. Esta página solo consulta el
 // estado guardado en el servidor: la redirección por sí sola no activa nada.
-import { $, api, brandLink, h, LOGO_BRANCO_HTML } from '../ui.js';
+import { $, api, brandLink, h, LOGO_BRANCO_HTML, setBusy } from '../ui.js';
 import { installAction, installState } from '../install.js';
 import { pixelFor } from '../track.js';
 
@@ -14,9 +14,12 @@ let PROGRAM_NAME = 'Sem Fumo';
 /** Destino tras la bienvenida: Sem Fumo va a su configuración; los demás, a su programa. */
 const destination = () => (PROGRAM === 'sem-fumo' ? '/configuracion' : `/programa?p=${PROGRAM}&nuevo=1`);
 
+let needsPassword = false;
+
 function showWelcome() {
-  // Si ya se abre como app instalada, no se vuelve a ofrecer la instalación.
-  const next = installState() === 'installed' ? () => location.assign(destination()) : showInstall;
+  // Compra sin registro previo: primero crea la contraseña; después, instalar la app.
+  const afterPassword = installState() === 'installed' ? () => location.assign(destination()) : showInstall;
+  const next = needsPassword ? () => showPassword(afterPassword) : afterPassword;
   root.replaceChildren(
     h('div', { class: 'hero__mark', html: LOGO_BRANCO_HTML }),
     h('h1', { class: 'title-xl' }, '¡Tu camino comienza aquí!'),
@@ -24,6 +27,29 @@ function showWelcome() {
     h('p', { class: 'welcome-program' }, h('strong', {}, PROGRAM_NAME), h('br'), h('span', { class: 'muted' }, 'Tu programa está listo.')),
     h('p', { class: 'u-mt-16' }, h('button', { class: 'btn btn--lg', onclick: next }, 'Continuar')),
   );
+}
+
+/** Crea la contraseña de acceso a la app (la cuenta nació en el checkout con el e-mail del test). */
+function showPassword(next) {
+  const pass = h('input', { class: 'input', id: 'pw', type: 'password', autocomplete: 'new-password', minlength: '8', required: true });
+  const err = h('p', { class: 'form-error', role: 'alert' });
+  const cta = h('button', { class: 'btn btn--lg btn--block', type: 'submit' }, 'Guardar y continuar');
+  const form = h('form', { class: 'stack welcome-form' },
+    h('label', { class: 'field', for: 'pw' }, h('span', { class: 'field__label' }, 'Crea tu contraseña'), pass),
+    h('p', { class: 'help' }, 'Mínimo 8 caracteres. La usarás para entrar en la app.'), err, cta);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    setBusy(cta, true, 'Guardando…');
+    try { await api('/api/auth/first-password', { method: 'POST', body: { password: pass.value } }); needsPassword = false; next(); }
+    catch (ex) { setBusy(cta, false); err.textContent = ex.message; }
+  });
+  root.replaceChildren(
+    h('div', { class: 'hero__mark', html: LOGO_BRANCO_HTML }),
+    h('h1', { class: 'title-lg' }, 'Crea tu acceso'),
+    h('p', { class: 'lead' }, 'Así podrás entrar en la app desde cualquier dispositivo.'),
+    form);
+  pass.focus();
 }
 
 /** Ofrece instalar la app. Nunca es obligatorio: siempre se puede seguir en el navegador. */
@@ -59,6 +85,7 @@ async function poll() {
       PROGRAM_NAME = cat?.programs?.find((x) => x.slug === PROGRAM)?.name ?? PROGRAM;
     }
     if (st.state === 'active') {
+      needsPassword = Boolean((await api('/api/me').catch(() => ({}))).needsPassword);
       // Pixel de compra con el mismo event_id que la API de conversiones (una sola vez por pago).
       let firedKey = `al_px_${sessionId}`, fired = false;
       try { fired = sessionStorage.getItem(firedKey) === '1'; } catch { /* modo privado */ }

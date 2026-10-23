@@ -104,15 +104,11 @@ async function render() {
   const tasks = d.tasks.filter((x) => x.week <= weekNum + 1);
   const goals = h('section', { class: 'card' },
     h('h2', { class: 'title-md' }, 'Metas de tu plan'),
-    tasks.length ? h('div', { class: 'u-mt-8' }, tasks.map((g) => {
-      const cb = h('input', { type: 'checkbox', checked: g.done });
-      const row = h('label', { class: `goal${g.done ? ' is-done' : ''}` }, cb, h('span', {}, h('span', { class: 'goal__title' }, g.title), h('p', { class: 'goal__detail' }, `Semana ${g.week} · ${g.detail ?? ''}`)));
-      cb.addEventListener('change', async () => {
-        row.classList.toggle('is-done', cb.checked);
-        try { await api(`/api/app/tasks/${g.id}`, { method: 'PATCH', body: { done: cb.checked } }); } catch (err) { cb.checked = !cb.checked; row.classList.toggle('is-done', cb.checked); toast(err.message); }
-      });
-      return row;
-    })) : emptyState('Sin metas pendientes', null));
+    h('p', { class: 'card__sub' }, 'Se marcan solas a medida que avanzas en tu plan.'),
+    tasks.length ? h('div', { class: 'u-mt-8' }, tasks.map((g) => h('div', { class: `goal${g.done ? ' is-done' : ''}` },
+      h('span', { class: 'goal__mark', 'aria-hidden': 'true' }, g.done ? '✓' : ''),
+      h('span', {}, h('span', { class: 'goal__title' }, g.title, h('span', { class: 'sr-only' }, g.done ? ' (cumplida)' : '')),
+        h('p', { class: 'goal__detail' }, `Semana ${g.week} · ${g.detail ?? ''}`))))) : emptyState('Sin metas pendientes', null));
 
   // ---- Ánimo
   const mood = h('a', { class: 'card card-link', href: '/diario' },

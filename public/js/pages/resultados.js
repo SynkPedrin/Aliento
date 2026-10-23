@@ -478,33 +478,90 @@ function semFumoFunnel(data, me) {
   show();
 }
 
-/** Pulmones y corazón: el vídeo avanza solo y la línea de tiempo marca cada hito con su fecha (como el original). */
+// Geometria do palco do pulmão (unidades: x 0–100, y 0–96). A linha do tempo fica em y = BAR;
+// cada marco sobe da sua bolinha por um conector até o rótulo, formando um «U» em volta do pulmão.
+const STAGE_H = 96, BAR = 84;
+const tickX = (i) => 5 + 15 * i;
+// Marcos de fora sobem pela margem de fora e vão para o rótulo mais alto: assim nenhum conector cruza outro.
+const LAYOUT = [
+  { side: 'l', y: 22, bus: BAR - 3, xm: 1 }, { side: 'l', y: 44, bus: BAR - 6, xm: 2.4 }, { side: 'l', y: 66, bus: BAR - 9, xm: 3.8 },
+  { side: 'c', y: BAR - 5 },
+  { side: 'r', y: 66, bus: BAR - 9, xm: 96.2 }, { side: 'r', y: 44, bus: BAR - 6, xm: 97.6 }, { side: 'r', y: 22, bus: BAR - 3, xm: 99 },
+];
+const pct = (y) => `${(y / STAGE_H) * 100}%`;
+
+/**
+ * Pulmões se recuperando: o vídeo avança sozinho e, a cada marco da linha do tempo (embaixo),
+ * sai da bolinha um conector fino até o texto do benefício, distribuído em volta do pulmão. Ao terminar, recomeça.
+ */
 function lungsTimeline(steps) {
-  const v = h('video', { class: 'lungs__video', src: '/assets/quiz/heal.mp4', poster: '/assets/quiz/heal-start.webp', muted: true, playsinline: true, preload: 'metadata', 'aria-label': 'Cómo se recuperan con el tiempo los pulmones y el corazón de un fumador' });
+  const NS = 'http://www.w3.org/2000/svg';
+  const v = h('video', { class: 'lungs__video', src: '/assets/quiz/heal.mp4', poster: '/assets/quiz/heal-start.webp', muted: true, playsinline: true, preload: 'auto', 'aria-label': 'Cómo se recuperan con el tiempo los pulmones y el corazón' });
   v.muted = true; // el atributo solo no basta en Safari para permitir autoplay
+  const lines = document.createElementNS(NS, 'svg');
+  lines.setAttribute('viewBox', `0 0 100 ${STAGE_H}`); lines.setAttribute('preserveAspectRatio', 'none'); lines.setAttribute('class', 'lungs__lines'); lines.setAttribute('aria-hidden', 'true');
+  const layer = h('div', { class: 'lungs__layer', 'aria-live': 'polite' });
   const fill = h('span', { class: 'lungs__fill' });
-  const labels = h('ol', { class: 'lungs__marks', style: `grid-template-columns:repeat(${steps.length},1fr)` }, steps.map((x) => h('li', {}, x.line)));
-  const caption = h('p', { class: 'lungs__caption', 'aria-live': 'polite' });
-  const show = (i) => {
-    caption.replaceChildren(h('strong', {}, x(i).when), h('br'), x(i).what);
-    [...labels.children].forEach((li, k) => { li.classList.toggle('is-active', k === i); li.classList.toggle('is-past', k < i); });
+  const rail = h('div', { class: 'lungs__rail', 'aria-hidden': 'true' }, fill);
+  rail.style.top = pct(BAR);
+  const ticks = steps.map((_, i) => { const t = h('span', { class: 'lungs__tick', 'aria-hidden': 'true' }); t.style.left = `${tickX(i)}%`; t.style.top = pct(BAR); return t; });
+  const names = steps.map((s, i) => { const n = h('span', { class: 'lungs__name', 'aria-hidden': 'true' }, s.line); n.style.left = `${tickX(i)}%`; n.style.top = pct(BAR + 3.2);
+    if (i === 0 || i === steps.length - 1) n.style.transform = `translateX(${i ? -75 : -25}%)`; // pontas não saem da tela
+    return n; });
+  const stage = h('div', { class: 'lungs__stage' }, v, rail, lines, ...ticks, ...names, layer);
+
+  let shown = -1;
+  const reveal = (i) => {
+    const s = steps[i], L = LAYOUT[i], x = tickX(i);
+    const d = L.side === 'c'
+      ? `M${x} ${BAR} V${L.y} M${x - 13} ${L.y} H${x + 13}`
+      : `M${x} ${BAR} V${L.bus} H${L.xm} V${L.y} H${L.side === 'l' ? 29 : 71}`;
+    const path = document.createElementNS(NS, 'path'); path.setAttribute('d', d); path.setAttribute('class', 'smk-path');
+    [...lines.children].forEach((el) => el.classList.add('smk-past'));
+    lines.append(path);
+    const lab = h('div', { class: `lungs__lab lungs__lab--${L.side} smk-lab${s.ash ? ' is-ash' : ''}` }, h('span', {}, s.when), h('strong', {}, s.what));
+    lab.style.top = pct(L.y - 1.2);
+    [...layer.children].forEach((el) => el.classList.add('smk-past'));
+    layer.append(lab);
+    ticks.forEach((t, k) => { t.classList.toggle('is-on', k <= i); t.classList.toggle('is-now', k === i); });
+    names.forEach((n, k) => n.classList.toggle('is-on', k === i));
+    fill.style.width = `${(i / (steps.length - 1)) * 100}%`;
   };
-  const x = (i) => steps[i];
-  const ats = steps.map((s) => s.at ?? 0);
-  v.addEventListener('timeupdate', () => {
+  const reset = () => { shown = -1; lines.replaceChildren(); layer.replaceChildren(); reveal(++shown); };
+  const sync = () => {
     if (!v.duration) return;
     const r = v.currentTime / v.duration;
-    let i = 0; while (i < ats.length - 1 && r >= ats[i + 1]) i++;
-    fill.style.width = `${(i / (steps.length - 1)) * 100}%`;
-    show(i);
-  });
-  show(0);
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { v.poster = '/assets/quiz/heal-end.webp'; show(steps.length - 1); }
-  else {
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { v.play().catch(() => {}); io.disconnect(); } }, { threshold: 0.4 });
-    io.observe(v);
+    while (shown < steps.length - 1 && r >= steps[shown + 1].at) reveal(++shown);
+  };
+  v.addEventListener('timeupdate', sync);
+  v.addEventListener('ended', () => setTimeout(() => { reset(); v.currentTime = 0; v.play().catch(() => {}); }, 4200));
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    v.poster = '/assets/quiz/heal-end.webp';
+    steps.forEach((_, i) => reveal(i));
+    layer.querySelectorAll('.smk-past').forEach((el) => el.classList.remove('smk-past'));
+    lines.querySelectorAll('.smk-past').forEach((el) => el.classList.remove('smk-past'));
+  } else {
+    reveal(++shown); // «Ahora» desde o início
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); }, { threshold: 0.35 });
+    io.observe(stage);
   }
-  return h('div', { class: 'lungs__box' }, v, h('div', { class: 'lungs__track' }, fill), labels, caption);
+  return h('div', { class: 'lungs__box' }, stage);
+}
+
+/** Carrossel que avança sozinho um card a cada `ms`; pausa enquanto a pessoa toca/passa o mouse e volta ao início no fim. */
+function autoCarousel(track, ms = 3800) {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return track;
+  let holdUntil = 0;
+  const hold = () => { holdUntil = Date.now() + 6000; };
+  ['pointerdown', 'pointerenter', 'touchstart', 'focusin', 'wheel'].forEach((ev) => track.addEventListener(ev, hold, { passive: true }));
+  const timer = setInterval(() => {
+    if (!track.isConnected) { clearInterval(timer); return; }
+    if (document.hidden || Date.now() < holdUntil || !track.firstElementChild) return;
+    const step = track.firstElementChild.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 12);
+    const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + step, behavior: 'smooth' });
+  }, ms);
+  return track;
 }
 
 function salesPage(r, fmt, name, me) {
@@ -514,29 +571,34 @@ function salesPage(r, fmt, name, me) {
   const yearsLabel = pf.years ? YEARS_LABELS[pf.years - 1] : null;
   const who = (() => {
     if (name) {
-      if (!yearsLabel) return `${name} años fumando.`;
-      return pf.vape ? `${name}, ${yearsLabel} de vapeo.` : pf.burnsTobacco ? `${name}, ${yearsLabel} fumando.` : `${name}, ${yearsLabel} de nicotina.`;
+      if (!yearsLabel) return `${name}, años de humo.`;
+      const y = yearsLabel.charAt(0).toLowerCase() + yearsLabel.slice(1);
+      return pf.vape ? `${name}, ${y} de vapeo.` : pf.burnsTobacco ? `${name}, ${y} fumando.` : `${name}, ${y} de nicotina.`;
     }
     if (!yearsLabel) return 'Años de humo.';
     return pf.vape ? `${yearsLabel} de vapeo.` : pf.burnsTobacco ? `${yearsLabel} de humo.` : `${yearsLabel} de nicotina.`;
   })();
   const reps = pf.repetitions ? `${num(pf.repetitions)}+` : null;
+  // Os 7 marcos são fixos (Ahora → 10 años); só os textos mudam entre tabaco e vape/nicotina.
+  const year = today.getFullYear();
   const timeline = pf.burnsTobacco
     ? [
-      { at: 0, line: 'Ahora', when: 'Hoy', what: reps ? `${reps} ${pf.form === 4 ? 'puros' : pf.form === 5 ? 'sesiones' : 'cigarrillos'}` : 'Fumando como siempre' },
-      { at: 0.03, line: '20 min', when: `20 min · ${fmtDay(today)}`, what: 'Baja la tensión arterial' },
-      { at: 0.18, line: '12 h', when: '12 horas', what: 'El nivel de oxígeno ha vuelto a la normalidad' },
-      { at: 0.34, line: '2 semanas', when: `Hace 2 semanas · ${fmtDay(addDays(14))}`, what: 'Respirar mejor' },
-      { at: 0.52, line: '1 año', when: `Hace 1 año · ${today.getFullYear() + 1}`, what: 'El riesgo de padecer enfermedades cardíacas se reduce a la mitad' },
-      { at: 0.7, line: '5 años', when: 'De 5 a 15 años', what: 'El riesgo de sufrir un ictus vuelve a la normalidad' },
-      { at: 0.86, line: '10 años', when: `10 años · ${today.getFullYear() + 10}`, what: 'El riesgo de cáncer de pulmón se reduce a la mitad' },
+      { at: 0, line: 'Ahora', when: 'Hoy', what: reps ? `${reps} ${pf.form === 4 ? 'puros' : pf.form === 5 ? 'sesiones' : 'cigarrillos'}` : 'Fumando como siempre', ash: true },
+      { at: 0.04, line: '20 min', when: `20 min · ${fmtDay(today)}`, what: 'Baja la tensión arterial' },
+      { at: 0.17, line: '12 h', when: '12 horas', what: 'El oxígeno vuelve a la normalidad' },
+      { at: 0.32, line: '2 semanas', when: `2 semanas · ${fmtDay(addDays(14))}`, what: 'Mejora la circulación' },
+      { at: 0.5, line: '1 año', when: `1 año · ${year + 1}`, what: 'Riesgo cardíaco a la mitad' },
+      { at: 0.67, line: '5 años', when: `5 años · ${year + 5}`, what: 'Riesgo de ictus como un no fumador' },
+      { at: 0.84, line: '10 años', when: `10 años · ${year + 10}`, what: 'Riesgo de cáncer de pulmón a la mitad' },
     ]
     : [
-      { at: 0, line: 'Ahora', when: 'Hoy', what: reps ? (pf.vape ? `${reps} sesiones de vapeo` : `${reps} veces`) : 'Nicotina, como siempre' },
-      { at: 0.04, line: '20 min', when: `20 min · ${fmtDay(today)}`, what: 'Baja la tensión arterial' },
-      { at: 0.3, line: '3 días', when: '3 días', what: 'Ya no hay nicotina' },
-      { at: 0.56, line: '2 semanas', when: '2 semanas', what: 'Mejora la circulación' },
-      { at: 0.8, line: '1 mes', when: '1 mes', what: 'Respirar mejor' },
+      { at: 0, line: 'Ahora', when: 'Hoy', what: reps ? (pf.vape ? `${reps} sesiones de vapeo` : `${reps} dosis de nicotina`) : (pf.vape ? 'Vapeando como siempre' : 'Nicotina, como siempre'), ash: true },
+      { at: 0.04, line: '20 min', when: `20 min · ${fmtDay(today)}`, what: 'El pulso y la tensión se calman' },
+      { at: 0.17, line: '12 h', when: '12 horas', what: 'La nicotina en sangre cae en picado' },
+      { at: 0.32, line: '2 semanas', when: `2 semanas · ${fmtDay(addDays(14))}`, what: 'Mejora la circulación' },
+      { at: 0.5, line: '1 año', when: `1 año · ${year + 1}`, what: 'Tu corazón trabaja con menos esfuerzo' },
+      { at: 0.67, line: '5 años', when: `5 años · ${year + 5}`, what: pf.vape ? 'Respiras sin el vapor de cada día' : 'Respiras con más facilidad' },
+      { at: 0.84, line: '10 años', when: `10 años · ${year + 10}`, what: 'Una década libre de nicotina' },
     ];
   const ageLabel = pf.age ? AGE_LABELS[pf.age - 1] : null;
   const gain = pf.age ? LIFE_GAIN[pf.age - 1] : null;
@@ -546,6 +608,16 @@ function salesPage(r, fmt, name, me) {
     { name: 'Riesgo de ictus', value: 'Normal', smoker: 100, free: 52, note: 'Vuelves al nivel de un no fumador en un plazo de 5 a 15 años', source: 'American Cancer Society' },
     { name: 'Colesterol bueno (HDL)', value: 'Subidas', smoker: 62, free: 74, note: pf.female ? 'En el plazo de un año, sobre todo en las mujeres' : 'En el plazo de un año', source: 'Gepner et al., Am Heart J 2011' },
   ];
+  // Barras enchem da esquerda para a direita quando a seção entra na tela.
+  const benefitList = h('ul', { class: 'benefit-bars' }, benefitRows.map((b) => h('li', {},
+    h('p', { class: 'benefit-bars__row' }, h('span', {}, b.name), h('strong', {}, b.value)),
+    h('span', { class: 'benefit-bars__track benefit-bars__track--smoker' }, h('span', { class: 'benefit-bars__fill', style: `--w:${b.smoker}%` })),
+    h('span', { class: 'benefit-bars__track' }, h('span', { class: 'benefit-bars__fill benefit-bars__fill--free', style: `--w:${b.free}%` })),
+    h('p', { class: 'benefit-bars__note' }, b.note, h('span', {}, ` · ${b.source}`)))));
+  if ('IntersectionObserver' in window) {
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { benefitList.classList.add('is-in'); io.disconnect(); } }, { threshold: 0.3 });
+    io.observe(benefitList);
+  } else benefitList.classList.add('is-in');
   const rel = new Intl.RelativeTimeFormat('es');
   const ticker = [RECENT_SIGNUPS.filter((_, i) => i % 2 === 0), RECENT_SIGNUPS.filter((_, i) => i % 2 === 1)];
   const paywallRoot = h('div');
@@ -577,11 +649,7 @@ function salesPage(r, fmt, name, me) {
         h('p', { class: 'eyebrow' }, 'Lo que obtienes a cambio'),
         h('h2', { class: 'title-lg' }, ageLabel ? `Dejar de fumar a los ${ageLabel} años` : 'Lo que te devuelve dejar de fumar'),
         h('p', { class: 'benefit-legend' }, h('span', {}, h('i', { class: 'is-smoker' }), 'Sigue fumando'), h('span', {}, h('i', { class: 'is-free' }), 'Sin humo')),
-        h('ul', { class: 'benefit-bars' }, benefitRows.map((b) => h('li', {},
-          h('p', { class: 'benefit-bars__row' }, h('span', {}, b.name), h('strong', {}, b.value)),
-          h('span', { class: 'benefit-bars__track benefit-bars__track--smoker' }, h('span', { class: 'benefit-bars__fill', style: `width:${b.smoker}%` })),
-          h('span', { class: 'benefit-bars__track' }, h('span', { class: 'benefit-bars__fill benefit-bars__fill--free', style: `width:${b.free}%` })),
-          h('p', { class: 'tiny muted' }, b.note, h('span', {}, ` · ${b.source}`))))),
+        benefitList,
         pf.years === 5 ? h('p', { class: 'small' }, 'Después de más de 10 años, tus pulmones han envejecido rápidamente. ', h('span', { class: 'muted' }, 'Desde el primer día sin fumar, vuelven a envejecer a un ritmo normal.')) : null)
       : funnelStep(
         h('p', { class: 'eyebrow' }, 'Lo que obtienes a cambio'),
@@ -591,10 +659,6 @@ function salesPage(r, fmt, name, me) {
           ['Más libertad en tu rutina', 'Disfruta de las pausas, las tardes y el tiempo con amigos sin organizarte en torno a la nicotina.'],
           ['Más dinero en el bolsillo', 'Conserva más del dinero que ahora gastas en productos con nicotina.'],
         ].map(([t, d]) => h('li', {}, icon('check'), h('span', {}, h('strong', {}, t), h('br'), d))))),
-    funnelStep(
-      h('p', { class: 'ticker__count' }, h('strong', {}, num(1123)), ' personas empezaron esta semana su camino para dejar de fumar'),
-      h('div', { class: 'ticker', 'aria-hidden': 'true' }, ticker.map((row, k) => h('div', { class: `ticker__row${k ? ' ticker__row--rev' : ''}` },
-        [...row, ...row].map((e) => h('span', { class: 'ticker__item' }, h('i'), e.email, h('em', {}, rel.format(-e.ago, e.unit)))))))),
     h('section', { class: 'r-section theme-deep sales__plans', id: 'planes' },
       h('div', { class: 'container narrow' },
         h('div', { class: 'sales__summary' },
@@ -602,11 +666,15 @@ function salesPage(r, fmt, name, me) {
           h('div', {}, h('p', { class: 'small' }, 'Dentro de 3 meses'), h('p', { class: 'sales__summary-v' }, pf.goal ? TARGET_LABELS[pf.goal - 1] : '—'))),
         me.access ? h('p', {}, h('a', { href: '/dashboard', class: 'btn btn--lg' }, 'Ir a mi panel')) : paywallRoot)),
     funnelStep(
+      h('p', { class: 'ticker__count' }, h('strong', {}, num(1123)), ' personas empezaron esta semana su camino para dejar de fumar'),
+      h('div', { class: 'ticker', 'aria-hidden': 'true' }, ticker.map((row, k) => h('div', { class: `ticker__row${k ? ' ticker__row--rev' : ''}` },
+        [...row, ...row].map((e) => h('span', { class: 'ticker__item' }, h('i'), e.email, h('em', {}, rel.format(-e.ago, e.unit)))))))),
+    funnelStep(
       h('p', { class: 'eyebrow' }, 'De nuestra comunidad'),
       h('h2', { class: 'title-lg' }, 'No eres el único.'),
-      h('div', { class: 'members' }, MEMBERS.map((m) => h('figure', { class: 'member' },
+      autoCarousel(h('div', { class: 'members' }, MEMBERS.map((m) => h('figure', { class: 'member' },
         h('img', { src: `/assets/quiz/members/card-${m.photo}.jpg`, alt: '', loading: 'lazy', width: 240, height: 320 }),
-        h('blockquote', {}, m.quote), h('figcaption', {}, m.name)))),
+        h('blockquote', {}, m.quote), h('figcaption', {}, m.name))))),
       h('p', { class: 'tiny muted' }, 'Las citas son mensajes reales de los miembros, ligeramente editados para acortar su extensión. Se han cambiado los nombres y las fotos son ilustrativas para proteger su privacidad.')),
     funnelStep(
       h('h2', { class: 'title-lg' }, 'Preguntas frecuentes'),
@@ -629,6 +697,9 @@ async function init() {
     root.replaceChildren(h('div', { class: 'container section' }, h('p', { class: 'notice' }, err.message)));
     return;
   }
+  const programSlug = SLUGS.includes(data.program) ? data.program : program;
+  // Embudo de venda: tela limpa, sem logo nem «Entrar» (o acesso só aparece depois da compra).
+  if (programSlug === 'sem-fumo' && data.result.smokerType && !me.access) return semFumoFunnel(data, me);
   if (me.user) {
     renderHeader($('[data-header]'), {
       links: me.access
@@ -638,9 +709,7 @@ async function init() {
   } else {
     renderHeader($('[data-header]'), { links: [{ href: '/acceso', label: 'Entrar' }] });
   }
-  const programSlug = SLUGS.includes(data.program) ? data.program : program;
-  if (programSlug === 'sem-fumo' && data.result.smokerType && !me.access) semFumoFunnel(data, me);
-  else if (programSlug === 'sem-fumo') semFumoResults(data, me);
+  if (programSlug === 'sem-fumo') semFumoResults(data, me);
   else programResults(programSlug, data, me);
 }
 

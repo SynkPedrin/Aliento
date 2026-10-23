@@ -392,7 +392,7 @@ function renderLeadName() {
       if (['INVALID', 'CONSENT_REQUIRED', 'RATE_LIMITED'].includes(ex.code)) { renderLeadEmail(ex.message); return; }
     }
     markLead();
-    try { if (first) localStorage.setItem('alento-name', first); } catch { /* modo privado */ }
+    try { if (first) localStorage.setItem('alento-name', first); localStorage.setItem('alento-email', lead.email); } catch { /* modo privado */ }
     window.location.assign(`/resultados?program=${PROGRAM}`);
   });
   track('quiz_step', { program: PROGRAM, step: 'nombre' }, { pixel: false });

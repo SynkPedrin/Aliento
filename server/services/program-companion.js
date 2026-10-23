@@ -521,6 +521,9 @@ export async function dashboardView(q, def, c, { program, entitlement, user, con
   const from = goal.startDate > today ? today : (goal.startDate < c.from ? c.from : goal.startDate);
   const week = days.slice(-7);
   const journey = await JourneyEngine.getJourneyState(q, c.userId, def.slug);
+  // Metas do plano são do sistema: uma semana encerrada fecha as metas dela.
+  await q.exec('update public.daily_goals set done_at = now() where user_id = $1 and program_slug = $2 and done_at is null and week <= $3',
+    [c.userId, def.slug, Math.floor(daysBetween(goal.startDate, today) / 7)]);
   const tasks = await q.rows('select id, week, title, detail, done_at from public.daily_goals where user_id = $1 and program_slug = $2 order by week, created_at', [c.userId, def.slug]);
   const maxWeek = Math.max(1, ...tasks.map((t) => t.week));
   const weekNumber = Math.min(maxWeek, Math.max(1, Math.floor(daysBetween(goal.startDate, today) / 7) + 1));
