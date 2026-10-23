@@ -74,8 +74,8 @@ export function createBilling({ db, stripe, config, log = console }) {
 
   // ------------------------------------------------------------ oferta de salida
   /** Oferta real (cupón de Stripe de un solo uso por suscripción) o null si no está configurada. */
-  async function getExitOffer() {
-    const { couponId, plan } = config.stripe.exitOffer;
+  async function getExitOffer(plan = config.stripe.exitOffer.plan) {
+    const { couponId } = config.stripe.exitOffer;
     if (!stripe || !couponId) return null;
     try {
       if (!couponCache || couponCache.at < Date.now() - PRICE_CACHE_MS) {
@@ -107,8 +107,8 @@ export function createBilling({ db, stripe, config, log = console }) {
     return r.blocked;
   }
 
-  async function claimExitOffer(sessionId, userId) {
-    const offer = await getExitOffer();
+  async function claimExitOffer(sessionId, userId, plan) {
+    const offer = await getExitOffer(PLAN_IDS.includes(plan) ? plan : undefined);
     if (!offer || !sessionId) return null;
     if (await offerBlockedFor(userId)) return null;
     const row = await db.service.one(`
@@ -195,8 +195,8 @@ export function createBilling({ db, stripe, config, log = console }) {
       let couponId = null;
       if (useExitOffer) {
         // La oferta de salida solo existe en el embudo del cuestionario de Sem Fumo.
-        const offer = program === 'sem-fumo' && assessment ? await getExitOffer() : null;
-        if (!offer || offer.plan !== plan || !(await exitOfferUsable(assessment.session_id)) || await offerBlockedFor(user.id)) {
+        const offer = program === 'sem-fumo' && assessment ? await getExitOffer(plan) : null;
+        if (!offer || !(await exitOfferUsable(assessment.session_id)) || await offerBlockedFor(user.id)) {
           throw new BillingError('OFFER_UNAVAILABLE', 'Esta oferta ya no está disponible.', 409);
         }
         couponId = offer.couponId;
@@ -248,7 +248,7 @@ export function createBilling({ db, stripe, config, log = console }) {
           submit: { message: 'El acceso a Alento empieza de inmediato. La suscripción se renueva automáticamente al mismo precio hasta que la canceles desde «Mi suscripción».' },
         },
         success_url: `${config.appUrl}/bienvenida?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${config.appUrl}/programas?pago=cancelado`,
+        // Sin cancel_url Stripe no muestra el botón «volver». El «atrás» del navegador abre la oferta de salida (paywall.js).
       }, {
         // Misma petición repetida (reintento de red) → misma sesión. Ventana de 10 min.
         idempotencyKey: `checkout-${user.id}-${program}-${plan}-${assessment?.id ?? 'catalogo'}-${couponId ?? 'none'}-${Math.floor(Date.now() / 600_000)}`,

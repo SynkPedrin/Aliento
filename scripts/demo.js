@@ -20,7 +20,7 @@ const WEBHOOK_SECRET = 'whsec_demo_local';
 // Usa el Supabase local (`npx supabase start`) y Stripe simulado.
 const config = loadConfig({
   ...process.env,
-  STRIPE_SECRET_KEY: 'sk_test_demo', STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET, STRIPE_EXIT_COUPON: 'aliento-salida-20',
+  STRIPE_SECRET_KEY: 'sk_test_demo', STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET, STRIPE_EXIT_COUPON: 'alento-volta-10',
   ...localSupabaseEnv(),
 });
 if (!/127\.0\.0\.1|localhost/.test(config.supabase.url)) throw new Error('El modo demo solo funciona con el Supabase local.');
@@ -48,7 +48,7 @@ demo.get('/demo-checkout/:n', (req, res) => {
     <h1 class="title-md">Checkout simulado</h1>
     <p class="muted">Plan <strong>${s.metadata.plan}</strong>. En producción aquí aparece Stripe Checkout. Los importes del modo demo son de ejemplo.</p>
     <form method="post" action="/demo-checkout/${req.params.n}/pagar"><button class="btn btn--lg btn--block">Pagar (simulado)</button></form>
-    <a class="btn btn--ghost btn--block" href="${s.cancel_url}">Cancelar y volver</a>`));
+    <p class="help">Como en Stripe, no hay botón «volver»: usa el «atrás» del navegador para ver la oferta de salida.</p>`));
 });
 
 demo.post('/demo-checkout/:n/pagar', async (req, res) => {

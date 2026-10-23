@@ -32,7 +32,7 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
       del: async (id) => { for (const sub of subs.values()) if (sub.customer === id) sub.status = 'canceled'; calls.deletedCustomers = (calls.deletedCustomers ?? 0) + 1; return { id, deleted: true }; },
     },
     invoices: { retrieve: async (id) => ({ id, parent: { subscription_details: { subscription: invoiceSubs.get(id) } } }) },
-    coupons: { retrieve: async (id) => (id === 'aliento-salida-20' ? { id, valid: true, duration: 'once', percent_off: 20 } : Promise.reject(new Error('No such coupon'))) },
+    coupons: { retrieve: async (id) => (id === 'alento-volta-10' ? { id, valid: true, duration: 'once', percent_off: 10 } : Promise.reject(new Error('No such coupon'))) },
     subscriptions: {
       list: ({ customer } = {}) => {
         const data = [...subs.values()].filter((s) => !customer || s.customer === customer);

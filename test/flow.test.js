@@ -26,7 +26,7 @@ const createdUsers = [];
 before(async () => {
   config = loadConfig({
     APP_URL: 'http://localhost',
-    STRIPE_SECRET_KEY: 'sk_test', STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET, STRIPE_EXIT_COUPON: 'aliento-salida-20',
+    STRIPE_SECRET_KEY: 'sk_test', STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET, STRIPE_EXIT_COUPON: 'alento-volta-10',
     CRON_SECRET: 'cron-test', VAPID_SUBJECT: 'mailto:test@example.com',
     VAPID_PUBLIC_KEY: 'BLs0rb7qGq5Ae7oZr3GgOq0h2vrnU2zrYsDYZJqgQzkQ2gO1pJ6s0x7VYb4i9i3Qzq2zK2sY3bJtV3l4n5o6p7Q',
     VAPID_PRIVATE_KEY: 'x7m4uN4mWm1kO6y4rH0q2Jv9cQe1b3d5f7h9j1l3n5p',
@@ -367,19 +367,21 @@ test('10 · webhook duplicado o fuera de orden: una sola suscripción, firma obl
 });
 
 // ------------------------------------------------------------------ extras
-test('oferta de salida: real, una sola vez, solo para el plan semanal', async () => {
+test('oferta de salida: real, una sola vez, 10 % sobre el plan elegido', async () => {
   const c = client();
   await completeQuiz(c);
   const first = await c('/api/exit-offer', { method: 'POST' });
-  assert.equal(first.body.offer.discountedAmount, 639);
+  assert.equal(first.body.offer.plan, 'semanal', 'sin plan elegido se usa EXIT_OFFER_PLAN');
+  assert.equal(first.body.offer.discountedAmount, 719);
   assert.equal(first.body.offer.amount, 799);
-  assert.equal((await c('/api/exit-offer', { method: 'POST' })).body.offer, null, 'no vuelve a aparecer');
+  assert.equal((await c('/api/exit-offer', { method: 'POST', body: { plan: 'mensual' } })).body.offer, null, 'no vuelve a aparecer');
   await register(c);
-  assert.equal((await c('/api/checkout', { method: 'POST', body: { plan: 'mensual', exitOffer: true } })).body.code, 'OFFER_UNAVAILABLE');
-  const r = await c('/api/checkout', { method: 'POST', body: { plan: 'semanal', exitOffer: true } });
+  // Vuelve del checkout del plan mensual: el descuento se aplica al plan que eligió.
+  const r = await c('/api/checkout', { method: 'POST', body: { plan: 'mensual', exitOffer: true } });
   assert.equal(r.status, 200);
   const s = [...stripe.sessions.values()].find((x) => x.url === r.body.url);
-  assert.deepEqual(s.discounts, [{ coupon: 'aliento-salida-20' }]);
+  assert.deepEqual(s.discounts, [{ coupon: 'alento-volta-10' }]);
+  assert.equal(s.cancel_url, undefined, 'sin botón «volver» en Stripe');
 
   // Otro cuestionario que nunca vio la oferta no puede usarla.
   const d = client();

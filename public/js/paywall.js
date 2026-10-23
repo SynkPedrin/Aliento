@@ -53,6 +53,8 @@ const FEATURES_BY_PROGRAM = {
 const programFeatures = (program) => FEATURES_BY_PROGRAM[program] ?? FEATURES;
 
 const PLAN_KEY = 'fg_plan';
+const LEFT_KEY = 'alento_checkout_left';
+let busyBtn = null;
 
 export function rememberPlan(id) { try { sessionStorage.setItem(PLAN_KEY, id); } catch {} }
 export function rememberedPlan() { try { return sessionStorage.getItem(PLAN_KEY); } catch { return null; } }
@@ -72,6 +74,8 @@ export async function goToCheckout(plan, btn, { exitOffer = false, program = 'se
     }
     const { url, eventId } = await api('/api/checkout', { method: 'POST', body: { plan, exitOffer, program, fromCatalog } });
     if (eventId) await Promise.race([pixelFor('checkout_started', eventId), new Promise((r) => setTimeout(r, 400))]); // mismo event_id que la API de conversiones
+    if (!exitOffer) { try { sessionStorage.setItem(LEFT_KEY, JSON.stringify({ plan, program })); } catch {} }
+    busyBtn = btn;
     window.location.assign(url);
   } catch (err) {
     if (btn) setBusy(btn, false);
@@ -131,6 +135,18 @@ function armExitOffer(program) {
   // Solo intención de salida en escritorio. No se intercepta el botón «atrás» del móvil.
   document.addEventListener('mouseout', onMouseOut);
 }
+
+// Stripe Checkout no tiene botón «volver»: quien vuelve con el «atrás» del navegador ve la oferta,
+// con el plan que había elegido. El servidor decide si aún le corresponde (una vez por cuestionario).
+window.addEventListener('pageshow', async () => {
+  let left = null;
+  try { left = JSON.parse(sessionStorage.getItem(LEFT_KEY)); sessionStorage.removeItem(LEFT_KEY); } catch { return; }
+  if (!left) return;
+  if (busyBtn) { setBusy(busyBtn, false); busyBtn = null; } // página restaurada desde la caché del navegador
+  let offer = null;
+  try { ({ offer } = await api('/api/exit-offer', { method: 'POST', body: left })); } catch { return; }
+  if (offer) showExitOffer(offer, left.program);
+});
 
 function showExitOffer(offer, program = 'sem-fumo') {
   const price = moneyCents(offer.amount, offer.currency);

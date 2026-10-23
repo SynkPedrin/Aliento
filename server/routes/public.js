@@ -192,7 +192,7 @@ export function publicRoutes({ db, billing, config, store, programs }) {
   r.post('/exit-offer', wrap(async (req, res) => {
     const program = req.body?.program ? String(req.body.program) : null;
     const s = await store.current(req, program);
-    res.json({ offer: await billing.claimExitOffer(s?.id, req.user?.id ?? s?.claimed_user_id) });
+    res.json({ offer: await billing.claimExitOffer(s?.id, req.user?.id ?? s?.claimed_user_id, req.body?.plan) });
   }));
 
   return r;
