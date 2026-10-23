@@ -69,6 +69,17 @@ export const STEPS = [
     ],
   },
   {
+    id: 'info_social',
+    type: 'info',
+    tone: 'dark',
+    eyebrow: '¡No estás solo!',
+    stat: 'Más de 1.200 millones',
+    title: 'de personas en el mundo consumen tabaco',
+    body: 'Y cada año, millones lo dejan paso a paso. Tu plan parte de lo que ya les ha funcionado a otros, adaptado a ti.',
+    source: 'Fuente: Organización Mundial de la Salud.',
+    images: ['/assets/quiz/people-left.webp', '/assets/quiz/people-right.webp'],
+  },
+  {
     id: 'q_medico',
     type: 'single',
     layout: 'pair',
@@ -144,6 +155,14 @@ export const STEPS = [
       { id: 'irritado', label: 'Irritable o distraído hasta que fumo' },
       { id: 'tension', label: 'Con mucha tensión: lo necesito de verdad' },
     ],
+  },
+  {
+    id: 'info_patron',
+    type: 'info',
+    tone: 'dark',
+    eyebrow: 'Lo que pasa en tu cerebro',
+    title: 'Cada cigarrillo refuerza un camino',
+    body: 'Cuando fumas en el mismo momento y lugar, tu cerebro une esa situación con la nicotina. Con la repetición, el camino se vuelve automático. La buena noticia: los caminos que no se usan se debilitan. Tu plan crea otros nuevos, con pasos pequeños y repetidos.',
   },
   {
     id: 'q_sin24h',
@@ -280,6 +299,14 @@ export const STEPS = [
     ],
   },
   {
+    id: 'ahorro_estimado',
+    type: 'savings',
+    tone: 'dark',
+    title: 'Sin tabaco, podrías ahorrar unos {amount} al año',
+    body: 'Estimación con el gasto que nos has indicado, si dejas de comprar tabaco. Con Alento lo haces paso a paso, a tu ritmo.',
+    from: 'q_gasto',
+  },
+  {
     id: 'q_ahorro',
     type: 'single',
     title: '¿Qué harías con el dinero que vas a ahorrar?',
@@ -302,6 +329,14 @@ export const STEPS = [
       { id: 'animo', label: 'Más tranquilo y con mejor ánimo' },
       { id: 'foco', label: 'Más productivo y concentrado' },
     ],
+  },
+  {
+    id: 'info_preparacion',
+    type: 'info',
+    tone: 'dark',
+    eyebrow: 'Casi listo',
+    title: 'Reconocer tu patrón ya es un paso',
+    body: 'Con tus respuestas vamos a ordenar qué sostiene tu hábito y qué estrategias encajan contigo. En el siguiente paso preparamos tu perfil y tu plan personalizado.',
   },
   {
     id: 'analisis',
@@ -733,7 +768,7 @@ export function publicQuiz(program = 'sem-fumo') {
     version: QUIZ_VERSION,
     steps: stepList.map((s) => ({
       ...s,
-      options: s.options?.map(({ id, label, exclusive, icon }) => ({ id, label, ...(exclusive ? { exclusive } : {}), ...(icon ? { icon } : {}) })),
+      options: s.options?.map(({ id, label, exclusive, icon, weekly }) => ({ id, label, ...(exclusive ? { exclusive } : {}), ...(icon ? { icon } : {}), ...(weekly ? { weekly } : {}) })),
     })),
   };
 }

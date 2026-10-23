@@ -205,11 +205,32 @@ function renderInfo(step) {
   // Pantalla personalizada: un párrafo por respuesta elegida (máx. 2), en el orden de las variantes.
   const picked = step.personalizedBy ? [].concat(answers[step.personalizedBy] ?? []) : [];
   const paras = Object.keys(step.variants ?? {}).filter((k) => picked.includes(k)).slice(0, 2).map((k) => step.variants[k]);
-  return h('section', { class: 'quiz__screen info-screen' },
-    step.image ? h('img', { class: 'info-screen__img', src: step.imageByGender?.[answers.q_genero] ?? step.image, alt: '', loading: 'eager' }) : h('div', { html: MARK_SVG }),
+  const people = step.images ? h('div', { class: 'info-screen__people', 'aria-hidden': 'true' }, step.images.map((src) => h('img', { src, alt: '' }))) : null;
+  return h('section', { class: `quiz__screen info-screen${step.tone === 'dark' ? ' info-screen--dark' : ''}` },
+    people ?? (step.image ? h('img', { class: 'info-screen__img', src: step.imageByGender?.[answers.q_genero] ?? step.image, alt: '', loading: 'eager' }) : h('div', { html: MARK_SVG })),
     step.eyebrow ? h('p', { class: 'eyebrow' }, step.eyebrow) : null,
+    step.stat ? h('p', { class: 'info-screen__stat' }, step.stat) : null,
     h('h1', { class: 'title-lg' }, step.title),
     ...(paras.length ? paras : [step.body]).map((t) => h('p', {}, t)),
+    step.source ? h('p', { class: 'tiny info-screen__source' }, step.source) : null,
+    h('div', { class: 'sticky-cta' }, cta));
+}
+
+/** Ahorro estimado: gasto semanal de la respuesta × 52, con barra animada (1 mes, 6 meses, 1 año). */
+function renderSavings(step) {
+  const weekly = steps.find((s) => s.id === step.from)?.options?.find((o) => o.id === answers[step.from])?.weekly ?? 0;
+  const fmt = (v) => new Intl.NumberFormat(config.locale, { style: 'currency', currency: config.currency, maximumFractionDigits: 0 }).format(v);
+  const marks = [['1 mes', weekly * 52 / 12], ['6 meses', weekly * 26], ['1 año', weekly * 52]];
+  const fill = h('span', { class: 'savings-bar__fill' });
+  const cta = h('button', { type: 'button', class: 'btn btn--lg', onclick: async () => { try { await save(null, null, steps[index + 1]?.id); goTo(index + 1); } catch (e) { toast(e.message); } } }, 'Continuar');
+  requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = '100%'; }));
+  return h('section', { class: 'quiz__screen info-screen info-screen--dark' },
+    h('p', {}, h('span', { class: 'estimate-tag' }, 'Estimación')),
+    h('h1', { class: 'title-lg' }, step.title.replace('{amount}', fmt(weekly * 52))),
+    h('div', { class: 'savings-bar', role: 'img', 'aria-label': marks.map(([l, v]) => `${l}: ${fmt(v)}`).join(', ') },
+      h('div', { class: 'savings-bar__track' }, fill),
+      h('ol', { class: 'savings-bar__marks' }, marks.map(([l, v]) => h('li', {}, h('strong', {}, fmt(v)), h('span', {}, l))))),
+    h('p', {}, step.body),
     h('div', { class: 'sticky-cta' }, cta));
 }
 
@@ -344,7 +365,7 @@ function render() {
   shownAt = Date.now();
   const step = steps[index];
   updateChrome();
-  const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, analysis: renderAnalysis }[step.type](step);
+  const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, savings: renderSavings, analysis: renderAnalysis }[step.type](step);
   screenEl.replaceChildren(view);
   window.scrollTo({ top: 0 });
   view.querySelector('h1')?.setAttribute('tabindex', '-1');

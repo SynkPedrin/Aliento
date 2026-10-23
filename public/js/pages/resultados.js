@@ -414,17 +414,29 @@ function semFumoFunnel(data, me) {
     proyeccion: () => funnelStep(
       h('h1', { class: 'title-lg funnel-step__title' }, 'Lo que puede cambiar en 12 semanas'),
       h('p', {}, h('span', { class: 'estimate-tag' }, 'Estimación')),
-      h('div', { class: 'stats u-mt-16' },
-        p.reductionPercent >= 100 ? stat('En la semana 12', 'Sin fumar', 'si sigues tu plan') : stat('Menos consumo', `−${p.reductionPercent}%`, 'en la semana 12'),
-        stat('Ahorro en 1 año', fmt(p.savingsYear, 0), r.labels?.q_ahorro ? `para «${r.labels.q_ahorro.toLowerCase()}»` : 'estimado')),
-      h('div', { class: 'card u-mt-16' },
-        h('h3', {}, 'Tu objetivo diario, semana a semana'),
-        xyChart({
-          labels: p.schedule.map((_, i) => (i === 0 ? 'Hoy' : `S${i}`)),
-          caption: 'Objetivo diario por semana',
-          format: (v) => num(Math.round(v), locale),
-          series: [{ label: 'Objetivo de tu plan', kind: 'area', values: p.schedule }, { label: 'Consumo actual', kind: 'dashed', values: p.schedule.map(() => r.current.perDay) }],
-        })),
+      h('div', { class: 'result-grid u-mt-16' },
+        h('div', { class: 'card result-card result-card--wide' },
+          h('h3', {}, 'Recuperarás el control antes'),
+          h('p', { class: 'result-card__big' }, p.reductionPercent >= 100 ? 'Sin fumar' : `−${p.reductionPercent}%`, h('span', {}, ' en la semana 12')),
+          xyChart({
+            labels: p.schedule.map((_, i) => (i === 0 ? 'Hoy' : `S${i}`)),
+            caption: 'Objetivo diario por semana',
+            format: (v) => num(Math.round(v), locale),
+            series: [{ label: 'Objetivo de tu plan', kind: 'area', values: p.schedule }, { label: 'Consumo actual', kind: 'dashed', values: p.schedule.map(() => r.current.perDay) }],
+            height: 200,
+          })),
+        h('div', { class: 'card result-card' },
+          h('h3', {}, 'Ahorrarás dinero'),
+          h('p', { class: 'result-card__big' }, fmt(p.savingsYear, 0)),
+          h('p', { class: 'small muted' }, r.labels?.q_ahorro ? `en un año, para «${r.labels.q_ahorro.toLowerCase()}»` : 'en un año')),
+        h('div', { class: 'card result-card' },
+          h('h3', {}, r.current.product === 'vapeador' ? 'Sesiones evitadas' : 'Cigarrillos evitados'),
+          h('p', { class: 'result-card__big' }, num(p.cigarettesAvoided12Weeks, locale)),
+          h('p', { class: 'small muted' }, 'en 12 semanas')),
+        h('div', { class: 'card result-card result-card--wide' },
+          h('h3', {}, 'Tu cuerpo lo notará'),
+          h('ul', { class: 'result-card__list' }, RECOVERY.map(([, when, what]) => h('li', {}, h('strong', {}, `${when}: `), what))),
+          h('p', { class: 'tiny muted' }, 'Fuente: Organización Mundial de la Salud.'))),
       h('p', { class: 'tiny muted u-mt-16' }, 'Calculado con tus respuestas, suponiendo que sigues el objetivo diario de tu plan. No es una garantía: los resultados reales dependen de cada persona.'),
       next('planes')),
     planes: () => salesPage(r, fmt, name, me),
@@ -441,15 +453,54 @@ function semFumoFunnel(data, me) {
   show();
 }
 
-/** Pulmones y corazón recuperándose: el vídeo arranca al entrar en pantalla y se queda en el último fotograma. */
-function healVideo() {
-  const v = h('video', { class: 'funnel-step__img funnel-step__img--dark', src: '/assets/quiz/heal.mp4', poster: '/assets/quiz/heal-start.webp',
-    muted: true, playsinline: true, preload: 'metadata', 'aria-label': 'Pulmones y corazón recuperándose con el tiempo' });
+/**
+ * Pulmones y corazón recuperándose: el vídeo avanza solo al entrar en pantalla y la persona puede
+ * arrastrar la línea de tiempo (20 min → 1 mes). Cada marca muestra su beneficio y su fecha.
+ */
+function lungsTimeline() {
+  const v = h('video', { class: 'lungs__video', src: '/assets/quiz/heal.mp4', poster: '/assets/quiz/heal-start.webp',
+    muted: true, playsinline: true, preload: 'metadata', 'aria-hidden': 'true' });
   v.muted = true; // el atributo solo no basta en Safari para permitir autoplay
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { v.poster = '/assets/quiz/heal-end.webp'; return v; }
-  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { v.play().catch(() => {}); io.disconnect(); } }, { threshold: 0.5 });
-  io.observe(v);
-  return v;
+  const last = RECOVERY.length - 1;
+  const range = h('input', { type: 'range', class: 'lungs__range', min: 0, max: last, step: 0.01, value: 0, 'aria-label': 'Tiempo desde el último cigarrillo' });
+  const caption = h('p', { class: 'lungs__caption', 'aria-live': 'polite' });
+  const marks = h('ol', { class: 'lungs__marks' }, RECOVERY.map(([days, when]) => h('li', {}, h('strong', {}, when), h('span', {}, days ? shortDate(addDays(days)) : 'hoy'))));
+  const show = (pos) => {
+    const i = Math.round(pos);
+    const [, when, what] = RECOVERY[i];
+    caption.replaceChildren(h('strong', {}, `${when}: `), what);
+    [...marks.children].forEach((li, k) => li.classList.toggle('is-active', k === i));
+  };
+  const seek = (pos) => { if (v.duration) v.currentTime = (pos / last) * v.duration; };
+  range.addEventListener('input', () => { v.pause(); seek(Number(range.value)); show(Number(range.value)); });
+  v.addEventListener('timeupdate', () => { if (!v.paused && v.duration) { const pos = (v.currentTime / v.duration) * last; range.value = pos; show(pos); } });
+  show(0);
+  if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { v.play().catch(() => {}); io.disconnect(); } }, { threshold: 0.5 });
+    io.observe(v);
+  }
+  return h('div', { class: 'lungs__box' }, v, range, marks, caption);
+}
+
+// Años de vida ganados al dejar de fumar según la edad (Jha et al., NEJM 2013) y riesgos (OMS).
+const LIFE_YEARS = { '18-24': 'hasta 10 años más', '25-34': 'unos 10 años más', '35-44': 'unos 9 años más', '45-54': 'unos 6 años más', '55-64': 'unos 4 años más', '65+': 'más años y mejor salud' };
+const AGE_LABEL = { '18-24': '18–24', '25-34': '25–34', '35-44': '35–44', '45-54': '45–54', '55-64': '55–64', '65+': '65 o más' };
+
+function ageBenefits(ageLabel) {
+  const id = Object.keys(AGE_LABEL).find((k) => AGE_LABEL[k] === ageLabel);
+  const rows = [
+    ['Esperanza de vida', id ? LIFE_YEARS[id] : 'más años de vida', 1],
+    ['Riesgo de enfermedad coronaria', 'la mitad, al cabo de 1 año', 0.5],
+    ['Riesgo de cáncer de pulmón', 'la mitad, a los 10 años', 0.5],
+    ['Riesgo de ictus', 'como el de un no fumador, en 5–15 años', 0.8],
+  ];
+  return funnelStep(
+    h('p', { class: 'eyebrow' }, 'Lo que obtienes a cambio'),
+    h('h2', { class: 'title-lg' }, id ? `Dejar de fumar a los ${AGE_LABEL[id]} años` : 'Dejar de fumar, a cualquier edad'),
+    h('ul', { class: 'benefit-bars' }, rows.map(([label, value, pct]) => h('li', {},
+      h('p', { class: 'benefit-bars__row' }, h('span', {}, label), h('strong', {}, value)),
+      h('span', { class: 'benefit-bars__track' }, h('span', { class: 'benefit-bars__fill', style: `width:${pct * 100}%` }))))),
+    h('p', { class: 'tiny muted' }, 'Fuentes: Organización Mundial de la Salud; Jha et al., New England Journal of Medicine (2013). Datos de población, no una predicción individual.'));
 }
 
 function salesPage(r, fmt, name, me) {
@@ -476,12 +527,13 @@ function salesPage(r, fmt, name, me) {
     funnelStep(
       h('p', { class: 'eyebrow' }, 'Tu objetivo principal'),
       h('h2', { class: 'title-lg' }, r.labels?.q_meta3m ?? 'Recuperar el control'),
-      h('p', { class: 'lead' }, `${name ? `${name}, ` : ''}${(r.labels?.q_anios ?? '').toLowerCase()} ${vape ? 'vapeando' : 'fumando'}. Tu cuerpo empieza a recuperarse a los 20 minutos de dejar la nicotina.`),
-      healVideo(),
-      h('ol', { class: 'timeline' }, RECOVERY.map(([days, when, what]) => h('li', {},
-        h('p', { class: 'timeline__when' }, when, h('span', { class: 'muted' }, ` · ${days ? shortDate(addDays(days)) : 'hoy'}`)),
-        h('p', {}, what)))),
-      h('p', { class: 'tiny muted' }, 'Fuente: Organización Mundial de la Salud. Las fechas cuentan desde hoy como ejemplo.')),
+      h('p', { class: 'lead' }, `${name ? `${name}, ` : ''}${(r.labels?.q_anios ?? '').toLowerCase()} ${vape ? 'vapeando' : 'fumando'}.`)),
+    h('section', { class: 'theme-deep lungs' },
+      h('div', { class: 'container narrow' },
+        h('h2', { class: 'title-lg lungs__title' }, 'Tu cuerpo aún puede recuperarse.'),
+        lungsTimeline(),
+        h('p', { class: 'tiny lungs__source' }, 'Fuente: Organización Mundial de la Salud. Las fechas cuentan desde hoy como ejemplo.'))),
+    ageBenefits(r.labels?.q_edad),
     funnelStep(
       h('p', { class: 'eyebrow' }, 'Lo que ganas'),
       h('ul', { class: 'feature-list' }, [

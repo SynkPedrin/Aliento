@@ -848,3 +848,47 @@ body.has-cookiebar { padding-bottom: 190px; }
 .analysis__img { width: 180px; height: 180px; object-fit: cover; border-radius: 50%; margin: 0 auto 16px; display: block; }
 .funnel-step__img { width: 100%; max-width: 360px; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius); display: block; margin: 0 auto 20px; }
 .funnel-step__img--dark { max-width: 300px; margin-top: 16px; border-radius: 50%; -webkit-mask-image: radial-gradient(closest-side, #000 82%, transparent 100%); mask-image: radial-gradient(closest-side, #000 82%, transparent 100%); }
+
+/* Quiz v3: pausas oscuras, prueba social y ahorro */
+.info-screen--dark .title-lg { color: #fff; }
+.info-screen--dark p { color: var(--nevoa); }
+.info-screen--dark .eyebrow { color: var(--menta); }
+.info-screen p.info-screen__stat { font: 400 clamp(38px, 10vw, 54px)/1.05 var(--font-title); color: var(--menta); margin-top: 8px; }
+.info-screen__source { opacity: .75; margin-top: 18px !important; font-size: 12.5px !important; }
+.info-screen__people { display: flex; justify-content: center; gap: 0; margin: 0 auto 18px; max-width: 420px; }
+.info-screen__people img { width: 50%; height: auto; object-fit: contain; }
+.savings-bar { margin: 26px auto 8px; max-width: 440px; text-align: left; }
+.savings-bar__track { height: 14px; border-radius: 99px; background: rgba(238, 243, 255, .15); overflow: hidden; }
+.savings-bar__fill { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--respiracao), var(--menta)); transition: width 1.4s var(--ease-out); }
+.savings-bar__marks { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.savings-bar__marks li { display: grid; gap: 2px; text-align: center; }
+.savings-bar__marks li:last-child { text-align: right; }
+.savings-bar__marks li:first-child { text-align: left; }
+.savings-bar__marks strong { font: 400 19px var(--font-title); color: #fff; }
+.savings-bar__marks span { font-size: 12.5px; color: var(--nevoa); }
+@media (prefers-reduced-motion: reduce) { .savings-bar__fill { transition: none; } }
+
+/* Resultado: 4 tarjetas, pulmones con línea de tiempo y beneficios por edad */
+.result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.result-card { padding: 16px; }
+.result-card--wide { grid-column: 1 / -1; }
+.result-card h3 { font-size: 16px; }
+.result-card__big { font: 400 28px/1.15 var(--font-title); color: var(--azul); margin: 6px 0 2px; }
+.result-card__big span { font: 400 14px var(--font-text); color: var(--muted); }
+.result-card__list { margin: 10px 0 8px; padding-left: 18px; display: grid; gap: 6px; font-size: 14.5px; color: var(--ink-2); }
+.lungs { padding: clamp(36px, 7vh, 64px) 0; margin-top: 24px; text-align: center; background: #0d0b1f; }
+.lungs__title { color: #FFB4A2; }
+.lungs__box { margin-top: 20px; }
+.lungs__video { width: 100%; max-width: 360px; aspect-ratio: 1; object-fit: cover; display: block; margin: 0 auto;
+  -webkit-mask-image: radial-gradient(closest-side, #000 82%, transparent 100%); mask-image: radial-gradient(closest-side, #000 82%, transparent 100%); }
+.lungs__range { width: 100%; max-width: 420px; margin: 18px auto 0; display: block; accent-color: #FFB4A2; min-height: 32px; }
+.lungs__marks { list-style: none; margin: 4px auto 0; padding: 0; max-width: 420px; display: grid; grid-template-columns: repeat(4, 1fr); font-size: 12px; color: var(--nevoa); }
+.lungs__marks li { display: grid; gap: 2px; opacity: .6; transition: opacity var(--motion-fast); }
+.lungs__marks li.is-active { opacity: 1; color: #FFB4A2; }
+.lungs__caption { margin: 18px auto 0; max-width: 420px; color: #fff; font-size: 16.5px; min-height: 3em; }
+.lungs__source { margin-top: 16px; color: var(--nevoa); opacity: .75; }
+.benefit-bars { list-style: none; margin: 18px 0 12px; padding: 0; display: grid; gap: 16px; }
+.benefit-bars__row { display: flex; justify-content: space-between; gap: 12px; font-size: 15px; margin-bottom: 6px; }
+.benefit-bars__row strong { text-align: right; color: var(--azul); }
+.benefit-bars__track { display: block; height: 10px; border-radius: 99px; background: var(--ar); overflow: hidden; }
+.benefit-bars__fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--azul), var(--menta)); }

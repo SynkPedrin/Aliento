@@ -536,7 +536,7 @@ export function computeResult(answers, options = {}) {
     radar,
     smokerType: { id: top.id, ...SMOKER_TYPES[top.id] },
     // Textos de respuestas que la página de resultado repite («{años} fumando», «dentro de 3 meses…»).
-    labels: Object.fromEntries(['q_anios', 'q_meta3m', 'q_ahorro', 'q_producto'].map((id) => [id, optionLabel(id, answers[id])])),
+    labels: Object.fromEntries(['q_anios', 'q_meta3m', 'q_ahorro', 'q_producto', 'q_edad'].map((id) => [id, optionLabel(id, answers[id])])),
     projection: {
       weeks: PROJECTION_WEEKS,
       schedule,
