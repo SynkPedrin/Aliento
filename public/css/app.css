@@ -817,8 +817,22 @@ body.has-cookiebar { padding-bottom: 190px; }
 .week-strip li { display: grid; gap: 2px; }
 .week-strip strong { font: 400 22px var(--font-title); }
 .week-strip span { font-size: 12px; text-transform: uppercase; color: var(--muted); }
-.week-strip__stamp { display: inline-block; margin-top: 14px; padding: 6px 14px; border: 2px solid var(--azul); color: var(--azul); border-radius: 10px;
-  font: 700 13px var(--font-text); letter-spacing: .1em; text-transform: uppercase; transform: rotate(-4deg); }
+.week-strip { padding-top: 40px; }
+.week-strip li { gap: 6px; justify-items: center; }
+.week-strip__item { position: relative; height: 96px; display: grid; align-items: end; justify-items: center; }
+.week-strip__cig { height: 96px; width: auto; display: block; }
+.week-strip__stamp { position: absolute; top: 46%; left: 50%; margin: 0; padding: 6px 14px; border: 3px solid var(--azul); color: var(--azul); background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-radius: 10px; font: 800 15px var(--font-text); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transform: translate(-50%, -88%) rotate(-9deg); }
+/* Cigarro / pod animados del calendario (mismo diseño del embudo de referencia). */
+.smk-vape { background: linear-gradient(0deg, #3a271d 0, #3a271d 64%, #c49a80 64%, #c49a80 80%, #2b1a11 80%); border-radius: 7px; width: 14px; height: 76px; position: relative; box-shadow: 0 6px 10px -6px rgba(43, 26, 17, .4); }
+.smk-vape::before { content: ''; background: #2b1a11; border-radius: 3px 3px 0 0; width: 8px; height: 8px; position: absolute; top: -6px; left: 3px; }
+.smk-glow { width: 16px; height: 16px; animation: smk-glow 2.6s ease-in-out infinite; pointer-events: none; background: radial-gradient(circle, rgba(255, 120, 45, .75), rgba(255, 120, 45, 0) 70%); border-radius: 50%; margin-left: -8px; position: absolute; top: -5px; left: 50%; }
+@keyframes smk-glow { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+.smk-wisp { width: 10px; height: 26px; animation: smk-wisp 3.2s ease-out infinite; border-left: 2px solid rgba(138, 116, 102, .45); border-radius: 50%; margin-left: -5px; position: absolute; top: -30px; left: 50%; }
+@keyframes smk-wisp { 0% { opacity: 0; transform: translateY(8px) scaleX(1); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px) scaleX(-1.4); } }
+.smk-stamp { animation: smk-stamp .55s cubic-bezier(.3, 1.6, .5, 1) .4s both; }
+@keyframes smk-stamp { 0% { opacity: 0; transform: translate(-50%, -88%) rotate(-9deg) scale(1.9); } 100% { opacity: 1; transform: translate(-50%, -88%) rotate(-9deg) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .smk-glow, .smk-stamp { animation: none; } .smk-wisp { display: none; } }
 .timeline { list-style: none; margin: 20px 0 12px; padding: 0 0 0 22px; border-left: 2px solid var(--line); display: grid; gap: 18px; }
 .timeline li { position: relative; }
 .timeline li::before { content: ''; position: absolute; left: -29px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--menta); border: 2px solid var(--bg); }
@@ -831,3 +845,6 @@ body.has-cookiebar { padding-bottom: 190px; }
 .faq__item { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px 16px; background: var(--surface); }
 .faq__item summary { cursor: pointer; font-weight: 600; }
 .faq__item p { margin-top: 10px; color: var(--ink-2); }
+.analysis__img { width: 180px; height: 180px; object-fit: cover; border-radius: 50%; margin: 0 auto 16px; display: block; }
+.funnel-step__img { width: 100%; max-width: 360px; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius); display: block; margin: 0 auto 20px; }
+.funnel-step__img--dark { max-width: 300px; margin-top: 16px; border-radius: 50%; -webkit-mask-image: radial-gradient(closest-side, #000 82%, transparent 100%); mask-image: radial-gradient(closest-side, #000 82%, transparent 100%); }

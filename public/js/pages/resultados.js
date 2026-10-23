@@ -407,6 +407,7 @@ function semFumoFunnel(data, me) {
       h('div', { class: 'card funnel-radar' }, radarChart(r.radar, { caption: 'Tu perfil' })),
       next('explicacion')),
     explicacion: () => funnelStep(
+      h('img', { class: 'funnel-step__img', src: '/assets/quiz/male-smoking.webp', alt: '' }),
       h('h1', { class: 'title-lg funnel-step__title' }, name ? `${name}, esto es lo que hace única tu situación` : 'Esto es lo que hace única tu situación'),
       h('p', { class: 'funnel-step__body' }, r.smokerType.body),
       next('proyeccion')),
@@ -440,23 +441,43 @@ function semFumoFunnel(data, me) {
   show();
 }
 
+/** Pulmones y corazón recuperándose: el vídeo arranca al entrar en pantalla y se queda en el último fotograma. */
+function healVideo() {
+  const v = h('video', { class: 'funnel-step__img funnel-step__img--dark', src: '/assets/quiz/heal.mp4', poster: '/assets/quiz/heal-start.webp',
+    muted: true, playsinline: true, preload: 'metadata', 'aria-label': 'Pulmones y corazón recuperándose con el tiempo' });
+  v.muted = true; // el atributo solo no basta en Safari para permitir autoplay
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { v.poster = '/assets/quiz/heal-end.webp'; return v; }
+  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { v.play().catch(() => {}); io.disconnect(); } }, { threshold: 0.5 });
+  io.observe(v);
+  return v;
+}
+
 function salesPage(r, fmt, name, me) {
   const week = Array.from({ length: 7 }, (_, i) => addDays(i));
+  const vape = ['vapeador', 'snus'].includes(r.current.product);
   const paywallRoot = h('div');
   const page = h('div', { class: 'sales' },
     funnelStep(
       h('h1', { class: 'title-xl sales__hook' }, 'No tienes que dejarlo hoy.'),
-      h('p', { class: 'lead' }, 'Fumar es automático: la mano va sola antes de que lo pienses. Por eso, durante la primera semana sigues como siempre mientras Alento aprende tu patrón. Después te decimos cuándo y cómo dar cada paso.'),
+      h('p', { class: 'lead' }, `${vape ? 'Vapear' : 'Fumar'} es automático: la mano va sola antes de que lo pienses. Por eso, durante la primera semana sigues como siempre mientras Alento aprende tu patrón. Después te decimos cuándo y cómo dar cada paso.`),
       h('div', { class: 'card week-strip' },
-        h('ol', {}, week.map((d) => h('li', {}, h('strong', {}, d.getDate()), h('span', {}, new Intl.DateTimeFormat('es', { weekday: 'short' }).format(d))))),
-        h('p', { class: 'week-strip__stamp' }, 'Semana de observación')),
+        h('ol', {}, week.map((d, i) => {
+          const delay = { style: `animation-delay:${(0.45 * i).toFixed(2)}s` };
+          return h('li', {},
+            h('div', { class: 'week-strip__item' },
+              vape ? h('div', { class: 'smk-vape', ...delay }) : [h('img', { src: '/assets/quiz/cigarette.webp', alt: '', class: 'week-strip__cig' }), h('span', { class: 'smk-glow', ...delay, 'aria-hidden': 'true' })],
+              h('span', { class: 'smk-wisp', ...delay, 'aria-hidden': 'true' })),
+            h('strong', {}, d.getDate()), h('span', {}, new Intl.DateTimeFormat('es', { weekday: 'short' }).format(d)));
+        })),
+        h('p', { class: 'week-strip__stamp smk-stamp' }, vape ? 'Puedes vapear' : 'Puedes fumar')),
       h('div', { class: 'stats u-mt-16' },
         stat(r.current.product === 'vapeador' ? 'Sesiones al año' : 'Cigarrillos al año', num(r.current.perYear), 'a tu ritmo actual'),
         stat('Gasto al año', fmt(r.current.yearlySpend, 0), 'si sigues igual'))),
     funnelStep(
       h('p', { class: 'eyebrow' }, 'Tu objetivo principal'),
       h('h2', { class: 'title-lg' }, r.labels?.q_meta3m ?? 'Recuperar el control'),
-      h('p', { class: 'lead' }, `${name ? `${name}, ` : ''}${(r.labels?.q_anios ?? '').toLowerCase()} fumando. Tu cuerpo empieza a recuperarse a los 20 minutos del último cigarrillo.`),
+      h('p', { class: 'lead' }, `${name ? `${name}, ` : ''}${(r.labels?.q_anios ?? '').toLowerCase()} ${vape ? 'vapeando' : 'fumando'}. Tu cuerpo empieza a recuperarse a los 20 minutos de dejar la nicotina.`),
+      healVideo(),
       h('ol', { class: 'timeline' }, RECOVERY.map(([days, when, what]) => h('li', {},
         h('p', { class: 'timeline__when' }, when, h('span', { class: 'muted' }, ` · ${days ? shortDate(addDays(days)) : 'hoy'}`)),
         h('p', {}, what)))),

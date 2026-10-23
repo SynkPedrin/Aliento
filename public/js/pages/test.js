@@ -206,7 +206,7 @@ function renderInfo(step) {
   const picked = step.personalizedBy ? [].concat(answers[step.personalizedBy] ?? []) : [];
   const paras = Object.keys(step.variants ?? {}).filter((k) => picked.includes(k)).slice(0, 2).map((k) => step.variants[k]);
   return h('section', { class: 'quiz__screen info-screen' },
-    step.image ? h('img', { class: 'info-screen__img', src: step.image, alt: '', loading: 'eager' }) : h('div', { html: MARK_SVG }),
+    step.image ? h('img', { class: 'info-screen__img', src: step.imageByGender?.[answers.q_genero] ?? step.image, alt: '', loading: 'eager' }) : h('div', { html: MARK_SVG }),
     step.eyebrow ? h('p', { class: 'eyebrow' }, step.eyebrow) : null,
     h('h1', { class: 'title-lg' }, step.title),
     ...(paras.length ? paras : [step.body]).map((t) => h('p', {}, t)),
@@ -218,7 +218,7 @@ function renderAnalysis(step) {
   const pctEl = h('p', { class: 'analysis__pct' }, '0%');
   const items = step.items.map((t) => h('li', {}, h('span', { class: 'checklist__dot', 'aria-hidden': 'true' }), t));
   const status = h('p', { class: 'sr-only', 'aria-live': 'polite' });
-  const section = h('section', { class: 'quiz__screen analysis' }, h('h1', {}, step.title), pctEl, bar, h('ul', { class: 'checklist' }, items),
+  const section = h('section', { class: 'quiz__screen analysis' }, step.image ? h('img', { class: 'analysis__img', src: step.image, alt: '' }) : null, h('h1', {}, step.title), pctEl, bar, h('ul', { class: 'checklist' }, items),
     h('p', { class: 'help analysis__note' }, 'Tus respuestas son privadas y solo se usan para crear tu plan.'), status);
 
   const completion = api('/api/assessment/complete', { method: 'POST', body: { program: PROGRAM } });

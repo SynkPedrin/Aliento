@@ -227,7 +227,8 @@ export const STEPS = [
     id: 'info_disfrute',
     type: 'info',
     personalizedBy: 'q_disfrute',
-    image: '/assets/images/IMG_012_SMALL_WINS.jpg', // shortcut: foto provisional, sustituir por la imagen generada del quiz
+    image: '/assets/quiz/man-breathes.webp',
+    imageByGender: { mujer: '/assets/quiz/woman-breathes.webp' },
     title: 'Lo que disfrutas tiene explicación',
     body: 'Cada cigarrillo te da algo concreto. Cuando sabes qué es, puedes conseguirlo de otra forma, sin la nicotina.',
     // Un párrafo por cada opción elegida (máximo dos), en el orden de la pregunta.
@@ -306,6 +307,7 @@ export const STEPS = [
     id: 'analisis',
     type: 'analysis',
     title: 'Analizando tus respuestas…',
+    image: '/assets/quiz/male-coffee.webp',
     items: [
       'Perfil y contexto diario',
       'Patrones y desencadenantes',
