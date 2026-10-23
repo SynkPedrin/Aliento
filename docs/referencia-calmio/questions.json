@@ -1,0 +1,654 @@
+[
+ {
+  "id": "0a1b2c3d-4e5f-4a6b-8c7d-0e1f2a3b4c5d",
+  "text": "Tu género",
+  "order": 1,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "d7936d6e-6853-4c39-b084-d9fe1bdd66df",
+    "order": 1,
+    "value": "Hombre",
+    "icon": "male.webp",
+    "type": "TEXT"
+   },
+   {
+    "id": "b73382a2-49b9-4005-be3c-3134f0978b26",
+    "order": 2,
+    "value": "Mujer",
+    "icon": "female.webp",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "1b2c3d4e-5f60-4b7c-9d8e-1f2a3b4c5d6e",
+  "text": "¿Cuántos años tienes?",
+  "order": 2,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "0f2665bc-e4f7-4af9-ac84-418a61ad07e0",
+    "order": 1,
+    "value": "18–24",
+    "type": "TEXT"
+   },
+   {
+    "id": "8fce74d5-2cd4-409c-9a28-eb5ce5b269c9",
+    "order": 2,
+    "value": "25–34",
+    "type": "TEXT"
+   },
+   {
+    "id": "24d58b24-0068-4ad3-b546-ee1473ebaa91",
+    "order": 3,
+    "value": "35–44",
+    "type": "TEXT"
+   },
+   {
+    "id": "a7e4f563-02a8-4b48-bec9-dc2a7f1c670f",
+    "order": 4,
+    "value": "45–54",
+    "type": "TEXT"
+   },
+   {
+    "id": "242fe100-cb07-4b95-a412-9ba4bde0573c",
+    "order": 5,
+    "value": "55–64",
+    "type": "TEXT"
+   },
+   {
+    "id": "fe596ff3-f7ff-4dd3-9b43-a0bd4a9374f7",
+    "order": 6,
+    "value": "65+",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "2c3d4e5f-6071-4c8d-8e9f-2a3b4c5d6e7f",
+  "text": "¿Cuál es tu forma principal de nicotina?",
+  "order": 3,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "d6c8c8e4-f455-46f0-aa02-65774f630265",
+    "order": 1,
+    "value": "Cigarrillos",
+    "type": "TEXT"
+   },
+   {
+    "id": "6a2a41e2-3bda-4bf4-b310-ba1bfc679748",
+    "order": 2,
+    "value": "Cigarrillo electrónico / Vape",
+    "type": "TEXT"
+   },
+   {
+    "id": "24ef9e80-f947-4d54-9fd7-fdb2bacca8a3",
+    "order": 3,
+    "value": "Tabaco calentado (p. ej., IQOS)",
+    "type": "TEXT"
+   },
+   {
+    "id": "de721e91-99e9-4c2b-a96d-a2ae980346d3",
+    "order": 4,
+    "value": "Puros",
+    "type": "TEXT"
+   },
+   {
+    "id": "93029a10-7f61-4617-b17c-98f4ebb32892",
+    "order": 5,
+    "value": "Shisha / Narguile",
+    "type": "TEXT"
+   },
+   {
+    "id": "d3bd90c6-2158-40f3-8c41-335aaa05e066",
+    "order": 6,
+    "value": "Sobres / Snus",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "c9e4bc15-8dc2-4113-882f-e17f56027a40",
+  "text": "¿Cuántos años llevas fumando de forma habitual?",
+  "order": 4,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "f61e476d-3c07-4a6f-b089-eb7592c8f031",
+    "order": 1,
+    "value": "<1 año",
+    "type": "TEXT"
+   },
+   {
+    "id": "ec8d061e-cfad-4974-9348-ded86b7854de",
+    "order": 2,
+    "value": "1-2 años",
+    "type": "TEXT"
+   },
+   {
+    "id": "44e5e8d7-cbd8-471b-b099-2d9b0ee7d7fb",
+    "order": 3,
+    "value": "3-5 años",
+    "type": "TEXT"
+   },
+   {
+    "id": "f269bd66-5272-4052-b253-91057c728377",
+    "order": 4,
+    "value": "De 6 a 9 años",
+    "type": "TEXT"
+   },
+   {
+    "id": "e2155d6a-0f29-4180-8c2a-04881ed6cff7",
+    "order": 5,
+    "value": "Más de 10 años",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "3d4e5f60-7182-4d9e-9f0a-3b4c5d6e7f80",
+  "text": "En un día normal, ¿cuántas veces fumas?",
+  "order": 5,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "67c77210-a294-480a-af61-f1aa1958fc96",
+    "order": 1,
+    "value": "1–2",
+    "type": "TEXT"
+   },
+   {
+    "id": "34e9cbb9-75f6-4289-af56-c36e831bdb05",
+    "order": 2,
+    "value": "3–5",
+    "type": "TEXT"
+   },
+   {
+    "id": "4334b48b-df43-47d2-b020-376462c85591",
+    "order": 3,
+    "value": "6–10",
+    "type": "TEXT"
+   },
+   {
+    "id": "acef428d-b779-4e7d-ade0-e7f432fcdbec",
+    "order": 4,
+    "value": "11–20",
+    "type": "TEXT"
+   },
+   {
+    "id": "c338b230-2672-48be-bfbe-51677d152f1e",
+    "order": 5,
+    "value": "21+",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "4e5f6071-8293-4eaf-8a0b-4c5d6e7f8091",
+  "text": "Cuando te levantas, ¿cuándo te tomas tu primera dosis de nicotina?",
+  "order": 6,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "d87e1680-4970-4098-98d4-39c3ce2a8da8",
+    "order": 1,
+    "value": "En 5 minutos",
+    "type": "TEXT"
+   },
+   {
+    "id": "73d5bd8f-dfe6-48eb-a885-f99a362a32e8",
+    "order": 2,
+    "value": "De 5 a 30 minutos",
+    "type": "TEXT"
+   },
+   {
+    "id": "907c04cd-293f-498f-ad4a-e0daed3d93a8",
+    "order": 3,
+    "value": "31–60 minutos",
+    "type": "TEXT"
+   },
+   {
+    "id": "c285704b-a880-4826-bdd0-f642e87fc918",
+    "order": 4,
+    "value": "Pasados 60 minutos",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "5f607182-93a4-4fb0-9b1c-5d6e7f8091a2",
+  "text": "¿Sigues consumiendo nicotina cuando te enfermas?",
+  "order": 7,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "dc91541d-3f19-41fc-8394-87db121fa490",
+    "order": 1,
+    "value": "Sí",
+    "type": "TEXT"
+   },
+   {
+    "id": "0e711124-ea8d-46eb-959c-3596ca682da1",
+    "order": 2,
+    "value": "No",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "60718293-a4b5-40c1-8c2d-6e7f8091a2b3",
+  "text": "¿Cómo te sientes normalmente en los sitios donde no se puede fumar?",
+  "order": 8,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "809ded48-2c14-4336-bdca-5d2a0f27f3c8",
+    "order": 1,
+    "value": "Con calma, no me importa esperar",
+    "type": "TEXT"
+   },
+   {
+    "id": "6f304eec-a6c0-4bc6-8096-5ad536a7aa29",
+    "order": 2,
+    "value": "Me siento un poco a disgusto, pero me las arreglo",
+    "type": "TEXT"
+   },
+   {
+    "id": "0aa6e6f3-01f7-4c85-b2d4-0ec2be7f1c33",
+    "order": 3,
+    "value": "Me irrito o me desconcentro hasta que fumo",
+    "type": "TEXT"
+   },
+   {
+    "id": "d1ce45e4-95dc-4eeb-907a-130f4f13ec1b",
+    "order": 4,
+    "value": "Siento mucha tensión o inquietud: de verdad lo necesito",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "718293a4-b5c6-41d2-9d3e-7f8091a2b3c4",
+  "text": "Si no pudieras conseguir tu dosis habitual de nicotina durante 24 horas, ¿qué harías?",
+  "order": 9,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "221fe841-2444-47c4-9b6c-aa609e7d0435",
+    "order": 1,
+    "value": "Aguantarme y pasar sin ella",
+    "type": "TEXT"
+   },
+   {
+    "id": "bd146ca4-1c63-4c12-acbe-4e790cf3de7a",
+    "order": 2,
+    "value": "Comprar cualquier marca o dispositivo disponible",
+    "type": "TEXT"
+   },
+   {
+    "id": "ccdd0cd0-d9fd-4b0e-9269-e1de31222444",
+    "order": 3,
+    "value": "Pedirle a algún amigo",
+    "type": "TEXT"
+   },
+   {
+    "id": "73c5e118-951e-4e04-b721-67689ec46fc5",
+    "order": 4,
+    "value": "Tomar café, comer algo o mascar chicle en su lugar",
+    "type": "TEXT"
+   },
+   {
+    "id": "93729a03-f176-4ed1-b86a-416a2e9f4ac5",
+    "order": 5,
+    "value": "Usar sustitutos de nicotina (parche, chicle o pastillas) ese día",
+    "type": "TEXT"
+   },
+   {
+    "id": "a77c7212-6913-4313-a180-9dbc51635aa6",
+    "order": 6,
+    "value": "Ir más lejos para conseguirlo",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "8293a4b5-c6d7-42e3-8e4f-8091a2b3c4d5",
+  "text": "¿Tu consumo es sobre todo…",
+  "order": 10,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "0ef4c58e-871b-4014-8fce-c607abb54a1a",
+    "order": 1,
+    "value": "Programado (horarios fijos)",
+    "type": "TEXT"
+   },
+   {
+    "id": "0ee6209e-36fc-4888-881a-7fa6a738f313",
+    "order": 2,
+    "value": "Automático (sin pensarlo)",
+    "type": "TEXT"
+   },
+   {
+    "id": "0665e2cc-dfd8-48a5-9c6e-95763839d4fb",
+    "order": 3,
+    "value": "Mixto",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "93a4b5c6-d7e8-43f4-9f50-091a2b3c4d5e",
+  "text": "¿Qué es lo que suele llevar a consumir nicotina?",
+  "order": 11,
+  "type": "MULTISELECT",
+  "options": [
+   {
+    "id": "f7ae2fde-2c0c-4cc9-8fbb-a6a643bce90e",
+    "order": 1,
+    "value": "Estrés o ansiedad",
+    "type": "TEXT"
+   },
+   {
+    "id": "bb7c40e2-1677-4b3a-881d-3d374be0cdd1",
+    "order": 2,
+    "value": "Aburrimiento o bajón",
+    "type": "TEXT"
+   },
+   {
+    "id": "595c019d-0546-4125-b1ef-e383e38c9156",
+    "order": 3,
+    "value": "Planes sociales o salidas nocturnas",
+    "type": "TEXT"
+   },
+   {
+    "id": "eaa55894-499a-44e7-8803-aaad2a3d933d",
+    "order": 4,
+    "value": "Después de comer / con el café",
+    "type": "TEXT"
+   },
+   {
+    "id": "c82c32c7-2810-4f3b-b99a-d3d577197a06",
+    "order": 5,
+    "value": "Descanso del trabajo o de los estudios, o para concentrarte mejor",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "a4b5c6d7-e8f9-4405-8a61-91a2b3c4d5e6",
+  "text": "¿Qué es lo que más te daría miedo si dejaras de fumar?",
+  "order": 12,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "9086eb83-5e0c-437a-84f3-8a1e8c72cf06",
+    "order": 1,
+    "value": "Engordar o comer más",
+    "type": "TEXT"
+   },
+   {
+    "id": "c4fdcbb5-34aa-4d92-9c92-80a12485c247",
+    "order": 2,
+    "value": "Sentir más estrés o ansiedad",
+    "type": "TEXT"
+   },
+   {
+    "id": "51035e06-c23e-4f09-a9c5-31f434832f1f",
+    "order": 3,
+    "value": "Perder momentos de convivencia o de conexión",
+    "type": "TEXT"
+   },
+   {
+    "id": "46d1e294-6501-4910-8213-d5843db9b962",
+    "order": 4,
+    "value": "Sentir aburrimiento o vacío sin ello",
+    "type": "TEXT"
+   },
+   {
+    "id": "d60393e8-19b6-4a20-9b5f-b6c7e593f168",
+    "order": 5,
+    "value": "No poder relajarte ni concentrarte",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "c6d7e8f9-0123-4627-8c83-b3c4d5e6f709",
+  "text": "Si nadie supiera que fumas, ¿te resultaría más fácil dejarlo?",
+  "order": 13,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "6ffbcf99-5ca6-44a4-aea2-5237c6b18c3c",
+    "order": 1,
+    "value": "Más fácil",
+    "type": "TEXT"
+   },
+   {
+    "id": "39080e2e-266c-49a2-b86c-5c0c92dd2e86",
+    "order": 2,
+    "value": "Más difícil",
+    "type": "TEXT"
+   },
+   {
+    "id": "dc41e9be-cf90-4ff9-902a-e0d6f6b5078c",
+    "order": 3,
+    "value": "Lo mismo",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "d7e8f901-2345-4738-9d94-c4d5e6f7091a",
+  "text": "Si tu amigo fumador más cercano deja de fumar, ¿aumentan tus posibilidades?",
+  "order": 14,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "9aad3094-2761-40ca-9936-d9541c58ddfb",
+    "order": 1,
+    "value": "Sí",
+    "type": "TEXT"
+   },
+   {
+    "id": "447d60c8-d544-41dc-9908-3f944d82e82f",
+    "order": 2,
+    "value": "No",
+    "type": "TEXT"
+   },
+   {
+    "id": "afd92018-925f-4886-92d5-fd42254f5eba",
+    "order": 3,
+    "value": "Sin efecto",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "e8f90123-4567-4849-8ea5-d5e6f7091a2b",
+  "text": "¿Qué es lo que más te gusta de eso?",
+  "order": 15,
+  "type": "MULTISELECT",
+  "options": [
+   {
+    "id": "ff1f5b9c-1c89-4cb6-b67d-82083493d5a8",
+    "order": 1,
+    "value": "El gesto de llevarse la mano a la boca",
+    "type": "TEXT"
+   },
+   {
+    "id": "a2a92790-eabe-4e08-87b8-0b8a7524f143",
+    "order": 2,
+    "value": "Sabor o sensación en la garganta",
+    "type": "TEXT"
+   },
+   {
+    "id": "600429ab-77dc-44d9-adb8-24c3901842dc",
+    "order": 3,
+    "value": "La sensación al inhalar / exhalar",
+    "type": "TEXT"
+   },
+   {
+    "id": "0e5e28d3-acd7-443f-8d27-b57e3ce231a2",
+    "order": 4,
+    "value": "Un descanso / una pausa",
+    "type": "TEXT"
+   },
+   {
+    "id": "5ca84eac-0e30-484a-bddb-78e97ae152c5",
+    "order": 5,
+    "value": "Relaciones sociales",
+    "type": "TEXT"
+   },
+   {
+    "id": "a9820488-9eb5-4eba-abf5-b1192f9a814a",
+    "order": 6,
+    "value": "Mejor concentración",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "f9012345-6789-495a-9fb6-e6f7091a2b3c",
+  "text": "¿Qué has probado para reducir o dejar de fumar?",
+  "order": 16,
+  "type": "MULTISELECT",
+  "options": [
+   {
+    "id": "1c8ed75d-6ff1-4af8-b76e-052bf8d5cc68",
+    "order": 1,
+    "value": "De momento nada",
+    "type": "TEXT"
+   },
+   {
+    "id": "e525e1ea-745b-40bd-8d45-76ce3a35fafa",
+    "order": 2,
+    "value": "De golpe",
+    "type": "TEXT"
+   },
+   {
+    "id": "74e4685a-d18a-4878-b9f5-8cc077a5205d",
+    "order": 3,
+    "value": "Coaching / terapia",
+    "type": "TEXT"
+   },
+   {
+    "id": "fcda261d-fc64-466c-8cdf-9e3650643d65",
+    "order": 4,
+    "value": "Hipnosis",
+    "type": "TEXT"
+   },
+   {
+    "id": "86d9c553-18e3-4705-9d30-16063f0fe701",
+    "order": 5,
+    "value": "Medicamentos",
+    "type": "TEXT"
+   },
+   {
+    "id": "ca7e58b1-5a68-4999-9d4e-6938c8fb64a3",
+    "order": 6,
+    "value": "Rehabilitación / programa",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "01234567-89ab-4a6b-8cc7-f7091a2b3c4d",
+  "text": "¿Cuál es tu objetivo ahora mismo?",
+  "order": 17,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "c911ca69-47d3-4860-8d27-53d08c9900de",
+    "order": 1,
+    "value": "Dejarlo por completo",
+    "type": "TEXT"
+   },
+   {
+    "id": "9e528256-7962-41be-ac26-a7e5a6f79d29",
+    "order": 2,
+    "value": "Reducir el consumo",
+    "type": "TEXT"
+   },
+   {
+    "id": "1128077a-1c11-45c2-a179-90ca8be12137",
+    "order": 3,
+    "value": "Sin tabaco, se permite la nicotina (terapia de sustitución de nicotina)",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "fedcba98-7654-4c3d-8ee9-81a2b3c4d5e6",
+  "text": "¿Cuánto te gastas más o menos al mes en nicotina?",
+  "order": 18,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "eabdd995-94a3-45fa-a316-5d98fdb34e82",
+    "order": 1,
+    "value": "$$0–49",
+    "type": "TEXT"
+   },
+   {
+    "id": "953820d3-877e-4ab8-b991-912fb439651b",
+    "order": 2,
+    "value": "$$50–149",
+    "type": "TEXT"
+   },
+   {
+    "id": "e75c3017-0800-4462-9a62-a2341267746e",
+    "order": 3,
+    "value": "$$150–299",
+    "type": "TEXT"
+   },
+   {
+    "id": "23c07645-d372-45f9-8992-86edbed237b0",
+    "order": 4,
+    "value": "$$300+",
+    "type": "TEXT"
+   }
+  ]
+ },
+ {
+  "id": "89abcdef-0123-4b5c-9dd8-091a2b3c4d5e",
+  "text": "¿Dónde te gustaría estar dentro de tres meses?",
+  "order": 19,
+  "type": "OPTION",
+  "options": [
+   {
+    "id": "4580a2a5-cf90-4a2e-a43c-56aa2618149e",
+    "order": 1,
+    "value": "Dormir mejor y tener la mente despejada",
+    "type": "TEXT"
+   },
+   {
+    "id": "4e6e7516-caa0-468d-928f-a1a9431cef48",
+    "order": 2,
+    "value": "Con más confianza y más control",
+    "type": "TEXT"
+   },
+   {
+    "id": "d4800174-363b-41c2-b6e5-c1489c287c5a",
+    "order": 3,
+    "value": "Más sociable sin necesidad de nicotina",
+    "type": "TEXT"
+   },
+   {
+    "id": "e94f57fa-82eb-4f99-b3ec-ed467525092b",
+    "order": 4,
+    "value": "Más feliz y con equilibrio emocional",
+    "type": "TEXT"
+   },
+   {
+    "id": "64411a66-2a25-4fe1-a891-e67cc0569a79",
+    "order": 5,
+    "value": "Con más productividad y concentración",
+    "type": "TEXT"
+   }
+  ]
+ }
+]
