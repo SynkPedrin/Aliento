@@ -1,5 +1,5 @@
 // Panel de Operación y Growth: SPA por hash (#/overview, #/funnel, …). Solo equipo con 2FA.
-import { $, ApiError, api, brandLink, h, localDay, toast } from '../ui.js';
+import { $, ApiError, api, brandLink, h, localDay, setBusy, toast } from '../ui.js';
 import { act, errorEl, loadingEl, state, field } from '../growth/lib.js';
 import { acquisition, creatives, funnel, overview, sales } from '../growth/screens1.js';
 import { ai, emails, experiments, people } from '../growth/screens2.js';
@@ -47,6 +47,30 @@ function buildHash(name, params) {
 // ---- Acceso
 function fullPage(...children) {
   root.replaceChildren(h('main', { class: 'gr-auth', id: 'gr-main' }, h('div', { class: 'card gr-auth__card' }, brandLink('/'), ...children)));
+}
+
+// Login exclusivo do painel: só e-mail e senha. Contas novas são criadas lá dentro (Configurações → Equipe).
+function loginScreen() {
+  const email = h('input', { class: 'input', id: 'gr-email', type: 'email', autocomplete: 'username', required: '' });
+  const pass = h('input', { class: 'input', id: 'gr-pass', type: 'password', autocomplete: 'current-password', required: '' });
+  const msg = h('p', { class: 'help is-high', role: 'alert' });
+  const submit = async (e) => {
+    e.preventDefault();
+    msg.textContent = '';
+    const btn = e.submitter;
+    setBusy(btn, true, 'Entrando…');
+    try {
+      await api('/api/auth/login', { method: 'POST', body: { email: email.value.trim(), password: pass.value } });
+      start();
+    } catch (err) {
+      setBusy(btn, false);
+      msg.textContent = err.status === 429 ? 'Muitas tentativas. Aguarde alguns minutos.' : 'E-mail ou senha incorretos.';
+    }
+  };
+  fullPage(h('h1', { class: 'gr-title' }, 'Painel de gestão'),
+    h('form', { class: 'stack', onsubmit: submit }, field('gr-email', 'E-mail', email), field('gr-pass', 'Senha', pass), msg,
+      h('button', { class: 'btn', type: 'submit' }, 'Entrar')));
+  email.focus();
 }
 
 function twofaScreen(me) {
@@ -148,7 +172,7 @@ async function render() {
 }
 
 function handleAuth(err, main) {
-  if (err instanceof ApiError && err.status === 401) { location.replace('/acceso?next=/growth'); return; }
+  if (err instanceof ApiError && err.status === 401) { me = null; loginScreen(); return; }
   if (err instanceof ApiError && err.status === 428) { me = null; twofaScreen({ twofa: { enabled: true } }); return; }
   main.replaceChildren(errorEl(err, render));
 }
@@ -164,7 +188,7 @@ async function start() {
   try {
     me = await api('/api/growth/me');
   } catch (err) {
-    if (err.status === 401) { location.replace('/acceso?next=/growth'); return; }
+    if (err.status === 401) { loginScreen(); return; }
     if (err.status === 428) { twofaScreen({ twofa: { enabled: true } }); me = null; return; }
     root.replaceChildren(h('div', { class: 'gr-wrap' }, errorEl(err, start)));
     return;

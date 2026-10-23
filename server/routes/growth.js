@@ -378,7 +378,14 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
   }));
   r.post('/staff', wrap(async (req, res) => {
     adminOnly(req); masterOnly();
-    const out = await staff.grant({ email: String(req.body?.email ?? ''), role: String(req.body?.role ?? '') });
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    const password = String(req.body?.password ?? '');
+    // Membro novo: a conta é criada aqui mesmo, com senha inicial (o painel não tem cadastro público).
+    if (!(await q.one('select 1 from auth.users where lower(email) = $1', [email]))) {
+      if (password.length < 10) throw new HttpError(422, 'Essa pessoa ainda não tem conta: defina uma senha inicial com pelo menos 10 caracteres.', 'INVALID', { field: 'password' });
+      await auth.register({ name: String(req.body?.name ?? '').trim().slice(0, 80) || email.split('@')[0], email, password, timezone: config.growth.timezone });
+    }
+    const out = await staff.grant({ email, role: String(req.body?.role ?? '') });
     await audit(req, 'staff.grant', 'staff', out?.userId ?? req.body?.email, { role: req.body?.role });
     res.json({ ok: true });
   }));

@@ -154,3 +154,17 @@ test('embudo: preguntas en el orden del quiz (P1, P2…) con retención sobre P1
     await db.service.exec('delete from growth.quiz_answers where quiz_version = $1', [`t-${tag}`]);
   }
 });
+
+test('equipe: o admin cria a conta de um membro novo dentro do painel (sem cadastro público)', async () => {
+  const s = globalThis.__staffer;
+  const mail = `novo-${tag}@example.com`;
+  const short = await s.c('/api/growth/staff', { method: 'POST', body: { name: 'Ana', email: mail, password: 'curta', role: 'marketing' } });
+  assert.equal(short.status, 422);
+  const ok = await s.c('/api/growth/staff', { method: 'POST', body: { name: 'Ana', email: mail, password: 'senha-inicial-123', role: 'marketing' } });
+  assert.equal(ok.status, 200, JSON.stringify(ok.body));
+  const u = await db.service.one('select id from auth.users where email = $1', [mail]);
+  created.push(u.id);
+  assert.equal(await growth.staff.roleOf(u.id), 'marketing');
+  const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: mail, password: 'senha-inicial-123' }) });
+  assert.equal(login.status, 200);
+});

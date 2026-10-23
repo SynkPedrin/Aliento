@@ -84,13 +84,18 @@ function staffSection(canAdmin) {
   const render = () => load(box, async () => {
     const d = await gapi('/staff');
     const list = Array.isArray(d) ? d : d.staff ?? d.rows ?? [];
+    const name = h('input', { class: 'input', id: 'st-name', autocomplete: 'off', maxlength: '80' });
     const email = h('input', { class: 'input', id: 'st-mail', type: 'email', required: '', autocomplete: 'off' });
+    const pass = h('input', { class: 'input', id: 'st-pass', type: 'text', autocomplete: 'new-password', minlength: '10', placeholder: 'mín. 10 caracteres' });
     const role = h('select', { class: 'select', id: 'st-role' }, [['marketing', 'Marketing (edita)'], ['readonly', 'Somente leitura'], ['admin', 'Administrador']].map(([v, l]) => h('option', { value: v }, l)));
     box.replaceChildren(
       list.length ? table(['E-mail', 'Função', 'Cadastro', ''], list.map((s) => [s.email, pill({ admin: 'Administrador', marketing: 'Marketing', readonly: 'Somente leitura' }[s.role] ?? s.role), dt(s.created_at),
         canAdmin ? h('button', { class: 'btn btn--ghost btn--sm btn--danger', type: 'button', onclick: (e) => { if (confirm(`Remover o acesso de ${s.email}?`)) act(e.currentTarget, () => gapi(`/staff/${s.user_id}`, { method: 'DELETE' }), 'Acesso removido', render); } }, 'Remover') : null]), 'Equipe') : emptyEl('Sem equipe'),
-      canAdmin ? h('form', { class: 'form-grid u-mt', onsubmit: (e) => { e.preventDefault(); act(e.submitter, () => gapi('/staff', { method: 'POST', body: { email: email.value.trim(), role: role.value } }), 'Permissão concedida', render); } },
-        field('st-mail', 'E-mail da conta Alento', email), field('st-role', 'Função', role), h('div', { class: 'field' }, h('button', { class: 'btn btn--sm', type: 'submit' }, 'Conceder acesso'))) : null);
+      canAdmin ? h('h4', { class: 'gr-h4 u-mt' }, 'Adicionar usuário') : null,
+      canAdmin ? h('form', { class: 'form-grid', onsubmit: (e) => { e.preventDefault(); act(e.submitter, () => gapi('/staff', { method: 'POST', body: { name: name.value.trim(), email: email.value.trim(), password: pass.value, role: role.value } }), 'Usuário adicionado', render); } },
+        field('st-name', 'Nome', name), field('st-mail', 'E-mail', email),
+        field('st-pass', 'Senha inicial', pass, 'Só para quem ainda não tem conta. Envie à pessoa por um canal seguro.'),
+        field('st-role', 'Função', role), h('div', { class: 'field' }, h('button', { class: 'btn btn--sm', type: 'submit' }, 'Adicionar'))) : null);
   });
   const sec = h('section', { class: 'card' }, h('h3', { class: 'gr-h3' }, 'Equipe e permissões'), box);
   render();
