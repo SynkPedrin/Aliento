@@ -19,6 +19,12 @@ const ROUTES = [
   ['ai', 'IA', ai, false],
   ['settings', 'Configurações', settings, false],
 ];
+const GROUPS = [
+  ['Análise', ['overview', 'funnel', 'acquisition', 'creatives', 'sales']],
+  ['Relacionamento', ['people', 'emails']],
+  ['Otimização', ['experiments', 'ai']],
+  ['Sistema', ['settings']],
+];
 const FILTER_KEYS = ['from', 'to', 'language', 'country', 'device', 'source', 'variant'];
 
 // ---- Hash: ruta + parámetros (los filtros globales viven en la URL).
@@ -80,11 +86,14 @@ function twofaScreen(me) {
 let me = null;
 function shell() {
   const { route } = parseHash();
-  const nav = h('nav', { class: 'gr-nav', 'aria-label': 'Seções do painel' }, ROUTES.map(([key, label]) => h('a', { href: `#/${key}`, 'data-route': key, 'aria-current': key === route[0] ? 'page' : null }, label)));
+  const link = (key) => { const [, label] = ROUTES.find((r) => r[0] === key); return h('a', { href: `#/${key}`, 'data-route': key, 'aria-current': key === route[0] ? 'page' : null }, label); };
+  const nav = h('nav', { class: 'gr-nav', 'aria-label': 'Seções do painel' },
+    GROUPS.map(([title, keys]) => h('div', { class: 'gr-nav__group' }, h('p', { class: 'gr-nav__title' }, title), keys.map(link))));
   root.replaceChildren(
-    h('header', { class: 'gr-top' }, h('div', { class: 'gr-wrap gr-top__inner' }, brandLink('/growth'), h('span', { class: 'pill' }, 'Growth'),
+    h('header', { class: 'gr-top' }, h('div', { class: 'gr-top__inner' }, brandLink('/growth'), h('span', { class: 'pill' }, 'Growth'),
       h('span', { class: 'gr-top__user' }, me.user?.email, ' · ', ({ admin: 'Administrador', marketing: 'Marketing', readonly: 'Somente leitura' })[me.role] ?? me.role))),
-    h('div', { class: 'gr-wrap' }, nav, h('div', { id: 'gr-filters' }), h('main', { id: 'gr-main', tabindex: '-1' })));
+    h('div', { class: 'gr-layout' }, h('aside', { class: 'gr-side' }, nav),
+      h('div', { class: 'gr-content' }, h('div', { id: 'gr-filters' }), h('main', { id: 'gr-main', tabindex: '-1' }))));
 }
 
 const LANGS = [['', 'Todos'], ['es', 'Espanhol'], ['en', 'Inglês'], ['pt', 'Português']];

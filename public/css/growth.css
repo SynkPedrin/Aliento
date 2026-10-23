@@ -4,13 +4,19 @@
 .gr .skip:focus { left: 12px; }
 .gr-wrap { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 20px; }
 .gr-top { background: var(--surface); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top); }
-.gr-top__inner { display: flex; align-items: center; gap: 12px; min-height: 60px; flex-wrap: wrap; padding-top: 8px; padding-bottom: 8px; }
+.gr-top__inner { display: flex; align-items: center; gap: 12px; min-height: 60px; flex-wrap: wrap; padding: 8px 24px; }
 .gr-top__user { margin-left: auto; font-size: 13.5px; color: var(--muted); overflow-wrap: anywhere; }
-.gr-nav { display: flex; gap: 4px; overflow-x: auto; margin: 16px 0; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 99px; scrollbar-width: none; max-width: 100%; }
-.gr-nav::-webkit-scrollbar { display: none; }
-.gr-nav a { flex: none; padding: 9px 16px; border-radius: 99px; text-decoration: none; font-size: 14.5px; color: var(--ink-2); white-space: nowrap; min-height: 40px; display: inline-flex; align-items: center; }
-.gr-nav a:hover { background: var(--surface-2); }
-.gr-nav a[aria-current="page"] { background: var(--brand); color: var(--brand-ink); font-weight: 600; }
+
+/* menú lateral */
+.gr-layout { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 32px; max-width: 1520px; margin: 0 auto; padding: 0 24px 0 0; }
+.gr-side { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; background: var(--surface); border-right: 1px solid var(--line); min-height: calc(100vh - 61px); padding: 20px 12px; }
+.gr-content { min-width: 0; padding-top: 24px; }
+.gr-nav { display: grid; gap: 20px; }
+.gr-nav__group { display: grid; gap: 2px; }
+.gr-nav__title { font: 600 11.5px/1 var(--font-text); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 0 12px 6px; }
+.gr-nav a { padding: 10px 12px; border-radius: 10px; text-decoration: none; font-size: 14.5px; color: var(--ink-2); min-height: 40px; display: flex; align-items: center; transition: background var(--motion-fast); }
+.gr-nav a:hover { background: var(--surface-2); color: var(--ink); }
+.gr-nav a[aria-current="page"] { background: color-mix(in srgb, var(--brand) 22%, var(--surface)); color: var(--ink); font-weight: 600; box-shadow: inset 3px 0 0 var(--brand); }
 #gr-main { padding-bottom: 64px; min-height: 60vh; outline: none; min-width: 0; }
 .gr-view { min-width: 0; }
 
@@ -139,9 +145,18 @@
 
 @media (max-width: 900px) {
   .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  .gr-layout { grid-template-columns: 1fr; gap: 0; padding: 0 16px; }
+  .gr-side { position: static; min-height: 0; max-height: none; background: none; border: 0; padding: 12px 0 0; margin: 0 -16px; overflow-x: auto; scrollbar-width: none; }
+  .gr-nav { display: flex; gap: 4px; padding: 0 16px; width: max-content; }
+  .gr-nav__group { display: flex; gap: 4px; }
+  .gr-nav__title { display: none; }
+  .gr-nav a { white-space: nowrap; border-radius: 99px; padding: 9px 16px; background: var(--surface); border: 1px solid var(--line); }
+  .gr-nav a[aria-current="page"] { box-shadow: none; background: var(--brand); color: var(--brand-ink); }
+  .gr-content { padding-top: 16px; }
 }
 @media (max-width: 480px) {
   .gr-wrap { padding: 0 16px; }
+  .gr-top__inner { padding: 8px 16px; }
   .creative { flex-direction: column; }
   .gr-top__user { margin-left: 0; width: 100%; }
   .defs dl { grid-template-columns: 1fr; gap: 0; }
@@ -151,3 +166,11 @@
   .gr-auth__card { padding: 20px; }
 }
 @media (prefers-reduced-motion: reduce) { .switch input, .switch input::after { transition: none; } }
+
+/* retención por pregunta */
+.u-mb { margin-bottom: 16px; }
+.retention__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; margin-bottom: 8px; }
+.retention__worst { font-size: 14px; overflow-wrap: anywhere; }
+.retention__worst strong { color: var(--danger); }
+.retention .chart .bar-muted { fill: var(--chart-1); }
+.retention .chart .bar-1 { fill: var(--danger); }

@@ -20,7 +20,7 @@ const WEBHOOK_SECRET = 'whsec_demo_local';
 // Usa el Supabase local (`npx supabase start`) y Stripe simulado.
 const config = loadConfig({
   ...process.env,
-  STRIPE_SECRET_KEY: 'sk_test_demo', STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET, STRIPE_EXIT_COUPON: 'alento-volta-10',
+  STRIPE_SECRET_KEY: 'sk_test_demo', STRIPE_WEBHOOK_SECRET: WEBHOOK_SECRET, STRIPE_EXIT_COUPON: 'alento-volta-20',
   ...localSupabaseEnv(),
 });
 if (!/127\.0\.0\.1|localhost/.test(config.supabase.url)) throw new Error('El modo demo solo funciona con el Supabase local.');

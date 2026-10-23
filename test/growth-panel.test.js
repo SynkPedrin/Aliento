@@ -136,3 +136,21 @@ test('cron: exige CRON_SECRET', async () => {
   assert.equal(ok.status, 200);
   assert.equal((await c('/api/cron/growth?job=inventado', { headers: { authorization: 'Bearer cron-test' } })).status, 404);
 });
+
+test('embudo: preguntas en el orden del quiz (P1, P2…) con retención sobre P1', async () => {
+  const s = globalThis.__staffer;
+  const ids = (await import('../server/quiz.js')).PROGRAM_STEPS.sueno.filter((x) => ['single', 'multi', 'number'].includes(x.type)).slice(0, 3).map((x) => x.id);
+  const v = [randomUUID(), randomUUID()];
+  // Inserción desordenada: la respuesta de la 3.ª pregunta llega primero.
+  for (const [vis, q] of [[v[0], ids[2]], [v[0], ids[0]], [v[1], ids[0]], [v[0], ids[1]], [v[1], ids[1]]]) {
+    await db.service.exec(`insert into growth.quiz_answers (visitor_id, program_slug, question, answer, seconds, quiz_version) values ($1, 'sueno', $2, 'x', 3, $3)`, [vis, q, `t-${tag}`]);
+  }
+  try {
+    const qs = (await s.c('/api/growth/funnel?program=sueno')).body.questions.filter((q) => q.program === 'sueno');
+    assert.deepEqual(qs.slice(0, 3).map((q) => q.n), [1, 2, 3]);
+    assert.equal(qs[0].retention_pct, 100);
+    assert.ok(qs[2].retention_pct < 100 && qs[2].title);
+  } finally {
+    await db.service.exec('delete from growth.quiz_answers where quiz_version = $1', [`t-${tag}`]);
+  }
+});

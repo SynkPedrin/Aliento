@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { HttpError, wrap } from './util.js';
+import { PROGRAM_STEPS, QUESTION_TYPES } from '../quiz.js';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const num = (v) => (v == null ? 0 : Number(v));
@@ -133,11 +134,22 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
       from growth.quiz_answers where answered_at::date between $1 and $2 and ($3::text is null or program_slug = $3)
       group by 1, 2 order by 1, first_id`, [f.from, f.to, f.program]);
     const dist = await q.rows(`select program, question, answer, total from growth.v_quiz_respuestas order by total desc`);
-    const questions = []; let prev = null;
+    // Orden y número de la pregunta según el quiz (P1, P2…); preguntas que ya no existen van al final.
+    const order = (program, id) => {
+      const list = (PROGRAM_STEPS[program] ?? []).filter((x) => QUESTION_TYPES.has(x.type));
+      const i = list.findIndex((x) => x.id === id);
+      return i < 0 ? { n: null, title: null, rank: 1e6 } : { n: i + 1, title: list[i].title, rank: i };
+    };
+    qrows.sort((a, b) => String(a.program).localeCompare(String(b.program))
+      || order(a.program, a.question).rank - order(b.program, b.question).rank || num(a.first_id) - num(b.first_id));
+    const questions = []; let prev = null; let firstOf = null;
     for (const row of qrows) {
-      const first = prev && prev.program === row.program ? prev : null;
-      questions.push({ program: row.program, question: row.question, answers: num(row.answers), people: num(row.people), avg_seconds: num(row.avg_seconds),
-        drop_pct: first && first.people ? pct(first.people - row.people, first.people) : 0,
+      const same = prev && prev.program === row.program;
+      if (!same) firstOf = row;
+      const { n, title } = order(row.program, row.question);
+      questions.push({ program: row.program, question: row.question, n, title, answers: num(row.answers), people: num(row.people), avg_seconds: num(row.avg_seconds),
+        drop_pct: same && num(prev.people) ? pct(num(prev.people) - num(row.people), num(prev.people)) : 0,
+        retention_pct: num(firstOf.people) ? pct(num(row.people), num(firstOf.people)) : 0,
         distribution: dist.filter((d) => d.program === row.program && d.question === row.question).slice(0, 8).map((d) => ({ answer: d.answer, total: num(d.total) })) });
       prev = row;
     }

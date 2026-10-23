@@ -51,7 +51,7 @@ export function xyChart({ labels, series, format = (v) => v, caption, height = 2
     t.textContent = format(v, true);
     svg.append(t);
   }
-  const step = Math.ceil(n / 7);
+  const step = hasBars && n <= 20 ? 1 : Math.ceil(n / 7); // barras: todas las etiquetas (p. ej. P1…P20 del quiz)
   labels.forEach((l, i) => {
     if (i % step && i !== n - 1) return;
     const t = s('text', { x: xAt(i), y: H - 8, 'text-anchor': 'middle' });

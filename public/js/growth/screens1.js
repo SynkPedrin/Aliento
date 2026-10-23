@@ -50,9 +50,10 @@ export async function funnel(root, f) {
           h('div', { class: 'funnel__row' }, h('span', { class: 'funnel__label' }, STEP_LABELS[s.key] ?? s.label), h('strong', {}, int(s.count)),
             i ? h('span', { class: `funnel__drop${s.drop_pct >= 40 ? ' is-high' : ''}` }, `−${dec(s.drop_pct)}%`) : h('span', { class: 'funnel__drop muted' }, 'início')),
           bar((s.count / top) * 100, `${STEP_LABELS[s.key] ?? s.label}: ${int(s.count)}`)))) : emptyEl('Sem dados do funil', 'Não há eventos no período e nos filtros escolhidos.')),
-      h('h2', { class: 'gr-h2 u-mt' }, 'Queda por pergunta'),
-      qs_.length ? table(['Programa', 'Pergunta', N('Respostas'), N('Tempo médio'), N('Abandono'), 'Distribuição'],
-        qs_.map((q) => [q.program, h('span', { class: 'wrap' }, q.question), int(q.answers), `${dec(q.avg_seconds)} s`,
+      h('h2', { class: 'gr-h2 u-mt' }, 'Retenção por pergunta'),
+      qs_.length ? [...new Set(qs_.map((q) => q.program))].map((prog) => retentionCard(prog, qs_.filter((q) => q.program === prog))) : null,
+      qs_.length ? table(['Programa', N('Nº'), 'Pergunta', N('Pessoas'), N('Retenção'), N('Tempo médio'), N('Abandono'), 'Distribuição'],
+        qs_.map((q) => [q.program, q.n ? `P${q.n}` : '—', h('span', { class: 'wrap' }, q.title ?? q.question), int(q.people), pct(q.retention_pct), `${dec(q.avg_seconds)} s`,
           h('span', { class: q.drop_pct >= 15 ? 'is-high' : null }, pct(q.drop_pct)),
           h('details', { class: 'inline-details' }, h('summary', {}, `${(q.distribution ?? []).length} respostas`),
             h('ul', { class: 'mini' }, (q.distribution ?? []).map((x) => h('li', {}, h('span', {}, x.answer), h('strong', {}, int(x.total))))))]), 'Queda por pergunta')
@@ -60,6 +61,20 @@ export async function funnel(root, f) {
       legend(['capture', 'funnel']));
     applyBars(body);
   });
+}
+
+/** Retención del quiz: % de quien respondió P1 que llegó a cada pregunta; la mayor caída en rojo. */
+function retentionCard(program, list) {
+  const worst = list.reduce((w, q) => (q.drop_pct > (w?.drop_pct ?? 0) ? q : w), null);
+  const label = (q, i) => (q.n ? `P${q.n}` : `#${i + 1}`);
+  return h('section', { class: 'card u-mb retention' },
+    h('div', { class: 'retention__head' }, h('h3', { class: 'gr-h3' }, program),
+      worst ? h('p', { class: 'retention__worst' }, 'Maior fuga: ', h('strong', {}, `${label(worst, list.indexOf(worst))} · −${dec(worst.drop_pct)}%`), ' ', h('span', { class: 'muted' }, worst.title ?? worst.question)) : null),
+    xyChart({
+      labels: list.map(label),
+      series: [{ key: 'ret', label: 'Retenção', kind: 'bars', values: list.map((q) => q.retention_pct), muted: list.map((q) => q !== worst) }],
+      format: (v) => `${dec(v)}%`, caption: `Retenção por pergunta · ${program}`, height: 260,
+    }));
 }
 
 // ---------------------------------------------------------------- adquisición
