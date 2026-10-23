@@ -31,7 +31,26 @@ Mapeado em 22/10/2026, versão ES, celular. Copiamos **estrutura e mecânica**; 
 | 22 | Onde quer estar em 3 meses | lista, 5 | |
 | — | "Analisando suas respostas…" | barra de progresso + checklist de 4 etapas que vão sendo marcadas | Depoimento com foto e "+17 000 usuários" com avatares. **3 popups Sim/Não interrompem a barra** (pronto para assumir o controle? / quer truques rápidos? / quer um plano passo a passo?). |
 | — | E-mail | campo + checkbox de privacidade + botão "Ver meus resultados" | **Antes do resultado.** É aqui que o lead é capturado. |
-| — | Resultado / oferta | não mapeado | Precisa de e-mail real para ver. |
+| — | Nome | campo "como podemos te chamar?" | Depois do e-mail. O nome é usado em todo o resultado. |
+| R1 | Seu tipo de fumante | nome do perfil + radar com 6 eixos em % | Ex.: "o mecanismo de relojoaria" (hábito alto). Promete o "significado oculto" na próxima tela. |
+| R2 | "{Nome}, o que torna sua situação única?" | 1 parágrafo por perfil | Explica o padrão e vira o problema em vantagem ("o previsível se treina"). |
+| R3 | Projeções | 4 blocos de gráfico | Recupera o controle (curva 1/3/6 meses), "vai se sentir melhor" (ânsia −82%, culpa −73%, tristeza −65%), sono (+h por mês com datas reais), ansiedade (curva típica vs. com o app). Nota "segundo usuários após 5 semanas". |
+| V | Página de vendas (`/checkout`) | página longa | Ver abaixo. |
+
+## Página de vendas (ordem)
+
+1. **Gancho contraintuitivo:** "Você não pode parar. Ainda não." Continue fumando por enquanto; o app avisa quando. Uma semana de calendário com o carimbo "permitido".
+2. Dois números grandes (sessões estimadas e "5× mais chance").
+3. **Objetivo principal** personalizado + "{Nome}, {anos} de hábito. Seu corpo ainda pode se recuperar." + linha do tempo de recuperação do corpo (20 min, 3 dias, 2 semanas, 1 mês) com datas reais.
+4. "O que você ganha em troca": 3 benefícios com ícone.
+5. Contador "N pessoas começaram esta semana" + faixa rolando com e-mails mascarados e "há X minutos".
+6. **Bloco de planos em fundo escuro:** resumo (anos de hábito / onde quer estar em 3 meses), 3 planos em rádio com **preço riscado**, preço por dia em destaque, selo "65% de desconto" e **bônus grátis** no plano do meio (pré-selecionado). Selo "cancele quando quiser".
+7. Texto legal de renovação: **preço introdutório no 1º período, depois renova pelo preço cheio** (ex.: 3 meses $34.99 → depois $99.99 a cada 3 meses).
+8. Checkbox de termos + botão "Comece sem nenhum risco" + regra de reembolso de 14 dias.
+9. "Da nossa comunidade": ~35 depoimentos curtos (nome + frase), com aviso de que foram editados.
+10. FAQ (5 perguntas) + garantia de reembolso.
+
+Preços vistos (USD): semana $7.99 (riscado $19.99), 3 meses $34.99 (riscado $99.99), 1 mês $19.99 (riscado $55.99). São os mesmos valores que o Alento já usa hoje.
 
 ## Mecânica
 
