@@ -17,9 +17,10 @@ const email = { enabled: async () => Boolean(cfgMap.customerio?.siteId), deliver
 const fetchImpl = async (url, opts) => { calls.push({ url: String(url), opts, body: JSON.parse(opts.body) }); return respond(String(url)); };
 const json = (status, body) => ({ ok: status < 400, status, json: async () => body });
 
-before(() => {
+before(async () => {
   config = loadConfig({ APP_URL: 'http://localhost', ...localSupabaseEnv() });
   db = createDb(config.supabase.dbUrl, { max: 3 });
+  await db.service.exec(`delete from growth.settings where key like 'pixel:%'`); // pixels nomeados de outras execuções
 });
 after(async () => {
   if (ids.length) await db.service.exec('delete from growth.outbox where id = any($1::bigint[])', [ids]);

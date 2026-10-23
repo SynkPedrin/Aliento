@@ -26,7 +26,7 @@ const clip = (v, n = 200) => (v == null || v === '' ? null : String(v).slice(0, 
 /** Sanea un toque de atribución (UTMs y click ids). */
 export function cleanTouch(t = {}) {
   const o = {};
-  for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'ttclid', 'fbp', 'fbc', 'referrer', 'landing']) {
+  for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'ttclid', 'fbp', 'fbc', 'px', 'referrer', 'landing']) {
     const v = clip(t?.[k], k === 'landing' || k === 'referrer' ? 500 : 200);
     if (v) o[k] = v;
   }

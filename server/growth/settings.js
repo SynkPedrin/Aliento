@@ -12,6 +12,8 @@ export const SECRET_FIELDS = {
   alerts: ['webhookUrl'],
 };
 
+const secretFieldsOf = (name) => SECRET_FIELDS[name] ?? (String(name).startsWith('pixel:') ? ['accessToken'] : []);
+
 export function createSettings({ db, config }) {
   const secret = config.growth?.encryptionKey || config.supabase?.secretKey || config.cronSecret || 'alento-dev-only';
   const key = createHash('sha256').update(`growth:${secret}`).digest();
@@ -33,7 +35,7 @@ export function createSettings({ db, config }) {
   };
 
   const walk = (name, value, fn) => {
-    const fields = SECRET_FIELDS[name] ?? [];
+    const fields = secretFieldsOf(name);
     const out = { ...(value ?? {}) };
     for (const f of fields) if (out[f] != null && out[f] !== '') out[f] = fn(out[f]);
     return out;
@@ -56,7 +58,7 @@ export function createSettings({ db, config }) {
   async function set(name, value, { by = null } = {}) {
     const current = await db.service.one('select value from growth.settings where key = $1', [name]);
     const merged = { ...(value ?? {}) };
-    for (const f of SECRET_FIELDS[name] ?? []) {
+    for (const f of secretFieldsOf(name)) {
       if (merged[f] === undefined || merged[f] === '' || merged[f] === '********') {
         if (current?.value?.[f] !== undefined) merged[f] = current.value[f]; else delete merged[f];
       } else {
@@ -66,7 +68,7 @@ export function createSettings({ db, config }) {
     await db.service.exec(`
       insert into growth.settings (key, value, encrypted, updated_by, updated_at) values ($1, $2::jsonb, $3, $4, now())
       on conflict (key) do update set value = excluded.value, encrypted = excluded.encrypted, updated_by = excluded.updated_by, updated_at = now()`,
-    [name, JSON.stringify(merged), (SECRET_FIELDS[name] ?? []).length > 0, by]);
+    [name, JSON.stringify(merged), secretFieldsOf(name).length > 0, by]);
   }
 
   async function all() {

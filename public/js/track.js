@@ -34,7 +34,7 @@ function sessionId() {
   return s;
 }
 
-const TOUCH_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'ttclid'];
+const TOUCH_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'ttclid', 'px'];
 function currentTouch() {
   const p = new URLSearchParams(location.search);
   const t = {};
@@ -117,6 +117,11 @@ async function ensurePixels() {
   if (pixelsReady || !marketingConsent()) return;
   const cfg = await loadConfig();
   pixelsReady = true;
+  // Pixel do perfil que trouxe a pessoa (?px= no anúncio); sem código, o padrão da rede.
+  const att = readAttribution();
+  const code = att.last?.px ?? att.first?.px;
+  const pickPx = (list) => (Array.isArray(list) ? list.find((x) => x.code === code) ?? list.find((x) => x.default) ?? list[0] : list) ?? null;
+  cfg.meta = pickPx(cfg.meta); cfg.tiktok = pickPx(cfg.tiktok);
   if (cfg.meta?.pixelId && !window.fbq) {
     const f = window.fbq = function fbq() { f.callMethod ? f.callMethod.apply(f, arguments) : f.queue.push(arguments); };
     window._fbq = f; f.push = f; f.loaded = true; f.version = '2.0'; f.queue = [];

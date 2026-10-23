@@ -13,7 +13,7 @@ function set(o, path, v) {
 
 // type: text | secret | number | cents | bool | list
 const PIXEL_FIELDS = (idHelp, tokHelp, testHelp) => [['pixelId', 'ID do pixel', 'text', idHelp], ['accessToken', 'Token de acesso da API de Conversões', 'secret', tokHelp], ['testEventCode', 'Código de eventos de teste', 'text', testHelp]];
-const GROUPS = [
+export const GROUPS = [
   { key: 'pixels.meta', title: 'Pixel do Meta', test: 'meta', intro: 'Envia as conversões do servidor para o Meta (API de Conversões), mesmo com bloqueadores de anúncios.',
     fields: PIXEL_FIELDS('Gerenciador de Eventos do Meta > Fontes de dados > seu pixel > Configurações. Só números.', 'Mesma tela do pixel > API de Conversões > Gerar token de acesso. Fica oculto após salvar.', 'Gerenciador de Eventos > Testar eventos (ex.: TEST12345). Use só durante os testes e apague depois.') },
   { key: 'pixels.tiktok', title: 'Pixel do TikTok', test: 'tiktok', intro: 'Envia as conversões do servidor para o TikTok (Events API).',
@@ -29,7 +29,7 @@ const GROUPS = [
   { key: 'timezone', title: 'Fuso horário', fields: [['tz', 'Fuso horário (ex.: America/Sao_Paulo)']] },
 ];
 
-function groupForm(g, all, canSave, reload) {
+export function groupForm(g, all, canSave, reload) {
   const val = structuredClone(all[g.key] ?? {});
   const inputs = [];
   const controls = g.fields.map(([path, label, type = 'text', help], i) => {
@@ -79,7 +79,7 @@ function pricesForm(all, canSave, reload) {
   canSave ? h('div', { class: 'actions-row' }, h('button', { class: 'btn btn--sm', type: 'submit' }, 'Salvar preços')) : null);
 }
 
-function staffSection(canAdmin) {
+export function staffSection(canAdmin) {
   const box = h('div');
   const render = () => load(box, async () => {
     const d = await gapi('/staff');
@@ -102,7 +102,7 @@ function staffSection(canAdmin) {
   return sec;
 }
 
-function outboxSection() {
+export function outboxSection() {
   const box = h('div');
   load(box, async () => {
     const o = await gapi('/outbox');

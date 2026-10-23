@@ -1,5 +1,6 @@
 // Envío de la bandeja de salida (growth.outbox) a Meta CAPI, TikTok Events API y Customer.io.
 // Solo viaja lo que ya está en el payload (sin respuestas del quiz ni hábito).
+import { createPixels } from './pixels.js';
 import { randomUUID } from 'node:crypto';
 import { sha256 } from './context.js';
 
@@ -61,11 +62,13 @@ export function matchQuality(payload) {
   return score;
 }
 
-export function createForwarders({ db, settings, config, email, fetchImpl = globalThis.fetch, log = console }) {
+export function createForwarders({ db, settings, pixels = createPixels({ db, settings }), config, email, fetchImpl = globalThis.fetch, log = console }) {
   const q = db.service;
 
+  const pixelFor = async (dest, payload) => (payload.pixel_key ? pixels.byKey(payload.pixel_key) : pixels.pick(dest));
+
   async function sendMeta(payload) {
-    const cfg = await settings.get('pixels.meta');
+    const cfg = await pixelFor('meta', payload);
     if (!cfg?.pixelId || !cfg?.accessToken) return { skipped: true };
     if (!META_EVENTS[payload.event_name]) return { skipped: true };
     const res = await fetchImpl(`https://graph.facebook.com/v21.0/${encodeURIComponent(cfg.pixelId)}/events?access_token=${encodeURIComponent(cfg.accessToken)}`, {
@@ -77,7 +80,7 @@ export function createForwarders({ db, settings, config, email, fetchImpl = glob
   }
 
   async function sendTikTok(payload) {
-    const cfg = await settings.get('pixels.tiktok');
+    const cfg = await pixelFor('tiktok', payload);
     if (!cfg?.pixelId || !cfg?.accessToken) return { skipped: true };
     if (!TIKTOK_EVENTS[payload.event_name]) return { skipped: true };
     const res = await fetchImpl('https://business-api.tiktok.com/open_api/v1.3/event/track/', {
@@ -136,13 +139,13 @@ export function createForwarders({ db, settings, config, email, fetchImpl = glob
   }
 
   /** Teste de conexão pelo painel: envia um PageView com o código de eventos de teste (não conta como evento real). */
-  async function sendTest(dest) {
+  async function sendTest(dest, pixelKey = null) {
     if (!['meta', 'tiktok'].includes(dest)) return { ok: false, message: 'Integração desconhecida.' };
-    const cfg = await settings.get(`pixels.${dest}`);
+    const cfg = pixelKey ? await pixels.byKey(pixelKey) : await pixels.pick(dest);
     const nome = dest === 'meta' ? 'Meta' : 'TikTok';
     if (!cfg?.pixelId || !cfg?.accessToken) return { ok: false, message: `Preencha o ID do pixel e o token de acesso do ${nome} e salve antes de testar.` };
     if (!cfg.testEventCode) return { ok: false, message: `Informe o "Código de eventos de teste" do ${nome} e salve. Assim o teste não conta como evento real.` };
-    const payload = { event_name: 'page_view', event_id: randomUUID(), time: Math.floor(Date.now() / 1000), url: `${config.appUrl}/`,
+    const payload = { event_name: 'page_view', event_id: randomUUID(), time: Math.floor(Date.now() / 1000), url: `${config.appUrl}/`, pixel_key: cfg.key,
       user: { ip: '203.0.113.10', user_agent: 'AlentoPainel/1.0 (teste de conexão)' } };
     try {
       const r = dest === 'meta' ? await sendMeta(payload) : await sendTikTok(payload);

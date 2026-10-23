@@ -17,11 +17,11 @@ export function trackRoutes({ db, config, growth, store, log = console }) {
 
   // Solo identificadores públicos de los pixels (nunca tokens) y experimentos activos.
   r.get('/track/config', wrap(async (req, res) => {
-    const [meta, tiktok] = await Promise.all([settings.get('pixels.meta'), settings.get('pixels.tiktok')]);
+    const pub = (list) => list.filter((x) => x.active !== false && x.pixelId).map((x) => ({ code: x.code, pixelId: String(x.pixelId), default: Boolean(x.isDefault) }));
+    const [meta, tiktok] = await Promise.all([growth.pixels.list({ platform: 'meta' }), growth.pixels.list({ platform: 'tiktok' })]);
     res.set('Cache-Control', 'public, max-age=60');
     res.json({
-      meta: meta?.pixelId ? { pixelId: String(meta.pixelId) } : null,
-      tiktok: tiktok?.pixelId ? { pixelId: String(tiktok.pixelId) } : null,
+      meta: pub(meta), tiktok: pub(tiktok),
       experiments: experiments ? await experiments.publicConfig().catch(() => []) : [],
     });
   }));

@@ -56,6 +56,7 @@ test('master: el panel responde sin segundo factor (sin 428) y la API de configu
   };
   try {
     await db.service.exec('delete from public.rate_limits');
+    await db.service.exec(`delete from growth.settings where key like 'pixel:%'`);
     const lg = await call('/api/auth/login', { method: 'POST', body: { email: master, password: 'secreta123' } });
     assert.equal(lg.status, 200, JSON.stringify(lg.body));
     const me = await call('/api/growth/me');
@@ -65,7 +66,7 @@ test('master: el panel responde sin segundo factor (sin 428) y la API de configu
     const got = await call('/api/growth/settings');
     assert.equal(got.body.settings['pixels.meta'].pixelId, '123456789');
     assert.equal(got.body.settings['pixels.meta'].accessToken, '********');
-    assert.equal((await call('/api/track/config')).body.meta.pixelId, '123456789', 'el navegador recibe solo el ID del pixel');
+    assert.equal((await call('/api/track/config')).body.meta[0].pixelId, '123456789', 'el navegador recibe solo el ID del pixel');
     assert.ok(!JSON.stringify((await call('/api/track/config')).body).includes('tok-secreto'));
     const eq = await call('/api/growth/staff');
     assert.equal(eq.body.rows.length, 1); assert.equal(eq.body.rows[0].email, master);

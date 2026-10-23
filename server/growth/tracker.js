@@ -1,10 +1,11 @@
 // Núcleo de rastreo: toda conversión se guarda primero en growth.events y después se copia
 // (outbox) a Meta, TikTok y Customer.io. Nunca se envían respuestas del quiz a anuncios.
+import { createPixels } from './pixels.js';
 import { randomUUID } from 'node:crypto';
 import { cleanTouch, hashEmail, isUuid, sanitizeUrl } from './context.js';
 
 /** Eventos que el navegador puede registrar. El resto (lead, checkout, compra…) lo escribe solo el servidor. */
-export const CLIENT_EVENTS = new Set(['page_view', 'quiz_started', 'quiz_answered', 'plan_viewed', 'plan_selected', 'app_activated', 'consent']);
+export const CLIENT_EVENTS = new Set(['page_view', 'quiz_started', 'quiz_answered', 'quiz_step', 'results_step', 'plan_viewed', 'plan_selected', 'app_activated', 'consent']);
 
 /** Eventos que viajan a Meta/TikTok (con el nombre estándar que mapea forwarders.js). Nada más sale. */
 export const AD_EVENTS = new Set(['page_view', 'quiz_started', 'lead_created', 'plan_viewed', 'plan_selected', 'checkout_started', 'purchase', 'app_activated']);
@@ -13,7 +14,7 @@ export const AD_EVENTS = new Set(['page_view', 'quiz_started', 'lead_created', '
 export const EMAIL_EVENTS = new Set(['lead_created', 'checkout_started', 'purchase', 'app_activated', 'payment_failed',
   'subscription_renewed', 'subscription_canceled', 'refund', 'trial_ending']);
 
-export function createTracker({ db, settings, config, log = console }) {
+export function createTracker({ db, settings, pixels = createPixels({ db, settings }), config, log = console }) {
   const q = db.service;
 
   async function emailOf({ leadId, userId }) {
@@ -103,8 +104,9 @@ export function createTracker({ db, settings, config, log = console }) {
         content_name: ev.props?.plan ?? null, // solo el plan, nunca el hábito
       };
       for (const dest of ['meta', 'tiktok']) {
-        const cfg = await settings.get(`pixels.${dest}`);
-        if (cfg?.pixelId && cfg?.accessToken) rows.push([dest, base]);
+        // Pixel do perfil que trouxe a pessoa (?px= no anúncio); sem código, o padrão da rede.
+        const px = await pixels.pick(dest, ev.last?.px ?? ev.first?.px);
+        if (px?.pixelId && px?.accessToken) rows.push([dest, { ...base, pixel_key: px.key }]);
       }
     }
     // --- e-mail: Customer.io recibe la identidad y el evento (la elegibilidad de marketing viaja como atributo).

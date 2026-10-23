@@ -184,3 +184,41 @@ test('2FA desligado (padrão): membro da equipe entra no painel só com a senha'
     assert.equal((await c('/api/growth/me')).body.twofa.verified, true);
   } finally { app.close(); }
 });
+
+test('painel v2: visão geral, funis com retenção tela a tela, vendas com UTMs e pixels', async () => {
+  const s = globalThis.__staffer;
+  const vid = randomUUID(), today = new Date().toISOString().slice(0, 10);
+  await db.service.exec(`insert into growth.visitors (visitor_id, country) values ($1, 'ES') on conflict do nothing`, [vid]);
+  for (const step of ['q_diario', 'q_genero', 'email']) {
+    await db.service.exec(`insert into growth.events (event_id, name, visitor_id, program_slug, country, props) values ($1, 'quiz_step', $2, 'sem-fumo', 'ES', $3::jsonb)`, [randomUUID(), vid, JSON.stringify({ step })]);
+  }
+  const orderId = `ordT-${tag}-v2`;
+  await db.service.exec(`insert into growth.orders (order_id, visitor_id, program_slug, plan, kind, amount_cents, currency, last_touch) values ($1, $2, 'sem-fumo', 'trimestral', 'first', 3499, $3, $4::jsonb)`,
+    [orderId, vid, config.currency, JSON.stringify({ utm_source: 'facebook', utm_campaign: 'c3', px: 'perfil10' })]);
+  try {
+    const home = (await s.c('/api/growth/home')).body;
+    assert.ok(home.cards.today.revenue_cents >= 3499 && home.cards.d30.orders >= 1);
+    assert.ok(home.recent.some((r) => r.order_id === orderId));
+    const funnels = (await s.c('/api/growth/funnels?days=1')).body.rows;
+    assert.ok(funnels.find((f) => f.program === 'sem-fumo').started >= 1);
+    const f = (await s.c('/api/growth/funnels/sem-fumo?days=1&dim=country&val=ES')).body;
+    assert.equal(f.screens[0].id, 'q_diario'); assert.equal(f.screens[0].n, 1); assert.equal(f.screens[0].label, 'P1');
+    assert.equal(f.screens[0].retention_pct, 100);
+    assert.ok(f.screens.some((x) => x.id === 'email' && x.people >= 1));
+    assert.equal(f.screens.at(-1).id, 'purchase');
+    assert.ok(f.segments.some((x) => x.value === 'ES'));
+    const orders = (await s.c(`/api/growth/orders?days=1&q=`)).body;
+    const row = orders.rows.find((r) => r.order_id === orderId);
+    assert.equal(row.last_touch.utm_source, 'facebook');
+    const one = (await s.c(`/api/growth/orders/${orderId}`)).body;
+    assert.equal(one.order.last_touch.px, 'perfil10');
+    const put = await s.c('/api/growth/pixels', { method: 'PUT', body: { platform: 'tiktok', name: 'PIXEL PERFIL 10', pixelId: 'TT10', accessToken: 'tt-secret' } });
+    assert.equal(put.status, 200, JSON.stringify(put.body));
+    const px = (await s.c('/api/growth/pixels')).body.rows.find((x) => x.key === put.body.key);
+    assert.equal(px.name, 'PIXEL PERFIL 10'); assert.equal(px.hasToken, true); assert.ok(!JSON.stringify(px).includes('tt-secret'));
+    assert.equal((await s.c(`/api/growth/pixels/${encodeURIComponent(put.body.key)}`, { method: 'DELETE' })).status, 200);
+  } finally {
+    await db.service.exec('delete from growth.orders where order_id = $1', [orderId]);
+    await db.service.exec(`select growth.erase_person(null, null, $1)`, [vid]);
+  }
+});

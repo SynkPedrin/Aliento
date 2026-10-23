@@ -1,29 +1,21 @@
 // Panel de Operación y Growth: SPA por hash (#/overview, #/funnel, …). Solo equipo con 2FA.
 import { $, ApiError, api, brandLink, h, localDay, setBusy, toast } from '../ui.js';
 import { act, errorEl, loadingEl, state, field } from '../growth/lib.js';
-import { acquisition, creatives, funnel, overview, sales } from '../growth/screens1.js';
-import { ai, emails, experiments, people } from '../growth/screens2.js';
-import { settings } from '../growth/settings.js';
+import { ai, emails } from '../growth/screens2.js';
+import { config as configScreen, funnel, funnels, home, sales, tracking } from '../growth/v2.js';
 
 const root = $('[data-root]');
 
+// [rota, rótulo no menu (null = fora do menu), tela, item do menu que fica marcado]
 const ROUTES = [
-  ['overview', 'Visão geral', overview, true],
-  ['funnel', 'Funil do quiz', funnel, true],
-  ['acquisition', 'Aquisição', acquisition, true],
-  ['creatives', 'Criativos', creatives, true],
-  ['sales', 'Vendas e assinaturas', sales, true],
-  ['people', 'Pessoas', people, false],
-  ['emails', 'E-mails', emails, true],
-  ['experiments', 'Experimentos', experiments, false],
-  ['ai', 'IA', ai, false],
-  ['settings', 'Configurações', settings, false],
-];
-const GROUPS = [
-  ['Análise', ['overview', 'funnel', 'acquisition', 'creatives', 'sales']],
-  ['Relacionamento', ['people', 'emails']],
-  ['Otimização', ['experiments', 'ai']],
-  ['Sistema', ['settings']],
+  ['overview', 'Visão geral', home],
+  ['funnels', 'Funis', funnels],
+  ['funnel', null, funnel, 'funnels'],
+  ['sales', 'Vendas', sales],
+  ['emails', 'Funis de e-mail', emails],
+  ['ai', 'Modo IA', ai],
+  ['tracking', 'Traqueamento', tracking],
+  ['settings', 'Configurações', configScreen],
 ];
 const FILTER_KEYS = ['from', 'to', 'language', 'country', 'device', 'source', 'variant'];
 
@@ -109,45 +101,12 @@ function twofaScreen(me) {
 // ---- Estructura
 let me = null;
 function shell() {
-  const { route } = parseHash();
-  const link = (key) => { const [, label] = ROUTES.find((r) => r[0] === key); return h('a', { href: `#/${key}`, 'data-route': key, 'aria-current': key === route[0] ? 'page' : null }, label); };
-  const nav = h('nav', { class: 'gr-nav', 'aria-label': 'Seções do painel' },
-    GROUPS.map(([title, keys]) => h('div', { class: 'gr-nav__group' }, h('p', { class: 'gr-nav__title' }, title), keys.map(link))));
-  root.replaceChildren(
-    h('header', { class: 'gr-top' }, h('div', { class: 'gr-top__inner' }, brandLink('/growth'), h('span', { class: 'pill' }, 'Growth'),
-      h('span', { class: 'gr-top__user' }, me.user?.email, ' · ', ({ admin: 'Administrador', marketing: 'Marketing', readonly: 'Somente leitura' })[me.role] ?? me.role))),
-    h('div', { class: 'gr-layout' }, h('aside', { class: 'gr-side' }, nav),
-      h('div', { class: 'gr-content' }, h('div', { id: 'gr-filters' }), h('main', { id: 'gr-main', tabindex: '-1' }))));
-}
-
-const LANGS = [['', 'Todos'], ['es', 'Espanhol'], ['en', 'Inglês'], ['pt', 'Português']];
-const COUNTRIES = [['', 'Todos'], ['ES', 'Espanha'], ['US', 'EUA'], ['MX', 'México'], ['AR', 'Argentina'], ['CO', 'Colômbia'], ['CL', 'Chile'], ['BR', 'Brasil'], ['PT', 'Portugal']];
-const DEVICES = [['', 'Todos'], ['mobile', 'Celular'], ['desktop', 'Computador'], ['tablet', 'Tablet']];
-function filterBar(params, filters) {
-  const days = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return localDay(d); };
-  const sel = (id, label, opts, v) => field(id, label, h('select', { class: 'select', id, name: id }, opts.map(([val, l]) => h('option', { value: val, selected: val === (v ?? '') ? '' : null }, l))));
-  const txt = (id, label, v, ph) => field(id, label, h('input', { class: 'input', id, name: id, value: v ?? '', maxlength: '60', placeholder: ph }));
-  const dates = (id, label, v) => field(id, label, h('input', { class: 'input', id, name: id, type: 'date', value: v ?? '', max: localDay() }));
-  const preset = field('preset', 'Período', h('select', { class: 'select', id: 'preset' }, [['', 'Últimos 30 dias'], ['7', 'Últimos 7 dias'], ['90', 'Últimos 90 dias'], ['custom', 'Personalizado']].map(([v, l]) =>
-    h('option', { value: v, selected: (filters.from || filters.to ? 'custom' : '') === v ? '' : null }, l))));
-  const form = h('form', { class: 'gr-filters', 'aria-label': 'Filtros globais', onsubmit: (e) => { e.preventDefault(); apply(); } },
-    preset, dates('from', 'Desde', filters.from), dates('to', 'Até', filters.to), sel('language', 'Idioma', LANGS, filters.language), sel('country', 'País', COUNTRIES, filters.country),
-    sel('device', 'Dispositivo', DEVICES, filters.device), txt('source', 'Fonte', filters.source, 'meta, tiktok…'), txt('variant', 'Variante', filters.variant, 'controle'),
-    h('div', { class: 'gr-filters__btns' }, h('button', { class: 'btn btn--sm', type: 'submit' }, 'Aplicar'), h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { location.hash = buildHash(parseHash().route[0], {}); } }, 'Limpar')));
-  const val = (n) => form.elements[n].value;
-  preset.querySelector('select').addEventListener('change', (e) => {
-    const v = e.target.value;
-    if (v === '7' || v === '90' || v === '') { form.elements.from.value = v ? days(Number(v)) : ''; form.elements.to.value = v ? localDay() : ''; apply(); }
-  });
-  function apply() {
-    const next = { ...params };
-    for (const k of FILTER_KEYS) next[k] = val(k).trim();
-    location.hash = buildHash(parseHash().route[0], next);
-  }
-  const active = FILTER_KEYS.filter((k) => filters[k]).length;
-  const box = h('details', { class: 'gr-filterbox card card--flat', open: window.matchMedia('(min-width: 900px)').matches || active ? '' : null },
-    h('summary', {}, 'Filtros', active ? h('span', { class: 'pill pill--ok' }, `${active} ${active === 1 ? 'ativo' : 'ativos'}`) : null), form);
-  return box;
+  const nav = h('nav', { class: 'v2-nav', 'aria-label': 'Seções do painel' }, ROUTES.filter((r) => r[1]).map(([key, label]) => h('a', { href: `#/${key}`, 'data-route': key }, label)));
+  root.replaceChildren(h('div', { class: 'v2-shell' },
+    h('aside', { class: 'v2-side' }, h('div', { class: 'v2-logo' }, brandLink('/growth'), h('span', { class: 'v2-pill' }, 'Gestão')), nav,
+      h('div', { class: 'v2-who' }, me.user?.email, h('br'), ({ admin: 'Administrador', marketing: 'Marketing', readonly: 'Somente leitura' })[me.role] ?? me.role,
+        h('button', { type: 'button', class: 'v2-link', onclick: async () => { await api('/api/auth/logout', { method: 'POST' }); location.reload(); } }, 'Sair'))),
+    h('main', { id: 'gr-main', class: 'v2-main', tabindex: '-1' })));
 }
 
 let token = 0;
@@ -155,13 +114,13 @@ async function render() {
   if (!me) return;
   const { route, params, filters } = parseHash();
   const my = ++token;
-  if (!$('#gr-main') || !$('.gr-nav')) shell();
-  document.querySelectorAll('.gr-nav a').forEach((a) => a.setAttribute('aria-current', a.dataset.route === route[0] ? 'page' : 'false'));
-  const holder = $('#gr-filters');
-  holder.replaceChildren(route[3] ? filterBar(params, filters) : '');
+  if (!$('#gr-main') || !$('.v2-nav')) shell();
+  const active = route[3] ?? route[0];
+  document.querySelectorAll('.v2-nav a').forEach((a) => a.setAttribute('aria-current', a.dataset.route === active ? 'page' : 'false'));
+  document.querySelector('.v2-drawer')?.classList.remove('open');
   const main = $('#gr-main');
   main.replaceChildren(loadingEl());
-  document.title = `${route[1]} · Growth · Alento`;
+  document.title = `${route[1] ?? 'Funil'} · Gestão · Alento`;
   const view = h('div', { class: 'gr-view' });
   try {
     await route[2](view, filters, params);

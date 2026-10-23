@@ -369,6 +369,7 @@ function renderLeadEmail(error = '') {
     Object.assign(lead, { email: email.value.trim(), marketing: false });
     renderLeadName();
   });
+  track('quiz_step', { program: PROGRAM, step: 'email' }, { pixel: false });
   leadScreen(h('h1', { class: 'title-lg' }, 'Consulta tus resultados'),
     h('p', { class: 'subtitle' }, 'Introduce tu dirección de correo electrónico para recibir los resultados de tu prueba y seguir avanzando con nuestro plan personalizado.'),
     form);
@@ -394,6 +395,7 @@ function renderLeadName() {
     try { if (first) localStorage.setItem('alento-name', first); } catch { /* modo privado */ }
     window.location.assign(`/resultados?program=${PROGRAM}`);
   });
+  track('quiz_step', { program: PROGRAM, step: 'nombre' }, { pixel: false });
   leadScreen(h('h1', { class: 'title-lg' }, 'Alento quiere saludarte como es debido'),
     h('p', { class: 'subtitle' }, '¿Cómo te podemos llamar?'),
     form);
@@ -402,6 +404,8 @@ function renderLeadName() {
 function render() {
   shownAt = Date.now();
   const step = steps[index];
+  // Retenção tela a tela no painel (só para a base própria; nunca para anúncios).
+  track('quiz_step', { program: PROGRAM, step: step.id }, { pixel: false });
   updateChrome();
   const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, notalone: renderNotalone, science: renderScience, savings: renderSavings, analysis: renderAnalysis }[step.type](step);
   screenEl.replaceChildren(view);

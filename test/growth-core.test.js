@@ -22,7 +22,7 @@ before(async () => {
   server = createApp({ db, auth: createAuth({ config, db }), billing, config, programs: { get: async () => null }, growth, log: silent }).listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
-  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok', 'customerio')`);
+  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok', 'customerio') or key like 'pixel:%'`);
 });
 
 after(async () => {
@@ -32,7 +32,7 @@ after(async () => {
     if (l) await db.service.exec('select growth.erase_person($1, null, null)', [l.lead_id]);
   }
   await db.service.exec(`delete from growth.outbox where status = 'pending' and destination in ('meta', 'tiktok', 'customerio')`); // nada de pruebas hacia APIs reales
-  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok')`);
+  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok') or key like 'pixel:%'`);
   server.close();
   await db.end();
 });

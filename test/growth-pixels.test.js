@@ -34,13 +34,13 @@ before(async () => {
   server = createApp({ db, auth, billing, config, programs: { get: async () => null }, growth, log: silent }).listen(0);
   await new Promise((r) => server.once('listening', r));
   base = `http://127.0.0.1:${server.address().port}`;
-  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok')`);
+  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok') or key like 'pixel:%'`);
   await db.service.exec(`delete from growth.outbox where status = 'pending'`);
 });
 after(async () => {
   for (const v of vids) await db.service.exec('select growth.erase_person(null, null, $1)', [v]);
   await db.service.exec(`delete from growth.outbox where destination in ('meta', 'tiktok') and status in ('pending', 'sent', 'failed')  and created_at > now() - interval '1 hour'`);
-  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok')`);
+  await db.service.exec(`delete from growth.settings where key in ('pixels.meta', 'pixels.tiktok') or key like 'pixel:%'`);
   server.close(); await db.end();
 });
 
@@ -80,7 +80,7 @@ test('de punta a punta: con consentimiento el evento llega a Meta y TikTok con e
   assert.equal((await send(false, idNo)).status, 200);
   assert.equal((await send(true, idYes)).status, 200);
   const cfg = await (await fetch(base + '/api/track/config')).json();
-  assert.equal(cfg.meta.pixelId, '111222333'); assert.equal(cfg.tiktok.pixelId, 'TTPIX9');
+  assert.equal(cfg.meta[0].pixelId, '111222333'); assert.equal(cfg.tiktok[0].pixelId, 'TTPIX9');
   assert.ok(!JSON.stringify(cfg).includes('secreto') && !JSON.stringify(cfg).includes('tt-token'), 'o navegador não recebe tokens');
   calls.length = 0;
   const out = await growth.forwarders.processOutbox({ limit: 100 });
@@ -94,4 +94,28 @@ test('de punta a punta: con consentimiento el evento llega a Meta y TikTok con e
   assert.ok(!calls.some((c) => c.body.data[0].event_id === idNo), 'sin consentimiento nada sale');
   assert.ok(!/alcohol|sueno|azucar|ansiedad|sem-fumo/i.test(JSON.stringify(calls)), 'el hábito no viaja a los anuncios');
   assert.equal(meta.body.data[0].event_source_url, 'https://alentohealth.com/quiz');
+});
+
+test('vários pixels por rede: a venda vai para o pixel do perfil do anúncio (?px=)', async () => {
+  const a = await growth.pixels.save({ platform: 'meta', name: 'PIXEL PERFIL 1', pixelId: 'PX-P1', accessToken: 'tok-p1' });
+  const b = await growth.pixels.save({ platform: 'meta', name: 'PIXEL PERFIL 10', code: 'perfil10', pixelId: 'PX-P10', accessToken: 'tok-p10' });
+  try {
+    assert.equal((await growth.pixels.pick('meta', 'perfil10')).pixelId, 'PX-P10');
+    assert.equal((await growth.pixels.pick('meta', 'nao-existe')).pixelId, 'PX-P1', 'sem código válido: pixel padrão');
+    assert.equal((await growth.pixels.pick('meta', null)).pixelId, 'PX-P1');
+    const cfg = await (await fetch(base + '/api/track/config')).json();
+    assert.deepEqual(cfg.meta.map((x) => x.code).sort(), ['perfil10', 'pixelperfil1']);
+    assert.ok(!JSON.stringify(cfg).includes('tok-p'), 'o navegador não recebe tokens');
+    const vid = randomUUID(); vids.push(vid);
+    const id = randomUUID();
+    const touch = { first: { utm_source: 'facebook', px: 'perfil10' }, last: { utm_source: 'facebook', px: 'perfil10' } };
+    assert.equal((await post('/api/track', { visitor: { id: vid, session: randomUUID(), touch }, page: '/quiz', consent: { marketing: true }, events: [{ id, name: 'quiz_started', props: {} }] })).status, 200);
+    calls.length = 0;
+    await growth.forwarders.processOutbox({ limit: 100 });
+    const sent = calls.find((c) => c.url.includes('facebook') && c.body.data[0].event_id === id);
+    assert.ok(sent, 'evento enviado ao Meta');
+    assert.match(sent.url, /PX-P10/);
+  } finally {
+    await growth.pixels.remove(a.key); await growth.pixels.remove(b.key);
+  }
 });

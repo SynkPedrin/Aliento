@@ -407,6 +407,151 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
     res.json({ ...c, match_quality: mq, last_errors: errors });
   }));
 
+
+  // ================================================================ Painel v2 (visão geral, funis, vendas, pixels)
+  const dayStr = (d) => d.toISOString().slice(0, 10);
+  const periodOf = (req) => {
+    const to = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.to)) ? String(req.query.to) : dayStr(new Date());
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(req.query.from))) return { from: String(req.query.from), to };
+    const days = [1, 7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 7;
+    return { from: dayStr(new Date(new Date(`${to}T00:00:00Z`).getTime() - (days - 1) * 86400_000)), to, days };
+  };
+  const revenueBetween = async (from, to, program = null) => {
+    const o = await q.one(`select coalesce(sum(amount_cents), 0) as gross, count(*) filter (where kind = 'first') as orders, count(*) as payments from growth.orders
+      where paid_at::date between $1 and $2 and upper(currency) = $3 and ($4::text is null or program_slug = $4)`, [from, to, currency, program]);
+    const rf = await q.one(`select coalesce(sum(r.amount_cents), 0) as refunded from growth.refunds r left join growth.orders o on o.order_id = r.order_id
+      where r.refunded_at::date between $1 and $2 and upper(r.currency) = $3 and ($4::text is null or o.program_slug = $4)`, [from, to, currency, program]);
+    return { revenue_cents: num(o.gross) - num(rf.refunded), orders: num(o.orders), payments: num(o.payments) };
+  };
+  const shift = (d, n) => dayStr(new Date(new Date(`${d}T00:00:00Z`).getTime() + n * 86400_000));
+  const started = (from, to, program) => q.one(`select count(distinct visitor_id) as n from growth.events
+    where name = 'quiz_step' and props->>'step' = $4 and occurred_at::date between $1 and $2 and program_slug = $3`, [from, to, program, PROGRAM_STEPS[program]?.[0]?.id ?? '']);
+
+  r.get('/home', wrap(async (req, res) => {
+    const today = dayStr(new Date());
+    const cards = {};
+    for (const [k, days] of [['today', 1], ['d7', 7], ['d30', 30]]) {
+      const from = shift(today, -(days - 1));
+      const [cur, prev] = await Promise.all([revenueBetween(from, today), revenueBetween(shift(from, -days), shift(today, -days))]);
+      cards[k] = { ...cur, prev_revenue_cents: prev.revenue_cents };
+    }
+    const funnels = [];
+    for (const program of Object.keys(PROGRAM_STEPS)) {
+      const [st, rev] = await Promise.all([started(today, today, program), revenueBetween(today, today, program)]);
+      if (num(st.n) || rev.orders) funnels.push({ program, started: num(st.n), orders: rev.orders, revenue_cents: rev.revenue_cents, conversion_pct: pct(rev.orders, num(st.n)) });
+    }
+    const recent = await q.rows(`select o.order_id, o.paid_at, o.plan, o.program_slug, o.kind, o.amount_cents, o.last_touch->>'utm_source' as source,
+        coalesce(p.name, lp.first_name) as name from growth.orders o
+      left join public.profiles p on p.user_id = o.user_id left join growth_pii.lead_pii lp on lp.lead_id = o.lead_id
+      order by o.paid_at desc limit 6`);
+    res.json({ currency, cards, funnels, recent });
+  }));
+
+  const STAGES = [['lead_created', 'Lead'], ['results_step', 'Resultado'], ['plan_viewed', 'Oferta'], ['checkout_started', 'Checkout'], ['purchase', 'Compra']];
+  const INSERT_LABELS = { info_notalone: 'Não está só', info_duracion: 'Texto anos', info_cerebro: 'Cérebro', info_amigo: 'Amigo + prazer', info_ahorro: 'Economia', info_metas: 'Metas', info_ciencia: 'Ciência', analisis: 'Análise', email: 'E-mail', nombre: 'Nome' };
+  const DIMS = { country: 'country', device: 'device', source: "coalesce(utm_source, '(direto)')", language: 'language' };
+
+  r.get('/funnels', wrap(async (req, res) => {
+    const p = periodOf(req);
+    const programs = await q.rows('select slug, commercial_status from public.programs').catch(() => []);
+    const rows = [];
+    for (const program of Object.keys(PROGRAM_STEPS)) {
+      const [st, rev, leads, daily] = await Promise.all([
+        started(p.from, p.to, program), revenueBetween(p.from, p.to, program),
+        q.one(`select count(distinct visitor_id) as n from growth.events where name = 'lead_created' and program_slug = $3 and occurred_at::date between $1 and $2`, [p.from, p.to, program]),
+        q.rows(`select occurred_at::date::text as day, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and props->>'step' = $4
+          and program_slug = $3 and occurred_at::date between $1 and $2 group by 1 order by 1`, [p.from, p.to, program, PROGRAM_STEPS[program][0].id]),
+      ]);
+      const status = programs.find((x) => x.slug === program)?.commercial_status ?? 'coming_soon';
+      rows.push({ program, status, started: num(st.n), leads: num(leads.n), orders: rev.orders, revenue_cents: rev.revenue_cents,
+        conversion_pct: pct(rev.orders, num(st.n)), daily: daily.map((d) => num(d.n)) });
+    }
+    res.json({ currency, period: p, rows });
+  }));
+
+  r.get('/funnels/:program', wrap(async (req, res) => {
+    const program = String(req.params.program);
+    const list = PROGRAM_STEPS[program];
+    if (!list) throw new HttpError(404, 'Funil não encontrado.', 'NOT_FOUND');
+    const p = periodOf(req);
+    const dim = DIMS[String(req.query.dim)] ? String(req.query.dim) : null;
+    const val = dim && req.query.val ? String(req.query.val).slice(0, 80) : null;
+    const where = `occurred_at::date between $1 and $2 and program_slug = $3 ${dim && val ? `and ${DIMS[dim]} = $4` : ''}`;
+    const args = [p.from, p.to, program, ...(dim && val ? [val] : [])];
+    const counts = Object.fromEntries((await q.rows(`select props->>'step' as step, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and ${where} group by 1`, args)).map((x) => [x.step, num(x.n)]));
+    // Etapas finais: só de quem começou o quiz no período (coorte), para a curva nunca subir.
+    const stageCounts = Object.fromEntries((await q.rows(`select name, count(distinct visitor_id) as n from growth.events
+      where name = any($${args.length + 1}) and occurred_at::date >= $1 and visitor_id in (
+        select visitor_id from growth.events where name = 'quiz_step' and props->>'step' = $${args.length + 2} and ${where})
+      group by 1`, [...args, STAGES.map((s) => s[0]), list[0].id])).map((x) => [x.name, num(x.n)]));
+    let qn = 0;
+    const screens = list.map((s) => {
+      const isQ = QUESTION_TYPES.has(s.type);
+      if (isQ) qn += 1;
+      return { id: s.id, n: isQ ? qn : null, label: isQ ? `P${qn}` : (INSERT_LABELS[s.id] ?? s.id), title: s.title ?? s.question ?? INSERT_LABELS[s.id] ?? s.id, people: counts[s.id] ?? 0, kind: 'quiz' };
+    });
+    screens.push({ id: 'email', n: null, label: 'E-mail', title: 'E-mail', people: counts.email ?? 0, kind: 'lead' }, { id: 'nombre', n: null, label: 'Nome', title: 'Nome', people: counts.nombre ?? 0, kind: 'lead' });
+    for (const [name, label] of STAGES.slice(1)) screens.push({ id: name, n: null, label, title: label, people: stageCounts[name] ?? 0, kind: 'stage' });
+    const base = screens[0].people || 0;
+    screens.forEach((s, i) => { s.retention_pct = pct(s.people, base); s.drop_pp = i ? Math.max(0, Math.round((screens[i - 1].retention_pct - s.retention_pct) * 10) / 10) : 0; });
+    const rev = await revenueBetween(p.from, p.to, program);
+    const segments = dim ? (await q.rows(`select ${DIMS[dim]} as value, count(distinct visitor_id) as n from growth.events
+      where name = 'quiz_step' and props->>'step' = $4 and occurred_at::date between $1 and $2 and program_slug = $3 group by 1 order by 2 desc limit 12`, [p.from, p.to, program, list[0].id]))
+      .map((x) => ({ value: x.value ?? '—', people: num(x.n) })) : [];
+    const leads = stageCounts.lead_created ?? 0;
+    res.json({
+      currency, period: p, program, dim, val, screens, segments,
+      metrics: { started: base, finished: counts.analisis ?? 0, leads, lead_pct: pct(leads, base), offer: stageCounts.plan_viewed ?? 0, checkouts: stageCounts.checkout_started ?? 0,
+        purchases: rev.orders, conversion_pct: pct(rev.orders, base), revenue_cents: rev.revenue_cents, ticket_cents: rev.orders ? Math.round(rev.revenue_cents / rev.orders) : 0 },
+    });
+  }));
+
+  r.get('/orders', wrap(async (req, res) => {
+    const p = periodOf(req);
+    const kind = ['first', 'renewal'].includes(String(req.query.kind)) ? String(req.query.kind) : null;
+    const term = String(req.query.q ?? '').trim().slice(0, 80);
+    const rows = await q.rows(`select o.order_id, o.paid_at, o.plan, o.program_slug, o.kind, o.amount_cents, o.currency, o.last_touch, o.first_touch,
+        coalesce(p.name, lp.first_name) as name, coalesce(u.email, lp.email) as email, v.country,
+        exists (select 1 from growth.refunds r where r.order_id = o.order_id) as refunded
+      from growth.orders o left join public.profiles p on p.user_id = o.user_id left join auth.users u on u.id = o.user_id
+      left join growth_pii.lead_pii lp on lp.lead_id = o.lead_id left join growth.visitors v on v.visitor_id = o.visitor_id
+      where o.paid_at::date between $1 and $2 and ($3::text is null or o.kind = $3)
+        and ($4 = '' or coalesce(u.email, lp.email, '') ilike '%' || $4 || '%' or coalesce(p.name, lp.first_name, '') ilike '%' || $4 || '%')
+      order by o.paid_at desc limit 300`, [p.from, p.to, kind, term]);
+    const rev = await revenueBetween(p.from, p.to);
+    const refunds = await q.one('select count(*)::int as n from growth.refunds where refunded_at::date between $1 and $2', [p.from, p.to]);
+    res.json({ currency, period: p, summary: { ...rev, ticket_cents: rev.orders ? Math.round(rev.revenue_cents / rev.orders) : 0, refunds: refunds.n }, rows });
+  }));
+
+  r.get('/orders/:id', wrap(async (req, res) => {
+    const id = String(req.params.id);
+    const o = await q.one(`select o.*, coalesce(p.name, lp.first_name) as name, coalesce(u.email, lp.email) as email, v.country
+      from growth.orders o left join public.profiles p on p.user_id = o.user_id left join auth.users u on u.id = o.user_id
+      left join growth_pii.lead_pii lp on lp.lead_id = o.lead_id left join growth.visitors v on v.visitor_id = o.visitor_id where o.order_id = $1`, [id]);
+    if (!o) throw new HttpError(404, 'Venda não encontrada.', 'NOT_FOUND');
+    const sent = await q.rows(`select ob.destination, ob.status, ob.attempts, ob.last_error, ob.payload->>'pixel_key' as pixel_key from growth.outbox ob
+      join growth.events e on e.event_id = ob.event_id where e.name = 'purchase' and e.props->>'order_id' = $1`, [id]);
+    const pixels = await growth.pixels.forPanel();
+    const sub = o.user_id ? await q.one(`select status, plan, next_billing_at from growth.subscriptions where user_id = $1 and program_slug = $2 order by updated_at desc limit 1`, [o.user_id, o.program_slug]) : null;
+    const refunds = await q.rows('select amount_cents, reason, refunded_at from growth.refunds where order_id = $1', [id]);
+    res.json({ currency, order: o, subscription: sub, refunds,
+      events: sent.map((s) => ({ ...s, pixel_name: pixels.find((x) => x.key === s.pixel_key)?.name ?? null })) });
+  }));
+
+  r.get('/pixels', wrap(async (req, res) => { res.json({ rows: await growth.pixels.forPanel(), appUrl: config.appUrl }); }));
+  r.put('/pixels', wrap(async (req, res) => {
+    canEdit(req);
+    try { res.json(await growth.pixels.save(req.body ?? {}, { by: req.staff.userId })); } catch (err) { if (err.status) throw new HttpError(err.status, err.message, 'INVALID'); throw err; }
+    await audit(req, 'pixel.save', 'pixel', req.body?.key ?? req.body?.name);
+  }));
+  r.delete('/pixels/:key', wrap(async (req, res) => { canEdit(req); await growth.pixels.remove(String(req.params.key)); await audit(req, 'pixel.remove', 'pixel', req.params.key); res.json({ ok: true }); }));
+  r.post('/pixels/test', wrap(async (req, res) => {
+    canEdit(req);
+    const px = await growth.pixels.byKey(String(req.body?.key ?? ''));
+    if (!px) throw new HttpError(404, 'Pixel não encontrado.', 'NOT_FOUND');
+    res.json(await growth.forwarders.sendTest(px.platform, px.key));
+  }));
+
   return r;
 }
 
