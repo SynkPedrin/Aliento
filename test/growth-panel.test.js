@@ -15,7 +15,7 @@ let db, config, growth, auth, server, base;
 const created = [], tag = randomUUID().slice(0, 8);
 
 before(async () => {
-  config = loadConfig({ APP_URL: 'http://localhost', CRON_SECRET: 'cron-test', GROWTH_ENCRYPTION_KEY: 'test-key', ...localSupabaseEnv() });
+  config = loadConfig({ APP_URL: 'http://localhost', CRON_SECRET: 'cron-test', GROWTH_ENCRYPTION_KEY: 'test-key', GROWTH_REQUIRE_2FA: 'true', ...localSupabaseEnv() });
   db = createDb(config.supabase.dbUrl, { max: 5 });
   auth = createAuth({ config, db });
   growth = createGrowth({ db, config, auth, log: silent });
@@ -34,10 +34,10 @@ after(async () => {
   server.close(); await db.end();
 });
 
-function client() {
+function client(b) {
   const jar = new Map();
   return async (path, { method = 'GET', body, headers = {} } = {}) => {
-    const res = await fetch(base + path, { method, headers: { ...(body !== undefined ? { 'content-type': 'application/json' } : {}), cookie: [...jar].map(([k, v]) => `${k}=${v}`).join('; '), ...headers }, body: body !== undefined ? JSON.stringify(body) : undefined });
+    const res = await fetch((b ?? base) + path, { method, headers: { ...(body !== undefined ? { 'content-type': 'application/json' } : {}), cookie: [...jar].map(([k, v]) => `${k}=${v}`).join('; '), ...headers }, body: body !== undefined ? JSON.stringify(body) : undefined });
     for (const c of res.headers.getSetCookie()) { const [pair] = c.split(';'); const i = pair.indexOf('='); const k = pair.slice(0, i), v = pair.slice(i + 1); if (v) jar.set(k, v); else jar.delete(k); }
     const text = await res.text(); let json; try { json = JSON.parse(text); } catch { json = text; }
     return { status: res.status, body: json, headers: res.headers };
@@ -167,4 +167,20 @@ test('equipe: o admin cria a conta de um membro novo dentro do painel (sem cadas
   assert.equal(await growth.staff.roleOf(u.id), 'marketing');
   const login = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: mail, password: 'senha-inicial-123' }) });
   assert.equal(login.status, 200);
+});
+
+test('2FA desligado (padrão): membro da equipe entra no painel só com a senha', async () => {
+  const cfg = loadConfig({ APP_URL: 'http://localhost', CRON_SECRET: 'cron-test', GROWTH_ENCRYPTION_KEY: 'test-key', ...localSupabaseEnv() });
+  assert.equal(cfg.growth.require2fa, false);
+  const app = createApp({ db, auth, billing: { enabled: false, activeSubscription: async () => null, subscriptionsByProgram: async () => [] }, config: cfg, programs: { get: async () => null }, growth: createGrowth({ db, config: cfg, auth, log: silent }), log: silent }).listen(0);
+  await new Promise((r) => app.once('listening', r));
+  try {
+    const c = client(`http://127.0.0.1:${app.address().port}`);
+    const mail = `sem2fa-${tag}@example.com`;
+    assert.equal((await c('/api/auth/register', { method: 'POST', body: { name: 'Eq', email: mail, password: 'secreta123', acceptTerms: true, healthConsent: true, timezone: 'Europe/Madrid' } })).status < 300, true);
+    const u = await db.service.one('select id from auth.users where email = $1', [mail]); created.push(u.id);
+    await growth.staff.grantUser(u.id, 'marketing');
+    assert.equal((await c('/api/growth/funnel')).status, 200);
+    assert.equal((await c('/api/growth/me')).body.twofa.verified, true);
+  } finally { app.close(); }
 });

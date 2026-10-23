@@ -38,7 +38,7 @@ function run(mw, req) {
 }
 
 before(async () => {
-  config = loadConfig({ APP_URL: 'http://localhost', ...localSupabaseEnv() });
+  config = loadConfig({ APP_URL: 'http://localhost', GROWTH_REQUIRE_2FA: 'true', ...localSupabaseEnv() });
   db = createDb(config.supabase.dbUrl, { max: 3 });
   auth = createAuth({ config, db });
   admin = createClient(config.supabase.url, config.supabase.secretKey, { auth: { persistSession: false } });

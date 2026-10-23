@@ -247,7 +247,7 @@ export function createStaff({ db, settings, config, log = console }) {
       const role = await roleOf(req.user.id);
       if (!role || !roles.includes(role)) return res.status(403).json({ error: 'Não autorizado.', code: 'FORBIDDEN' });
       // Modo master: el acceso lo limita el correo único autorizado; no se pide segundo factor.
-      if (!config?.growth?.masterEmail && !has2fa(req, req.user.id)) {
+      if (config?.growth?.require2fa && !config?.growth?.masterEmail && !has2fa(req, req.user.id)) {
         return res.status(428).json({ error: 'Confirme o seu segundo fator de autenticação.', code: 'TWOFA_REQUIRED' });
       }
       req.staff = { userId: req.user.id, role };
