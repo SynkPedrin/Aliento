@@ -22,7 +22,8 @@
     "prod:finish": "node scripts/finish-production.js",
     "access:grant": "node --env-file-if-exists=.env scripts/create-comp-account.js",
     "e2e": "playwright test",
-    "stripe:programs": "node --env-file-if-exists=.env scripts/stripe-programs.js"
+    "stripe:programs": "node --env-file-if-exists=.env scripts/stripe-programs.js",
+    "local": "PATH=$HOME/.orbstack/bin:$PATH npx supabase start >/dev/null && node --env-file=.env scripts/demo.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",
