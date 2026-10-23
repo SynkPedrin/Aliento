@@ -8,7 +8,7 @@ export const MEMBERS = [
   {
     "photo": "24",
     "name": "Margaret",
-    "quote": "Lo más difícil es no rendirse. Pero ya me siento más tranquila. Y me gusta hablar con ella; no me importa que sea una IA."
+    "quote": "Lo más difícil es no rendirse. Pero el método va paso a paso, sin presión, y ya me siento más tranquila. Por fin entiendo por qué fumo."
   },
   {
     "photo": "20",
@@ -18,7 +18,7 @@ export const MEMBERS = [
   {
     "photo": "02",
     "name": "Carol",
-    "quote": "Llevaba seis semanas sin fumar, pero un mal día lo echó todo por tierra. Si hubiera tenido esto con quien hablarlo, no me habría fumado ese primer cigarrillo. Es un consuelo no estar solo."
+    "quote": "Llevaba seis semanas sin fumar, pero un mal día lo echó todo por tierra. El método me enseñó que una recaída no borra lo aprendido: retomé el plan al día siguiente, sin culpa."
   },
   {
     "photo": "10",
@@ -98,7 +98,7 @@ export const MEMBERS = [
   {
     "photo": "12",
     "name": "Dorothy",
-    "quote": "Cuando te escribí por primera vez, mi ansia era de un 10. Unos minutos después, ya era de un 3."
+    "quote": "La primera vez que usé el ejercicio de respiración, mi ansia era de un 10. Unos minutos después, ya era de un 3."
   },
   {
     "photo": "05",
