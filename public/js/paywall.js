@@ -101,17 +101,18 @@ export function displayOrder(allPlans) {
 export const perDay = (p) => moneyCents(Math.round(p.amount / p.days), p.currency);
 
 /** Lista de planes seleccionable (radio). Se usa en el paywall y en la identificación. */
-export function planList(plans, selected, onSelect, { compact = false } = {}) {
+export function planList(plans, selected, onSelect, { compact = false, titles = {}, discountBadge = false } = {}) {
+  const pctOff = (p) => (p.renewalAmount ? Math.round((1 - p.amount / p.renewalAmount) * 100) : 0);
   const rows = displayOrder(plans).map((p) => h('button', {
     type: 'button', role: 'radio', 'data-id': p.id, disabled: !p.available,
     class: `plan-row${p.recommended ? ' plan-row--recommended' : ''}${compact ? ' plan-row--compact' : ''}`,
     'aria-checked': String(p.id === selected),
     onclick: () => { rows.forEach((r) => r.setAttribute('aria-checked', String(r.dataset.id === p.id))); onSelect(p.id); },
   },
-  p.recommended ? h('span', { class: 'plan-row__badge' }, 'Recomendado para ti') : null,
+  p.recommended ? h('span', { class: 'plan-row__badge' }, discountBadge && pctOff(p) ? `¡${pctOff(p)} % de descuento!` : 'Recomendado para ti') : null,
   h('span', { class: 'plan-row__radio', 'aria-hidden': 'true' }),
   h('span', { class: 'plan-row__main' },
-    h('span', { class: 'plan-row__name' }, p.title),
+    h('span', { class: 'plan-row__name' }, titles[p.id] ?? p.title),
     h('span', { class: 'plan-row__total' }, !p.available ? 'Precio no disponible'
       : p.renewalAmount ? [h('s', {}, moneyCents(p.renewalAmount, p.currency)), ' ', h('strong', {}, p.displayPrice ?? moneyCents(p.amount, p.currency)), ' el primer período']
         : `${(p.displayPrice ?? moneyCents(p.amount, p.currency))} ${p.periodLabel}`)),
@@ -180,7 +181,7 @@ function showExitOffer(offer, program = 'sem-fumo') {
   accept.focus();
 }
 
-export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo', purchasable = true } = {}) {
+export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo', purchasable = true, variant = 'default' } = {}) {
   // Embudo: quiz → e-mail → plan. A quien aún no dejó su e-mail se lo pedimos antes de mostrar los precios.
   if (!isNativeApp() && await needsLead()) {
     return renderLeadGate(root, { program, onDone: () => renderPaywall(root, { pendingCheckout, program, purchasable }) });
@@ -226,6 +227,8 @@ export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo
     ));
   }
 
+  if (variant === 'sales') return renderSalesPlans(root, { plans, selected, canPurchase, program, pendingCheckout });
+
   const resume = pendingCheckout
     ? h('div', { class: 'notice notice--wide' }, icon('info', 'notice__icon'),
       h('div', {}, h('strong', {}, 'Tu pago quedó pendiente. '), 'Tus respuestas y resultados están guardados; puedes retomarlo cuando quieras.'))
@@ -254,4 +257,36 @@ export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo
   ].filter(Boolean));
   renderTerms();
   if (paymentsEnabled && !isNativeApp()) armExitOffer(program);
+}
+
+// Bloque de planes de la página de venta (mismo contenido que el embudo original).
+const SALES_TITLES = { semanal: 'Prueba de una semana', trimestral: 'Plan de 3 meses', mensual: 'Plan de 1 mes' };
+const FIRST_PERIOD = { semanal: 'por la primera semana', mensual: 'por el primer mes', trimestral: 'por los primeros 3 meses', anual: 'por el primer año' };
+const SALES_CTA = 'Empieza sin ningún riesgo';
+
+function renderSalesPlans(root, { plans, selected, canPurchase, program, pendingCheckout }) {
+  const legal = h('p', { class: 'sales-plans__legal' });
+  const terms = h('input', { type: 'checkbox', id: 'sales-terms' });
+  const cta = h('button', { type: 'button', class: 'btn btn--lg btn--block sales-plans__cta', disabled: true, onclick: () => goToCheckout(selected, cta, { program }) }, SALES_CTA);
+  const update = () => {
+    const p = plans.find((x) => x.id === selected);
+    cta.disabled = !canPurchase || !terms.checked || !p?.available;
+    if (!p?.available) { legal.textContent = ''; return; }
+    const first = p.displayPrice ?? moneyCents(p.amount, p.currency);
+    const renewal = moneyCents(p.renewalAmount ?? p.amount, p.currency);
+    legal.textContent = `Al hacer clic en «${SALES_CTA}», acepto pagar ${first} ${FIRST_PERIOD[p.id] ?? ''}. Si no cancelo antes de que termine este periodo introductorio, Alento me cobrará automáticamente ${renewal} ${p.periodLabel} a través de mi método de pago a partir de entonces, hasta que cancele. Puedo cancelar en cualquier momento a través de la web, entrando en la página de suscripción de mi cuenta.`;
+  };
+  terms.addEventListener('change', update);
+  root.replaceChildren(
+    pendingCheckout ? h('div', { class: 'notice notice--wide' }, h('strong', {}, 'Tu pago quedó pendiente. '), 'Puedes retomarlo cuando quieras.') : '',
+    planList(plans, selected, (id) => { selected = id; rememberPlan(id); update(); }, { titles: SALES_TITLES, discountBadge: true }),
+    h('p', { class: 'sales-plans__cancel' }, icon('check'), 'Puedes darte de baja cuando quieras'),
+    legal,
+    h('label', { class: 'check sales-plans__terms', for: 'sales-terms' }, terms,
+      h('span', {}, 'Al marcar esta casilla, acepto los ', h('a', { href: '/terminos', target: '_blank' }, 'Términos y condiciones'), ' de Alento.')),
+    cta,
+    h('p', { class: 'sales-plans__refund' }, 'Solo se pueden solicitar reembolsos dentro del plazo de garantía de devolución del dinero de 14 días, siempre y cuando el producto se haya utilizado de forma activa durante al menos 7 días (o 4 días en el caso de los planes semanales) y se pueda demostrar su uso con pruebas verificables.'),
+    h('div', { class: 'sales-plans__pay', 'aria-label': 'Métodos de pago' }, ['paypal', 'applepay', 'visa', 'mastercard', 'maestro', 'discover', 'amex'].map((n) => h('img', { src: `/assets/quiz/pay/${n}.svg`, alt: n, width: 32, height: 20 }))));
+  update();
+  if (canPurchase && !isNativeApp()) armExitOffer(program);
 }

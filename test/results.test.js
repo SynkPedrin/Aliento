@@ -191,12 +191,12 @@ test('respuestas vacías permanecen en el programa por defecto (sem-fumo)', () =
 });
 
 test('quiz v3: rangos → números, radar 0–100 y tipo de fumador por el eje dominante', () => {
-  const r = computeResult({ ...base, q_cantidad: '11a20', q_gasto: '50a149', q_patron: 'automatico', q_disfrute: ['sabor', 'inhalar', 'gesto'], q_anios: 'mas20' });
+  const r = computeResult({ ...base, q_cantidad: '11a20', q_gasto: '50a149', q_patron: 'automatico', q_disfrute: ['sabor', 'inhalar', 'gesto'], q_anios: 'mas10' });
   assert.equal(r.current.perDay, 15);
-  assert.equal(r.current.weeklySpend, 23);
+  assert.equal(r.current.weeklySpend, 34.38);
   assert.equal(r.radar.length, 6);
   assert.ok(r.radar.every((x) => x.value >= 0 && x.value <= 100));
   assert.equal(r.radar.find((x) => x.id === 'placer').value, 100);
-  assert.equal(r.smokerType.id, 'placer');
+  assert.equal(r.smokerType.id, 'Savor'); // eje «placer» → El Saboreador
   assert.ok(r.smokerType.name && r.smokerType.body);
 });

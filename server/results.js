@@ -1,4 +1,5 @@
 import { HABIT_GROUPS, QUESTIONS, STEPS, TRIGGERS } from './quiz.js';
+import { SMOKER_TYPE_NAMES, SMOKER_TYPE_TEXTS } from './content/funnels/sem-fumo-es.js';
 
 const WEEKS_PER_MONTH = 52 / 12;
 const PROJECTION_WEEKS = 12;
@@ -148,7 +149,7 @@ export function radarScores(a) {
   pts.ansia += ({ sustituir: 1, parches: 1, pedir: 2, cualquiera: 2, lejos: 3 })[a.q_sin24h] ?? 0;
   pts.habito += ({ programado: 3, automatico: 3, mixto: 2 })[a.q_patron] ?? 0;
   pts.habito += Math.min(4, groupCount('automatico'));
-  pts.habito += ({ '1a5': 1, '6a10': 2, '11a20': 3, mas20: 3 })[a.q_anios] ?? 0;
+  pts.habito += ({ '1a2': 1, '3a5': 2, '6a9': 3, mas10: 3, '1a5': 1, '6a10': 2, '11a20': 3, mas20: 3 })[a.q_anios] ?? 0;
   pts.habito += has(a.q_disfrute, 'gesto') ? 1 : 0;
   pts.estres += Math.min(4, groupCount('emocional') * 2);
   pts.estres += ({ ansiedad: 3, vacio: 2 })[a.q_preocupacion] ?? 0;
@@ -166,33 +167,19 @@ export function radarScores(a) {
   return RADAR_AXES.map((x) => ({ ...x, value: Math.min(100, Math.round((pts[x.id] / RADAR_MAX[x.id]) * 100)) }));
 }
 
-// Tipo de fumador según el eje dominante.
-export const SMOKER_TYPES = {
-  habito: {
-    name: 'El piloto automático',
-    body: 'Tus cigarrillos siguen un guion: las mismas horas, los mismos sitios, las mismas señales. Por eso parece imposible romperlo, y por eso mismo tiene solución: lo que es predecible se puede reentrenar. Cambiar el orden de una rutina, mover un horario unos minutos o sustituir el primer cigarrillo del café son cambios pequeños que, repetidos, le enseñan a tu cerebro un guion nuevo. La constancia que creó este hábito es la misma que lo va a deshacer.',
-  },
-  ansia: {
-    name: 'El impulso químico',
-    body: 'En tu caso, la nicotina marca el ritmo: el primer cigarrillo llega pronto y la falta se nota rápido. No es falta de voluntad, es una dependencia física que tu cuerpo ha aprendido. La buena noticia es que el ansia sube, llega a un pico y baja en pocos minutos. Tu plan te enseña a atravesar esos minutos con técnicas concretas y a bajar la dosis de forma gradual, para que el cuerpo se adapte sin pasarlo mal.',
-  },
-  estres: {
-    name: 'El refugio emocional',
-    body: 'Para ti, fumar es una forma de bajar la tensión: un momento de calma cuando el día aprieta. El problema es que el alivio dura poco y, con el tiempo, la nicotina aumenta la sensación de estrés entre cigarrillo y cigarrillo. Tu plan te da otras salidas para esos momentos, como respiraciones cortas y pausas guiadas, para que conserves la calma sin depender del cigarrillo.',
-  },
-  pertenecer: {
-    name: 'El conector social',
-    body: 'Tu hábito vive en los demás: las salidas, los descansos compartidos, la complicidad de fumar juntos. Eso lo hace muy fuerte, porque dejarlo parece alejarte de tu gente. Pero esa conexión no depende del tabaco. Tu plan te prepara para cada situación social con frases y estrategias concretas, para que sigas en el grupo sin necesitar el cigarrillo.',
-  },
-  enfoque: {
-    name: 'El combustible mental',
-    body: 'Usas el cigarrillo para arrancar, concentrarte o cerrar una tarea. Sientes que te ayuda a pensar, pero en realidad calma la falta de nicotina que interrumpe tu concentración. Cuando la dependencia baja, el foco vuelve solo. Tu plan sustituye las pausas de cigarrillo por pausas de enfoque de pocos minutos que funcionan igual de bien.',
-  },
-  placer: {
-    name: 'El ritual sensorial',
-    body: 'Lo que más te engancha es la experiencia: el gesto, el sabor, la sensación al inhalar. Es un ritual que disfrutas, y por eso no basta con la fuerza de voluntad. Tu plan no te pide renunciar al placer de golpe: te ayuda a encontrar sustitutos para cada parte del ritual y a reducirlo de forma gradual, sin sensación de pérdida.',
-  },
-};
+// Tipo de fumador: eje dominante (principal) y segundo eje (secundario), como en el embudo original.
+const AXIS_TYPE = { ansia: 'Ember', habito: 'Clockwork', estres: 'Storm', pertenecer: 'Tribe', enfoque: 'Edge', placer: 'Savor' };
+
+export function smokerTypeFor(radar) {
+  const [first, second] = [...radar].sort((x, y) => y.value - x.value);
+  const primary = AXIS_TYPE[first.id];
+  const secondary = second && second.value > 0 ? AXIS_TYPE[second.id] : null;
+  return {
+    id: primary, secondary,
+    name: SMOKER_TYPE_NAMES[primary],
+    body: (secondary && SMOKER_TYPE_TEXTS[`${primary}-${secondary}`]) || SMOKER_TYPE_TEXTS[primary],
+  };
+}
 
 // ------------------------------------------------------------
 // CÁLCULO PARA ALCOHOL
@@ -490,7 +477,6 @@ export function computeResult(answers, options = {}) {
   const perDay = numericAnswer('q_cantidad', answers.q_cantidad, 'n');
   const weeklySpend = numericAnswer('q_gasto', answers.q_gasto, 'weekly');
   const radar = radarScores(answers);
-  const top = [...radar].sort((x, y) => y.value - x.value)[0];
   const strategyId = options.strategyOverride ?? answers.q_objetivo;
   const strategy = STRATEGIES[strategyId] || STRATEGIES.gradual;
 
@@ -534,9 +520,11 @@ export function computeResult(answers, options = {}) {
     profile,
     triggers,
     radar,
-    smokerType: { id: top.id, ...SMOKER_TYPES[top.id] },
+    smokerType: smokerTypeFor(radar),
+    // Respuestas que la página de venta usa para personalizar (por orden de opción).
+    answers: Object.fromEntries(['q_producto', 'q_anios', 'q_cantidad', 'q_edad', 'q_genero', 'q_preocupacion', 'q_meta3m'].map((id) => [id, answers[id] ?? null])),
     // Textos de respuestas que la página de resultado repite («{años} fumando», «dentro de 3 meses…»).
-    labels: Object.fromEntries(['q_anios', 'q_meta3m', 'q_ahorro', 'q_producto', 'q_edad'].map((id) => [id, optionLabel(id, answers[id])])),
+    labels: Object.fromEntries(['q_anios', 'q_meta3m', 'q_ahorro', 'q_producto', 'q_edad', 'q_genero', 'q_preocupacion', 'q_cantidad'].map((id) => [id, optionLabel(id, answers[id])])),
     projection: {
       weeks: PROJECTION_WEEKS,
       schedule,

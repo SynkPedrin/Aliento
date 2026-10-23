@@ -18,20 +18,21 @@ async function payInStripe(page, card) {
 test('embudo: cuestionario → resultados → plan → cuenta → pago test → bienvenida → instalación → configuración → panel', async ({ page }) => {
   test.setTimeout(900_000);
   await completeQuiz(page);
-  // TEST 2: resultado personalizado (tipo de fumador → explicación → proyección → venta).
-  await expect(page.getByText('Tu tipo de fumador')).toBeVisible();
+  // TEST 2: resultado personalizado (tipo de fumador → significado → proyección → venta).
+  await expect(page.getByText('Tu tipo de fumador:')).toBeVisible();
   await page.getByRole('link', { name: 'Continuar' }).click();
-  await expect(page.getByRole('heading', { name: /Lucía, esto es lo que hace única tu situación/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Lucía, ¿qué hace que tu situación sea algo único\?/ })).toBeVisible();
   await page.getByRole('link', { name: 'Continuar' }).click();
-  await expect(page.getByText('Estimación').first()).toBeVisible();
+  await expect(page.getByText('Recuperarás el control antes')).toBeVisible();
   await page.getByRole('link', { name: 'Continuar' }).click();
-  await expect(page.getByRole('heading', { name: 'No tienes que dejarlo hoy.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /No puedes dejarlo/ })).toBeVisible();
   // TEST 3: selección de plan (solo planes configurados en Stripe).
   await page.locator('#planes').scrollIntoViewIfNeeded();
   const rows = page.locator('#planes .plan-row');
   await expect(rows).toHaveCount(3);
   await page.locator('#planes .plan-row[data-id="mensual"]').click();
-  await page.getByRole('button', { name: 'Comenzar mi transformación' }).click();
+  await page.check('#sales-terms');
+  await page.getByRole('button', { name: 'Empieza sin ningún riesgo' }).click();
   // TEST 6: creación de cuenta.
   await page.waitForURL(/\/acceso\?plan=mensual/);
   const email = `e2e-${randomUUID().slice(0, 8)}@example.com`;
@@ -77,7 +78,8 @@ test('pago rechazado: la tarjeta se rechaza en Stripe y no se activa nada (TEST 
   await completeQuiz(page);
   await page.goto('/resultados?program=sem-fumo#planes');
   await page.locator('#planes .plan-row[data-id="semanal"]').click();
-  await page.getByRole('button', { name: 'Comenzar mi transformación' }).click();
+  await page.check('#sales-terms');
+  await page.getByRole('button', { name: 'Empieza sin ningún riesgo' }).click();
   const email = `e2e-${randomUUID().slice(0, 8)}@example.com`;
   await page.fill('#name', 'Rechazo'); await page.fill('#email', email); await page.fill('#emailConfirm', email);
   await page.fill('#password', PASSWORD); await page.check('input[name=acceptTerms]'); await page.check('input[name=healthConsent]');

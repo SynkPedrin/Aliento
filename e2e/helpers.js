@@ -33,7 +33,7 @@ export async function completeQuiz(page) {
     if (await page.locator('#lead-email').isVisible()) {
       await page.fill('#lead-email', `e2e-${randomUUID().slice(0, 8)}@example.com`);
       await page.check('#lead-health');
-      await page.getByRole('button', { name: 'Ver mi resultado' }).click();
+      await page.getByRole('button', { name: 'Ver mis resultados' }).click();
       await page.fill('#lead-name', 'Lucía');
       await page.getByRole('button', { name: 'Continuar' }).click();
       break;

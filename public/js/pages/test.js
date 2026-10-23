@@ -83,11 +83,9 @@ const OPTION_ICONS = {
   dot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>',
 };
 
-// Perfil de ejemplo para la portada (no son datos de la persona).
-const DEMO_RADAR = [
-  { label: 'Ansia', value: 72 }, { label: 'Hábito', value: 61 }, { label: 'Estrés', value: 44 },
-  { label: 'Pertenecer', value: 29 }, { label: 'Enfoque', value: 39 }, { label: 'Placer', value: 37 },
-];
+// Portada: el radar alterna seis perfiles de ejemplo (no son datos de la persona), como en el embudo original.
+const RADAR_AXES = ['Ansia', 'Hábito', 'Estrés', 'Pertenecer', 'Enfoque', 'Placer'];
+const RADAR_PROFILES = [[86, 52, 46, 28, 33, 41], [45, 85, 38, 30, 52, 27], [48, 33, 87, 25, 40, 36], [30, 42, 35, 84, 22, 55], [38, 49, 27, 24, 83, 31], [33, 28, 41, 52, 26, 88]];
 
 function pick(step, o) {
   return (e) => {
@@ -101,17 +99,16 @@ function pick(step, o) {
 
 function renderHero(step) {
   return h('section', { class: 'quiz__screen hero-screen' },
-    h('p', { class: 'eyebrow' }, step.eyebrow),
-    h('h1', { class: 'title-lg' }, step.title),
-    h('p', { class: 'subtitle' }, step.lead),
-    radarChart(DEMO_RADAR, { caption: 'Ejemplo de perfil' }),
-    h('h2', { class: 'hero-screen__q' }, step.question),
+    h('p', { class: 'hero-screen__sub' }, step.subtitle),
+    radarChart(RADAR_AXES.map((label, i) => ({ label, value: RADAR_PROFILES[0][i] })), { caption: 'Ejemplo de perfil', cycle: RADAR_PROFILES }),
+    h('h1', { class: 'hero-screen__title' }, `${step.title} `, h('span', { class: 'mark' }, step.titleMark)),
+    h('p', { class: 'hero-screen__q' }, step.question),
     h('div', { class: 'options options--pair' }, step.options.map((o) =>
       h('button', { type: 'button', class: 'option-pair', 'aria-pressed': String(answers[step.id] === o.id), onclick: pick(step, o) }, o.label))),
     h('p', { class: 'help hero-screen__legal' },
-      'Al responder, aceptas los ', h('a', { href: '/terminos', target: '_blank' }, 'Términos'),
-      ' y que tratemos tus respuestas, incluidas las relativas a tu salud y tus hábitos, solo para calcular tu resultado. Si no creas una cuenta, se eliminan en 30 días. ',
-      h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.'));
+      'Si sigues adelante, aceptas nuestros ', h('a', { href: '/terminos', target: '_blank' }, 'Términos y condiciones'), ' | ',
+      h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.'),
+    h('p', { class: 'help hero-screen__legal' }, `© ${new Date().getFullYear()} Alento. Todos los derechos reservados.`));
 }
 
 function renderSingle(step) {
@@ -195,52 +192,97 @@ function renderNumber(step) {
     h('div', { class: 'sticky-cta' }, cta));
 }
 
-function renderInfo(step) {
-  const cta = h('button', {
-    type: 'button', class: 'btn btn--lg',
-    onclick: async () => {
-      try { await save(null, null, steps[index + 1]?.id); goTo(index + 1); } catch (e) { toast(e.message); }
-    },
-  }, 'Continuar');
-  // Pantalla personalizada: un párrafo por respuesta elegida (máx. 2), en el orden de las variantes.
-  const picked = step.personalizedBy ? [].concat(answers[step.personalizedBy] ?? []) : [];
-  const paras = Object.keys(step.variants ?? {}).filter((k) => picked.includes(k)).slice(0, 2).map((k) => step.variants[k]);
-  const people = step.images ? h('div', { class: 'info-screen__people', 'aria-hidden': 'true' }, step.images.map((src) => h('img', { src, alt: '' }))) : null;
-  return h('section', { class: `quiz__screen info-screen${step.tone === 'dark' ? ' info-screen--dark' : ''}` },
-    people ?? (step.image ? h('img', { class: 'info-screen__img', src: step.imageByGender?.[answers.q_genero] ?? step.image, alt: '', loading: 'eager' }) : h('div', { html: MARK_SVG })),
-    step.eyebrow ? h('p', { class: 'eyebrow' }, step.eyebrow) : null,
-    step.stat ? h('p', { class: 'info-screen__stat' }, step.stat) : null,
-    h('h1', { class: 'title-lg' }, step.title),
-    ...(paras.length ? paras : [step.body]).map((t) => h('p', {}, t)),
-    step.source ? h('p', { class: 'tiny info-screen__source' }, step.source) : null,
-    h('div', { class: 'sticky-cta' }, cta));
+// Orden (1, 2, 3…) de la opción elegida: el embudo original personaliza por posición.
+const orderOf = (qid, value) => (steps.find((s) => s.id === qid)?.options?.findIndex((o) => o.id === value) ?? -1) + 1;
+const FORM_KEYS = { 1: 'cigarettes', 2: 'e-cig/vape', 3: 'heated-tobacco', 4: 'cigars', 5: 'shisha/hookah', 6: 'pouches/snus' };
+const YEAR_KEYS = { 1: 'less-than-1-year', 2: '1-2-years', 3: '3-5-years', 4: '6-9-years', 5: '10-plus-years' };
+
+function personalText(step) {
+  const t = step.texts ?? {};
+  if (step.personalize === 'duration') {
+    return t.byForm?.[FORM_KEYS[orderOf('q_producto', answers.q_producto)]]?.[YEAR_KEYS[orderOf('q_anios', answers.q_anios)]] ?? t.fallback;
+  }
+  if (step.personalize === 'friend') {
+    const picked = [].concat(answers.q_disfrute ?? []).map((v) => orderOf('q_disfrute', v)).filter(Boolean);
+    const add = picked.length ? t.pleasure?.[picked[Math.floor(Math.random() * picked.length)]] : '';
+    return [t.friend?.[orderOf('q_amigo', answers.q_amigo)] ?? t.friend?.FALLBACK, add].filter(Boolean).join('\n\n');
+  }
+  if (step.personalize === 'goal') {
+    const tried = [].concat(answers.q_metodos ?? []).map((v) => orderOf('q_metodos', v)).find((o) => t.tried?.[o]);
+    const text = [t.tried?.[tried], t.goal?.[orderOf('q_meta3m', answers.q_meta3m)]].filter(Boolean).join('\n\n');
+    return text || t.fallback;
+  }
+  return step.body;
 }
 
-/** Ahorro estimado: gasto semanal de la respuesta × 52, con barra animada (1 mes, 6 meses, 1 año). */
+const continueBtn = () => {
+  const cta = h('button', {
+    type: 'button', class: 'btn btn--lg',
+    onclick: async () => { try { await save(null, null, steps[index + 1]?.id); goTo(index + 1); } catch (e) { toast(e.message); } },
+  }, 'Continuar');
+  return h('div', { class: 'sticky-cta' }, cta);
+};
+
+function renderInfo(step) {
+  const image = step.imageByGender?.[answers.q_genero] ?? step.image;
+  return h('section', { class: `quiz__screen info-screen${step.tone === 'dark' ? ' info-screen--dark' : ''} info-screen--story` },
+    step.title ? h('h1', { class: 'title-lg' }, step.title) : null,
+    step.html ? h('p', { class: 'info-screen__text', html: step.html }) : h('p', { class: 'info-screen__text' }, personalText(step)),
+    image ? h('img', { class: 'info-screen__img info-screen__img--leaf', src: image, alt: '', loading: 'eager' }) : null,
+    continueBtn());
+}
+
+function renderNotalone() {
+  return h('section', { class: 'quiz__screen info-screen info-screen--dark notalone' },
+    h('h1', { class: 'notalone__title' }, '¡No estás solo!'),
+    h('p', { class: 'notalone__stat notalone__stat--mobile' }, 'Más de 280 millones'),
+    h('div', { class: 'notalone__row' },
+      h('img', { class: 'notalone__people', src: '/assets/quiz/people-left-mobile.webp', alt: '' }),
+      h('div', {}, h('p', { class: 'notalone__stat notalone__stat--desktop' }, 'Más de 960 millones'), h('p', { class: 'notalone__lead' }, 'tienen problemas con el tabaco en todo el mundo')),
+      h('img', { class: 'notalone__people', src: '/assets/quiz/people-right-mobile.webp', alt: '' })),
+    h('blockquote', { class: 'notalone__quote' }, h('span', { 'aria-hidden': 'true' }, '"'), 'Con la ayuda adecuada, el cambio siempre es posible', h('br'), h('br'), 'Alento te ofrece apoyo diario y herramientas contrastadas y con base científica'),
+    continueBtn());
+}
+
+function renderScience(step) {
+  return h('section', { class: 'quiz__screen info-screen info-screen--dark science' },
+    h('h1', { class: 'title-lg' }, step.title),
+    h('h2', { class: 'science__sub' }, step.subtitle),
+    h('div', { class: 'science__grid' }, step.logos.map(([name, file]) =>
+      h('div', { class: 'science__card' }, h('span', {}, name), h('img', { src: `/assets/quiz/logos/${file}.webp`, alt: name, loading: 'lazy' })))),
+    continueBtn());
+}
+
+/** Ahorro anual según el gasto mensual elegido, con barra animada y etiqueta (como en el original). */
 function renderSavings(step) {
-  const weekly = steps.find((s) => s.id === step.from)?.options?.find((o) => o.id === answers[step.from])?.weekly ?? 0;
+  const annual = steps.find((s) => s.id === step.from)?.options?.find((o) => o.id === answers[step.from])?.annual ?? 2304;
   const fmt = (v) => new Intl.NumberFormat(config.locale, { style: 'currency', currency: config.currency, maximumFractionDigits: 0 }).format(v);
-  const marks = [['1 mes', weekly * 52 / 12], ['6 meses', weekly * 26], ['1 año', weekly * 52]];
+  const pct = Math.max(6, Math.min(100, Math.round((annual / (annual + 200)) * 100)));
   const fill = h('span', { class: 'savings-bar__fill' });
-  const cta = h('button', { type: 'button', class: 'btn btn--lg', onclick: async () => { try { await save(null, null, steps[index + 1]?.id); goTo(index + 1); } catch (e) { toast(e.message); } } }, 'Continuar');
-  requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = '100%'; }));
-  return h('section', { class: 'quiz__screen info-screen info-screen--dark' },
-    h('p', {}, h('span', { class: 'estimate-tag' }, 'Estimación')),
-    h('h1', { class: 'title-lg' }, step.title.replace('{amount}', fmt(weekly * 52))),
-    h('div', { class: 'savings-bar', role: 'img', 'aria-label': marks.map(([l, v]) => `${l}: ${fmt(v)}`).join(', ') },
-      h('div', { class: 'savings-bar__track' }, fill),
-      h('ol', { class: 'savings-bar__marks' }, marks.map(([l, v]) => h('li', {}, h('strong', {}, fmt(v)), h('span', {}, l))))),
-    h('p', {}, step.body),
-    h('div', { class: 'sticky-cta' }, cta));
+  const pill = h('span', { class: 'savings-bar__pill' }, fmt(annual));
+  requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.width = `${pct}%`; pill.style.left = `${Math.max(5, Math.min(95, pct))}%`; }));
+  return h('section', { class: 'quiz__screen info-screen info-screen--dark savings' },
+    h('h1', { class: 'title-lg' }, step.title.replace('{amount}', fmt(annual))),
+    h('p', { class: 'savings__sub' }, step.body),
+    h('div', { class: 'savings-bar' },
+      h('div', { class: 'savings-bar__track' }, fill, pill),
+      h('div', { class: 'savings-bar__ends' }, h('span', {}, fmt(0)), h('span', {}, fmt(annual)))),
+    continueBtn());
 }
 
 function renderAnalysis(step) {
   const bar = h('div', { class: 'progress progress--lg', role: 'progressbar', 'aria-label': 'Análisis', 'aria-valuemin': '0', 'aria-valuemax': '100' }, h('span'));
-  const pctEl = h('p', { class: 'analysis__pct' }, '0%');
   const items = step.items.map((t) => h('li', {}, h('span', { class: 'checklist__dot', 'aria-hidden': 'true' }), t));
   const status = h('p', { class: 'sr-only', 'aria-live': 'polite' });
-  const section = h('section', { class: 'quiz__screen analysis' }, step.image ? h('img', { class: 'analysis__img', src: step.image, alt: '' }) : null, h('h1', {}, step.title), pctEl, bar, h('ul', { class: 'checklist' }, items),
-    h('p', { class: 'help analysis__note' }, 'Tus respuestas son privadas y solo se usan para crear tu plan.'), status);
+  const section = h('section', { class: 'quiz__screen analysis' },
+    h('h1', {}, step.title, h('span', { class: 'analysis__dots', 'aria-hidden': 'true' }, h('span', {}, '.'), h('span', {}, '.'), h('span', {}, '.'))),
+    bar, h('ul', { class: 'checklist' }, items),
+    step.testimonial ? h('figure', { class: 'card analysis__quote' },
+      h('figcaption', {}, h('strong', {}, step.testimonial.name), h('span', { class: 'analysis__stars', 'aria-label': '5 estrellas' }, '★★★★★')),
+      h('blockquote', {}, step.testimonial.text)) : null,
+    step.supportingText ? h('p', { class: 'analysis__support' }, step.supportingText) : null,
+    step.supportingText ? h('img', { class: 'analysis__avatars', src: '/assets/quiz/grouped-people.jpg', alt: '' }) : null,
+    status);
 
   const completion = api('/api/assessment/complete', { method: 'POST', body: { program: PROGRAM } });
   completion.catch(() => {}); // el error se trata en finish()
@@ -257,7 +299,7 @@ function renderAnalysis(step) {
     const no = h('button', { type: 'button', class: 'btn btn--ghost btn--lg', onclick: answer('no') }, 'No');
     const overlay = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'pp-q' },
       h('div', { class: 'card modal__card commit' },
-        h('p', { class: 'help' }, 'Para continuar, dinos'),
+        h('p', { class: 'help' }, 'Para seguir adelante, especifica'),
         h('h2', { class: 'title-md', id: 'pp-q' }, question),
         h('div', { class: 'commit__btns' }, no, h('button', { type: 'button', class: 'btn btn--lg', onclick: answer('si') }, 'Sí'))));
     document.body.append(overlay);
@@ -272,7 +314,6 @@ function renderAnalysis(step) {
     const pct = Math.round(p * 100);
     bar.firstChild.style.width = `${pct}%`;
     bar.setAttribute('aria-valuenow', pct);
-    pctEl.textContent = `${pct}%`;
     const per = 1 / items.length;
     items.forEach((li, i) => { li.className = p >= per * (i + 1) ? 'is-done' : p >= per * i ? 'is-active' : ''; });
     if (!paused && popups.length && p >= popups[0].at) popup(popups.shift());
@@ -312,40 +353,37 @@ function leadScreen(...children) {
 }
 
 function renderLeadEmail(error = '') {
-  const email = h('input', { type: 'email', class: 'input', id: 'lead-email', autocomplete: 'email', inputmode: 'email', required: true, placeholder: 'tu@correo.com', value: lead.email });
+  const email = h('input', { type: 'email', class: 'input', id: 'lead-email', autocomplete: 'email', inputmode: 'email', required: true, placeholder: 'Introduce tu dirección de correo electrónico', value: lead.email });
   const health = h('input', { type: 'checkbox', id: 'lead-health' });
-  const mkt = h('input', { type: 'checkbox', id: 'lead-mkt', checked: lead.marketing || null });
   const err = h('p', { class: 'form-error', role: 'alert' }, error);
   const form = h('form', { class: 'stack', novalidate: true },
-    h('label', { class: 'field', for: 'lead-email' }, h('span', { class: 'field__label' }, 'Tu e-mail'), email),
+    h('label', { class: 'field', for: 'lead-email' }, h('span', { class: 'field__label' }, 'Tu dirección de correo electrónico:'), email),
     h('label', { class: 'check', for: 'lead-health' }, health,
-      h('span', {}, 'Acepto que Alento use mis respuestas, incluidas las relativas a mi salud y mis hábitos, para crear mi plan. ', h('a', { href: '/privacidad', target: '_blank', rel: 'noopener' }, 'Política de privacidad'), '.')),
-    h('label', { class: 'check', for: 'lead-mkt' }, mkt, h('span', {}, 'Quiero recibir consejos y recordatorios por e-mail (opcional).')),
+      h('span', {}, 'Respetamos tu privacidad y nos comprometemos a proteger tus datos personales. Tus datos se tratarán de acuerdo con nuestra ', h('a', { href: '/privacidad', target: '_blank', rel: 'noopener' }, 'Política de privacidad'), '.')),
     err,
-    h('button', { type: 'submit', class: 'btn btn--lg btn--block' }, 'Ver mi resultado'));
+    h('button', { type: 'submit', class: 'btn btn--lg btn--block' }, 'Ver mis resultados'));
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim())) { err.textContent = 'Introduce un e-mail válido.'; return; }
-    if (!health.checked) { err.textContent = 'Necesitamos tu consentimiento para usar tus respuestas en tu plan.'; return; }
-    Object.assign(lead, { email: email.value.trim(), marketing: mkt.checked });
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim())) { err.textContent = 'Por favor, introduce una dirección de correo electrónico válida.'; return; }
+    if (!health.checked) { err.textContent = 'Marca la casilla para continuar.'; return; }
+    Object.assign(lead, { email: email.value.trim(), marketing: false });
     renderLeadName();
   });
-  leadScreen(h('p', { class: 'eyebrow' }, 'Tu resultado está listo'),
-    h('h1', { class: 'title-lg' }, 'Consulta tu resultado'),
-    h('p', { class: 'subtitle' }, 'Escribe tu e-mail para ver tu perfil y recibir tu plan personalizado.'),
+  leadScreen(h('h1', { class: 'title-lg' }, 'Consulta tus resultados'),
+    h('p', { class: 'subtitle' }, 'Introduce tu dirección de correo electrónico para recibir los resultados de tu prueba y seguir avanzando con nuestro plan personalizado.'),
     form);
   track('lead_form_shown', { program: PROGRAM }, { pixel: false });
 }
 
 function renderLeadName() {
-  const name = h('input', { class: 'input', id: 'lead-name', autocomplete: 'given-name', maxlength: '40', placeholder: 'Tu nombre' });
+  const name = h('input', { class: 'input', id: 'lead-name', autocomplete: 'given-name', maxlength: '40', placeholder: 'Escribe tu nombre' });
   const cta = h('button', { type: 'submit', class: 'btn btn--lg btn--block' }, 'Continuar');
   const form = h('form', { class: 'stack', novalidate: true },
-    h('label', { class: 'field', for: 'lead-name' }, h('span', { class: 'field__label' }, 'Tu nombre'), name), cta);
+    h('label', { class: 'field', for: 'lead-name' }, h('span', { class: 'field__label' }, 'Tu nombre:'), name), cta);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const first = name.value.trim();
-    setBusy(cta, true, 'Preparando tu resultado…');
+    setBusy(cta, true, 'Cargando…');
     try {
       await submitLead({ email: lead.email, name: first, program: PROGRAM, marketingEmail: lead.marketing });
     } catch (ex) {
@@ -356,8 +394,8 @@ function renderLeadName() {
     try { if (first) localStorage.setItem('alento-name', first); } catch { /* modo privado */ }
     window.location.assign(`/resultados?program=${PROGRAM}`);
   });
-  leadScreen(h('h1', { class: 'title-lg' }, '¿Cómo te llamamos?'),
-    h('p', { class: 'subtitle' }, 'Así personalizamos tu resultado y tu plan.'),
+  leadScreen(h('h1', { class: 'title-lg' }, 'Alento quiere saludarte como es debido'),
+    h('p', { class: 'subtitle' }, '¿Cómo te podemos llamar?'),
     form);
 }
 
@@ -365,7 +403,7 @@ function render() {
   shownAt = Date.now();
   const step = steps[index];
   updateChrome();
-  const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, savings: renderSavings, analysis: renderAnalysis }[step.type](step);
+  const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, notalone: renderNotalone, science: renderScience, savings: renderSavings, analysis: renderAnalysis }[step.type](step);
   screenEl.replaceChildren(view);
   window.scrollTo({ top: 0 });
   view.querySelector('h1')?.setAttribute('tabindex', '-1');

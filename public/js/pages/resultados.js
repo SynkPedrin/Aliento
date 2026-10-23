@@ -2,6 +2,7 @@ import { $, api, h, icon, money, num, renderFooter, renderHeader, revealOnScroll
 import { gauge, hbars, radarChart, xyChart } from '../charts.js';
 import { renderPaywall } from '../paywall.js';
 import { track } from '../track.js';
+import { FAQ, MEMBERS, RECENT_SIGNUPS } from '../content/sem-fumo-es.js';
 
 const root = $('[data-root]');
 renderFooter($('[data-footer]'));
@@ -365,79 +366,103 @@ function semFumoResults(data, me) {
   if (location.hash === '#planes') document.getElementById('planes')?.scrollIntoView();
 }
 
-// ---------------------------------------------------------------- Embudo v3 (Sem Fumo, sin suscripción)
-// Perfil → explicación → proyección → página de venta. Cada paso tiene su #hash para que «atrás» funcione.
+// ---------------------------------------------------------------- Embudo Sem Fumo (contenido del embudo original)
+// Perfil → significado → proyección → página de venta. Cada paso tiene su #hash para que «atrás» funcione.
 const FUNNEL = ['perfil', 'explicacion', 'proyeccion', 'planes'];
-const savedName = () => { try { return localStorage.getItem('alento-name') || ''; } catch { return ''; } };
-const shortDate = (d) => new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' }).format(d);
-const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
+const savedName = () => { try { const n = (localStorage.getItem('alento-name') || '').trim(); return n ? n[0].toUpperCase() + n.slice(1).toLowerCase() : ''; } catch { return ''; } };
+const addDays = (n, d = new Date()) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const fmtDay = (d) => new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' }).format(d);
 
-const FAQ = [
-  ['¿Tengo que dejarlo el primer día?', 'No. La primera semana sigues con tu consumo normal mientras registras cuándo y por qué fumas. Con esos datos, Alento te propone el siguiente paso, a tu ritmo.'],
-  ['¿Y si no quiero dejarlo del todo?', 'También puedes empezar reduciendo. Eliges tu objetivo y el plan se adapta: menos cigarrillos, retrasar el primero del día o dejarlo por completo.'],
-  ['¿Qué pasa si tengo una recaída?', 'Es parte del proceso. El plan no se reinicia ni te juzga: registras lo que pasó, ves qué lo provocó y sigues desde donde estabas.'],
-  ['¿Cuánto tiempo al día necesito?', 'Entre 5 y 10 minutos: una tarea breve, el registro de tu consumo y, cuando aprietan las ganas, un ejercicio de respiración de 2 minutos.'],
-  ['¿Alento sustituye a un médico?', 'No. Alento es un programa de apoyo para cambiar el hábito. Si tienes dudas sobre tu salud o sobre medicación para dejar de fumar, consulta a un profesional sanitario.'],
-];
+// Respuestas por orden (1, 2, 3…), como las usa el embudo original.
+const ORDER = {
+  form: { cigarrillos: 1, vapeador: 2, calentado: 3, puros: 4, shisha: 5, snus: 6 },
+  years: { menos1: 1, '1a2': 2, '3a5': 3, '6a9': 4, mas10: 5 },
+  age: { '18-24': 1, '25-34': 2, '35-44': 3, '45-54': 4, '55-64': 5, '65+': 6 },
+  fear: { peso: 1, ansiedad: 2, social: 3, vacio: 4, foco: 5 },
+  goal: { dormir: 1, control: 2, social: 3, animo: 4, foco: 5 },
+  freq: { '1a2': 1, '3a5': 2, '6a10': 3, '11a20': 4, '21mas': 5 },
+};
 
-// Recuperación del cuerpo tras el último cigarrillo (OMS).
-const RECOVERY = [
-  [0, '20 minutos', 'Bajan la frecuencia cardiaca y la presión arterial.'],
-  [1, '12 horas', 'El monóxido de carbono en sangre vuelve a la normalidad.'],
-  [14, '2 semanas', 'Mejoran la circulación y la función pulmonar.'],
-  [30, '1 mes', 'Disminuyen la tos y la falta de aliento.'],
-];
+/** Perfil para la página de venta a partir de las etiquetas guardadas en el resultado. */
+function smokingProfile(r) {
+  const a = r.answers ?? {};
+  const form = ORDER.form[a.q_producto] ?? 1;
+  const years = ORDER.years[a.q_anios];
+  const freqLow = [1, 3, 6, 11, 21][(ORDER.freq[a.q_cantidad] ?? 1) - 1];
+  const yearsLow = [0.5, 1, 3, 6, 10][(years ?? 1) - 1];
+  const total = Math.floor(freqLow * 365 * yearsLow);
+  const mag = 10 ** Math.floor(Math.log10(Math.max(1, total)));
+  return {
+    form, years, age: ORDER.age[a.q_edad], female: a.q_genero === 'mujer', fear: ORDER.fear[a.q_preocupacion], goal: ORDER.goal[a.q_meta3m],
+    burnsTobacco: [1, 4, 5].includes(form), vape: form === 2,
+    repetitions: total >= 100 ? Math.floor(total / mag) * mag : null,
+  };
+}
+
+const AGE_LABELS = ['18–24', '25–34', '35–44', '45–54', '55–64', '65+'];
+const LIFE_GAIN = [10, 10, 9, 6, 4];
+const YEARS_LABELS = ['Menos de un año', '1–2 años', '3 a 5 años', 'De 6 a 9 años', 'Más de 10 años'];
+const SINCE_LABELS = ['Nuevo', '1–2 años', '3-5 años', '6–9 años', 'A partir de 10 años'];
+const TARGET_LABELS = ['Duerme tranquilo', 'Siéntete en control', 'Social sin nicotina', 'Estado de ánimo equilibrado', 'Concentrado y productivo'];
+const FEAR_GOALS = ['Deja de fumar sin engordar', 'Mantén la calma sin cigarrillos', 'No descuides tu vida social', 'Rellena el hueco que deja', 'Relájate y concéntrate sin eso'];
 
 function funnelStep(...children) {
   return h('section', { class: 'funnel-step' }, h('div', { class: 'container narrow' }, ...children));
+}
+
+/** Medidor semicircular (0–100). */
+function halfGauge(value) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 120 66'); svg.setAttribute('class', 'half-gauge'); svg.setAttribute('aria-hidden', 'true');
+  const arc = (pct, cls) => { const p = document.createElementNS(NS, 'path'); const a = Math.PI * (1 - pct / 100); p.setAttribute('d', `M10 60 A50 50 0 0 1 ${60 + 50 * Math.cos(a)} ${60 - 50 * Math.sin(a)}`); p.setAttribute('class', cls); return p; };
+  svg.append(arc(100, 'half-gauge__track'), arc(value, 'half-gauge__fill'));
+  return svg;
 }
 
 function semFumoFunnel(data, me) {
   const { result: r, currency, locale } = data;
   const fmt = (v, d) => money(v, currency, locale, d);
   const name = savedName();
-  const p = r.projection;
   const next = (to) => h('div', { class: 'sticky-cta' }, h('a', { class: 'btn btn--lg', href: `#${to}` }, 'Continuar'));
+  const months = [1, 2, 3].map((m) => new Intl.DateTimeFormat('es', { month: 'short', year: 'numeric' }).format(new Date(new Date().getFullYear(), new Date().getMonth() + m, 1)));
 
   const screens = {
     perfil: () => funnelStep(
-      h('p', { class: 'eyebrow' }, 'Tu tipo de fumador'),
-      h('h1', { class: 'title-lg funnel-step__title' }, r.smokerType.name),
-      h('p', { class: 'subtitle' }, 'Este gráfico muestra qué sostiene tu hábito. En la página siguiente verás qué significa tu perfil.'),
+      h('h1', { class: 'title-lg funnel-step__title u-text-center' }, 'Tu tipo de fumador:', h('br'), h('span', { class: 'funnel-step__accent' }, r.smokerType.name)),
+      h('p', { class: 'subtitle u-text-center' }, 'Este gráfico muestra cómo se relaciona tu hábito de fumar con tus emociones. En la página siguiente, verás el significado oculto que hay detrás de este perfil.'),
       h('div', { class: 'card funnel-radar' }, radarChart(r.radar, { caption: 'Tu perfil' })),
       next('explicacion')),
     explicacion: () => funnelStep(
-      h('img', { class: 'funnel-step__img', src: '/assets/quiz/male-smoking.webp', alt: '' }),
-      h('h1', { class: 'title-lg funnel-step__title' }, name ? `${name}, esto es lo que hace única tu situación` : 'Esto es lo que hace única tu situación'),
+      h('h1', { class: 'title-lg funnel-step__title' }, `${name ? `${name},` : ''} ¿qué hace que tu situación sea algo único?`.trim()),
       h('p', { class: 'funnel-step__body' }, r.smokerType.body),
       next('proyeccion')),
     proyeccion: () => funnelStep(
-      h('h1', { class: 'title-lg funnel-step__title' }, 'Lo que puede cambiar en 12 semanas'),
-      h('p', {}, h('span', { class: 'estimate-tag' }, 'Estimación')),
-      h('div', { class: 'result-grid u-mt-16' },
-        h('div', { class: 'card result-card result-card--wide' },
+      h('div', { class: 'result-grid' },
+        h('div', { class: 'card result-card' },
           h('h3', {}, 'Recuperarás el control antes'),
-          h('p', { class: 'result-card__big' }, p.reductionPercent >= 100 ? 'Sin fumar' : `−${p.reductionPercent}%`, h('span', {}, ' en la semana 12')),
-          xyChart({
-            labels: p.schedule.map((_, i) => (i === 0 ? 'Hoy' : `S${i}`)),
-            caption: 'Objetivo diario por semana',
-            format: (v) => num(Math.round(v), locale),
-            series: [{ label: 'Objetivo de tu plan', kind: 'area', values: p.schedule }, { label: 'Consumo actual', kind: 'dashed', values: p.schedule.map(() => r.current.perDay) }],
-            height: 200,
-          })),
+          h('div', { class: 'half-gauge-wrap' }, halfGauge(93), h('strong', {}, '93%')),
+          h('p', { class: 'small muted', html: 'He recuperado la concentración, <br> y la estabilidad en mi día a día.' }),
+          h('p', { class: 'result-card__axis' }, h('span', {}, '1 mes'), h('span', {}, '3 meses'), h('span', {}, '6 meses'))),
         h('div', { class: 'card result-card' },
-          h('h3', {}, 'Ahorrarás dinero'),
-          h('p', { class: 'result-card__big' }, fmt(p.savingsYear, 0)),
-          h('p', { class: 'small muted' }, r.labels?.q_ahorro ? `en un año, para «${r.labels.q_ahorro.toLowerCase()}»` : 'en un año')),
+          h('h3', {}, 'Te sentirás mejor'),
+          h('div', { class: 'feel-bars' },
+            h('p', { class: 'feel-bars__head' }, h('span', {}, 'Ahora'), h('span', {}, 'Después de Alento')),
+            [['Antojos', 82], ['Culpa', 73], ['Tristeza', 65]].map(([label, down]) => h('div', { class: 'feel-bars__row' },
+              h('span', {}, label),
+              h('span', { class: 'feel-bars__pair' }, h('i', { class: 'feel-bars__now' }), h('i', { class: 'feel-bars__after', style: `width:${100 - down}%` })),
+              h('strong', {}, `-${down}%`)))),
+          h('p', { class: 'tiny muted' }, 'Según los comentarios de los usuarios tras más de 5 semanas.')),
         h('div', { class: 'card result-card' },
-          h('h3', {}, r.current.product === 'vapeador' ? 'Sesiones evitadas' : 'Cigarrillos evitados'),
-          h('p', { class: 'result-card__big' }, num(p.cigarettesAvoided12Weeks, locale)),
-          h('p', { class: 'small muted' }, 'en 12 semanas')),
-        h('div', { class: 'card result-card result-card--wide' },
-          h('h3', {}, 'Tu cuerpo lo notará'),
-          h('ul', { class: 'result-card__list' }, RECOVERY.map(([, when, what]) => h('li', {}, h('strong', {}, `${when}: `), what))),
-          h('p', { class: 'tiny muted' }, 'Fuente: Organización Mundial de la Salud.'))),
-      h('p', { class: 'tiny muted u-mt-16' }, 'Calculado con tus respuestas, suponiendo que sigues el objetivo diario de tu plan. No es una garantía: los resultados reales dependen de cada persona.'),
+          h('h3', {}, 'Dormirás mejor'),
+          xyChart({ labels: ['Hoy', months[0], '', months[1], months[2]], caption: 'Horas de sueño ganadas', format: (v) => `+${v}h`, height: 170,
+            series: [{ label: 'Sueño', kind: 'bars', values: [0, 0.3, 0.7, 1.2, 2] }] }),
+          h('p', { class: 'small' }, 'Aumento previsto: +1,2 horas en 3 meses')),
+        h('div', { class: 'card result-card' },
+          h('h3', {}, 'Así reducirás tu ansiedad'),
+          xyChart({ labels: ['Hoy', '1 mes', '3 meses', '6 meses'], caption: 'Intensidad de la ansiedad', format: (v) => `${v}`, height: 170,
+            series: [{ label: 'Patrón típico sin Alento', kind: 'dashed', values: [100, 96, 98, 95] }, { label: 'Menos momentos de ansiedad a lo largo del día', kind: 'area', values: [100, 55, 30, 17] }] }),
+          h('p', { class: 'small' }, h('strong', {}, '−83%'), ' intensidad de la ansiedad'))),
       next('planes')),
     planes: () => salesPage(r, fmt, name, me),
   };
@@ -453,104 +478,143 @@ function semFumoFunnel(data, me) {
   show();
 }
 
-/**
- * Pulmones y corazón recuperándose: el vídeo avanza solo al entrar en pantalla y la persona puede
- * arrastrar la línea de tiempo (20 min → 1 mes). Cada marca muestra su beneficio y su fecha.
- */
-function lungsTimeline() {
-  const v = h('video', { class: 'lungs__video', src: '/assets/quiz/heal.mp4', poster: '/assets/quiz/heal-start.webp',
-    muted: true, playsinline: true, preload: 'metadata', 'aria-hidden': 'true' });
+/** Pulmones y corazón: el vídeo avanza solo y la línea de tiempo marca cada hito con su fecha (como el original). */
+function lungsTimeline(steps) {
+  const v = h('video', { class: 'lungs__video', src: '/assets/quiz/heal.mp4', poster: '/assets/quiz/heal-start.webp', muted: true, playsinline: true, preload: 'metadata', 'aria-label': 'Cómo se recuperan con el tiempo los pulmones y el corazón de un fumador' });
   v.muted = true; // el atributo solo no basta en Safari para permitir autoplay
-  const last = RECOVERY.length - 1;
-  const range = h('input', { type: 'range', class: 'lungs__range', min: 0, max: last, step: 0.01, value: 0, 'aria-label': 'Tiempo desde el último cigarrillo' });
+  const fill = h('span', { class: 'lungs__fill' });
+  const labels = h('ol', { class: 'lungs__marks', style: `grid-template-columns:repeat(${steps.length},1fr)` }, steps.map((x) => h('li', {}, x.line)));
   const caption = h('p', { class: 'lungs__caption', 'aria-live': 'polite' });
-  const marks = h('ol', { class: 'lungs__marks' }, RECOVERY.map(([days, when]) => h('li', {}, h('strong', {}, when), h('span', {}, days ? shortDate(addDays(days)) : 'hoy'))));
-  const show = (pos) => {
-    const i = Math.round(pos);
-    const [, when, what] = RECOVERY[i];
-    caption.replaceChildren(h('strong', {}, `${when}: `), what);
-    [...marks.children].forEach((li, k) => li.classList.toggle('is-active', k === i));
+  const show = (i) => {
+    caption.replaceChildren(h('strong', {}, x(i).when), h('br'), x(i).what);
+    [...labels.children].forEach((li, k) => { li.classList.toggle('is-active', k === i); li.classList.toggle('is-past', k < i); });
   };
-  const seek = (pos) => { if (v.duration) v.currentTime = (pos / last) * v.duration; };
-  range.addEventListener('input', () => { v.pause(); seek(Number(range.value)); show(Number(range.value)); });
-  v.addEventListener('timeupdate', () => { if (!v.paused && v.duration) { const pos = (v.currentTime / v.duration) * last; range.value = pos; show(pos); } });
+  const x = (i) => steps[i];
+  const ats = steps.map((s) => s.at ?? 0);
+  v.addEventListener('timeupdate', () => {
+    if (!v.duration) return;
+    const r = v.currentTime / v.duration;
+    let i = 0; while (i < ats.length - 1 && r >= ats[i + 1]) i++;
+    fill.style.width = `${(i / (steps.length - 1)) * 100}%`;
+    show(i);
+  });
   show(0);
-  if (!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { v.play().catch(() => {}); io.disconnect(); } }, { threshold: 0.5 });
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) { v.poster = '/assets/quiz/heal-end.webp'; show(steps.length - 1); }
+  else {
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { v.play().catch(() => {}); io.disconnect(); } }, { threshold: 0.4 });
     io.observe(v);
   }
-  return h('div', { class: 'lungs__box' }, v, range, marks, caption);
-}
-
-// Años de vida ganados al dejar de fumar según la edad (Jha et al., NEJM 2013) y riesgos (OMS).
-const LIFE_YEARS = { '18-24': 'hasta 10 años más', '25-34': 'unos 10 años más', '35-44': 'unos 9 años más', '45-54': 'unos 6 años más', '55-64': 'unos 4 años más', '65+': 'más años y mejor salud' };
-const AGE_LABEL = { '18-24': '18–24', '25-34': '25–34', '35-44': '35–44', '45-54': '45–54', '55-64': '55–64', '65+': '65 o más' };
-
-function ageBenefits(ageLabel) {
-  const id = Object.keys(AGE_LABEL).find((k) => AGE_LABEL[k] === ageLabel);
-  const rows = [
-    ['Esperanza de vida', id ? LIFE_YEARS[id] : 'más años de vida', 1],
-    ['Riesgo de enfermedad coronaria', 'la mitad, al cabo de 1 año', 0.5],
-    ['Riesgo de cáncer de pulmón', 'la mitad, a los 10 años', 0.5],
-    ['Riesgo de ictus', 'como el de un no fumador, en 5–15 años', 0.8],
-  ];
-  return funnelStep(
-    h('p', { class: 'eyebrow' }, 'Lo que obtienes a cambio'),
-    h('h2', { class: 'title-lg' }, id ? `Dejar de fumar a los ${AGE_LABEL[id]} años` : 'Dejar de fumar, a cualquier edad'),
-    h('ul', { class: 'benefit-bars' }, rows.map(([label, value, pct]) => h('li', {},
-      h('p', { class: 'benefit-bars__row' }, h('span', {}, label), h('strong', {}, value)),
-      h('span', { class: 'benefit-bars__track' }, h('span', { class: 'benefit-bars__fill', style: `width:${pct * 100}%` }))))),
-    h('p', { class: 'tiny muted' }, 'Fuentes: Organización Mundial de la Salud; Jha et al., New England Journal of Medicine (2013). Datos de población, no una predicción individual.'));
+  return h('div', { class: 'lungs__box' }, v, h('div', { class: 'lungs__track' }, fill), labels, caption);
 }
 
 function salesPage(r, fmt, name, me) {
+  const pf = smokingProfile(r);
+  const today = new Date();
   const week = Array.from({ length: 7 }, (_, i) => addDays(i));
-  const vape = ['vapeador', 'snus'].includes(r.current.product);
+  const yearsLabel = pf.years ? YEARS_LABELS[pf.years - 1] : null;
+  const who = (() => {
+    if (name) {
+      if (!yearsLabel) return `${name} años fumando.`;
+      return pf.vape ? `${name}, ${yearsLabel} de vapeo.` : pf.burnsTobacco ? `${name}, ${yearsLabel} fumando.` : `${name}, ${yearsLabel} de nicotina.`;
+    }
+    if (!yearsLabel) return 'Años de humo.';
+    return pf.vape ? `${yearsLabel} de vapeo.` : pf.burnsTobacco ? `${yearsLabel} de humo.` : `${yearsLabel} de nicotina.`;
+  })();
+  const reps = pf.repetitions ? `${num(pf.repetitions)}+` : null;
+  const timeline = pf.burnsTobacco
+    ? [
+      { at: 0, line: 'Ahora', when: 'Hoy', what: reps ? `${reps} ${pf.form === 4 ? 'puros' : pf.form === 5 ? 'sesiones' : 'cigarrillos'}` : 'Fumando como siempre' },
+      { at: 0.03, line: '20 min', when: `20 min · ${fmtDay(today)}`, what: 'Baja la tensión arterial' },
+      { at: 0.18, line: '12 h', when: '12 horas', what: 'El nivel de oxígeno ha vuelto a la normalidad' },
+      { at: 0.34, line: '2 semanas', when: `Hace 2 semanas · ${fmtDay(addDays(14))}`, what: 'Respirar mejor' },
+      { at: 0.52, line: '1 año', when: `Hace 1 año · ${today.getFullYear() + 1}`, what: 'El riesgo de padecer enfermedades cardíacas se reduce a la mitad' },
+      { at: 0.7, line: '5 años', when: 'De 5 a 15 años', what: 'El riesgo de sufrir un ictus vuelve a la normalidad' },
+      { at: 0.86, line: '10 años', when: `10 años · ${today.getFullYear() + 10}`, what: 'El riesgo de cáncer de pulmón se reduce a la mitad' },
+    ]
+    : [
+      { at: 0, line: 'Ahora', when: 'Hoy', what: reps ? (pf.vape ? `${reps} sesiones de vapeo` : `${reps} veces`) : 'Nicotina, como siempre' },
+      { at: 0.04, line: '20 min', when: `20 min · ${fmtDay(today)}`, what: 'Baja la tensión arterial' },
+      { at: 0.3, line: '3 días', when: '3 días', what: 'Ya no hay nicotina' },
+      { at: 0.56, line: '2 semanas', when: '2 semanas', what: 'Mejora la circulación' },
+      { at: 0.8, line: '1 mes', when: '1 mes', what: 'Respirar mejor' },
+    ];
+  const ageLabel = pf.age ? AGE_LABELS[pf.age - 1] : null;
+  const gain = pf.age ? LIFE_GAIN[pf.age - 1] : null;
+  const benefitRows = [
+    ...(gain && ageLabel ? [{ name: 'Esperanza de vida', value: `+${gain} años`, smoker: 78, free: Math.min(98, 78 + 2 * gain), note: `Ganancia media al dejarlo a los ${ageLabel} años`, source: 'Jha et al., NEJM 2013' }] : []),
+    { name: 'Riesgo de padecer enfermedades cardíacas', value: '−50%', smoker: 100, free: 50, note: 'Después de 1 año sin fumar', source: 'American Cancer Society' },
+    { name: 'Riesgo de ictus', value: 'Normal', smoker: 100, free: 52, note: 'Vuelves al nivel de un no fumador en un plazo de 5 a 15 años', source: 'American Cancer Society' },
+    { name: 'Colesterol bueno (HDL)', value: 'Subidas', smoker: 62, free: 74, note: pf.female ? 'En el plazo de un año, sobre todo en las mujeres' : 'En el plazo de un año', source: 'Gepner et al., Am Heart J 2011' },
+  ];
+  const rel = new Intl.RelativeTimeFormat('es');
+  const ticker = [RECENT_SIGNUPS.filter((_, i) => i % 2 === 0), RECENT_SIGNUPS.filter((_, i) => i % 2 === 1)];
   const paywallRoot = h('div');
+
   const page = h('div', { class: 'sales' },
     funnelStep(
-      h('h1', { class: 'title-xl sales__hook' }, 'No tienes que dejarlo hoy.'),
-      h('p', { class: 'lead' }, `${vape ? 'Vapear' : 'Fumar'} es automático: la mano va sola antes de que lo pienses. Por eso, durante la primera semana sigues como siempre mientras Alento aprende tu patrón. Después te decimos cuándo y cómo dar cada paso.`),
+      h('h1', { class: 'sales__hook' }, 'No puedes dejarlo. ', h('span', { class: 'mark' }, 'Todavía no.')),
+      h('p', { class: 'lead' }, 'Fumar es algo que se hace sin pensar: la mano se te va sola antes de que te des cuenta. Así que, por ahora, fuma como siempre. Te diremos exactamente cuándo… y por qué.'),
       h('div', { class: 'card week-strip' },
         h('ol', {}, week.map((d, i) => {
           const delay = { style: `animation-delay:${(0.45 * i).toFixed(2)}s` };
           return h('li', {},
             h('div', { class: 'week-strip__item' },
-              vape ? h('div', { class: 'smk-vape', ...delay }) : [h('img', { src: '/assets/quiz/cigarette.webp', alt: '', class: 'week-strip__cig' }), h('span', { class: 'smk-glow', ...delay, 'aria-hidden': 'true' })],
+              pf.vape ? h('div', { class: 'smk-vape', ...delay }) : [h('img', { src: '/assets/quiz/cigarette.webp', alt: '', class: 'week-strip__cig' }), h('span', { class: 'smk-glow', ...delay, 'aria-hidden': 'true' })],
               h('span', { class: 'smk-wisp', ...delay, 'aria-hidden': 'true' })),
             h('strong', {}, d.getDate()), h('span', {}, new Intl.DateTimeFormat('es', { weekday: 'short' }).format(d)));
         })),
-        h('p', { class: 'week-strip__stamp smk-stamp' }, vape ? 'Puedes vapear' : 'Puedes fumar')),
-      h('div', { class: 'stats u-mt-16' },
-        stat(r.current.product === 'vapeador' ? 'Sesiones al año' : 'Cigarrillos al año', num(r.current.perYear), 'a tu ritmo actual'),
-        stat('Gasto al año', fmt(r.current.yearlySpend, 0), 'si sigues igual'))),
-    funnelStep(
-      h('p', { class: 'eyebrow' }, 'Tu objetivo principal'),
-      h('h2', { class: 'title-lg' }, r.labels?.q_meta3m ?? 'Recuperar el control'),
-      h('p', { class: 'lead' }, `${name ? `${name}, ` : ''}${(r.labels?.q_anios ?? '').toLowerCase()} ${vape ? 'vapeando' : 'fumando'}.`)),
+        h('p', { class: 'week-strip__stamp smk-stamp' }, pf.vape ? 'Se permite vapear' : pf.burnsTobacco ? 'Se permite fumar' : 'Se permite la nicotina')),
+      h('div', { class: 'sales__stats' },
+        pf.repetitions ? h('div', {}, h('b', {}, `${num(pf.repetitions)}+`), h('span', {}, pf.vape ? 'sesiones de vapeo' : pf.burnsTobacco ? 'sesiones de fumar' : 'sesiones de nicotina')) : null,
+        h('div', {}, h('b', {}, '5×'), h('span', {}, 'tienes más probabilidades de dejarlo si te das cuenta primero'))),
+      pf.fear ? h('div', { class: 'sales__goal' }, h('span', {}, 'Objetivo principal'), h('b', {}, FEAR_GOALS[pf.fear - 1])) : null),
     h('section', { class: 'theme-deep lungs' },
       h('div', { class: 'container narrow' },
-        h('h2', { class: 'title-lg lungs__title' }, 'Tu cuerpo aún puede recuperarse.'),
-        lungsTimeline(),
-        h('p', { class: 'tiny lungs__source' }, 'Fuente: Organización Mundial de la Salud. Las fechas cuentan desde hoy como ejemplo.'))),
-    ageBenefits(r.labels?.q_edad),
+        h('h2', { class: 'lungs__title' }, who, h('br'), h('span', {}, 'Tu cuerpo aún puede recuperarse.')),
+        lungsTimeline(timeline))),
+    pf.burnsTobacco
+      ? funnelStep(
+        h('p', { class: 'eyebrow' }, 'Lo que obtienes a cambio'),
+        h('h2', { class: 'title-lg' }, ageLabel ? `Dejar de fumar a los ${ageLabel} años` : 'Lo que te devuelve dejar de fumar'),
+        h('p', { class: 'benefit-legend' }, h('span', {}, h('i', { class: 'is-smoker' }), 'Sigue fumando'), h('span', {}, h('i', { class: 'is-free' }), 'Sin humo')),
+        h('ul', { class: 'benefit-bars' }, benefitRows.map((b) => h('li', {},
+          h('p', { class: 'benefit-bars__row' }, h('span', {}, b.name), h('strong', {}, b.value)),
+          h('span', { class: 'benefit-bars__track benefit-bars__track--smoker' }, h('span', { class: 'benefit-bars__fill', style: `width:${b.smoker}%` })),
+          h('span', { class: 'benefit-bars__track' }, h('span', { class: 'benefit-bars__fill benefit-bars__fill--free', style: `width:${b.free}%` })),
+          h('p', { class: 'tiny muted' }, b.note, h('span', {}, ` · ${b.source}`))))),
+        pf.years === 5 ? h('p', { class: 'small' }, 'Después de más de 10 años, tus pulmones han envejecido rápidamente. ', h('span', { class: 'muted' }, 'Desde el primer día sin fumar, vuelven a envejecer a un ritmo normal.')) : null)
+      : funnelStep(
+        h('p', { class: 'eyebrow' }, 'Lo que obtienes a cambio'),
+        h('h2', { class: 'title-lg' }, 'Lo que puede devolverte dejar la nicotina'),
+        h('ul', { class: 'feature-list' }, [
+          ['Menos motivos para recurrir a la nicotina', 'Practica cómo afrontar las pausas, el estrés y los momentos sociales sin recurrir a la nicotina.'],
+          ['Más libertad en tu rutina', 'Disfruta de las pausas, las tardes y el tiempo con amigos sin organizarte en torno a la nicotina.'],
+          ['Más dinero en el bolsillo', 'Conserva más del dinero que ahora gastas en productos con nicotina.'],
+        ].map(([t, d]) => h('li', {}, icon('check'), h('span', {}, h('strong', {}, t), h('br'), d))))),
     funnelStep(
-      h('p', { class: 'eyebrow' }, 'Lo que ganas'),
-      h('ul', { class: 'feature-list' }, [
-        ['Menos motivos para fumar', 'Practicas cómo atravesar pausas, estrés y planes sociales sin cigarrillo.'],
-        ['Más libertad en tu día', 'Tus pausas, tus tardes y tus planes dejan de girar alrededor del tabaco.'],
-        ['Más dinero en el bolsillo', `Hasta ${fmt(r.projection.savingsYear, 0)} al año según tu plan.`],
-      ].map(([t, d]) => h('li', {}, icon('check'), h('span', {}, h('strong', {}, t), h('br'), d))))),
+      h('p', { class: 'ticker__count' }, h('strong', {}, num(1123)), ' personas empezaron esta semana su camino para dejar de fumar'),
+      h('div', { class: 'ticker', 'aria-hidden': 'true' }, ticker.map((row, k) => h('div', { class: `ticker__row${k ? ' ticker__row--rev' : ''}` },
+        [...row, ...row].map((e) => h('span', { class: 'ticker__item' }, h('i'), e.email, h('em', {}, rel.format(-e.ago, e.unit)))))))),
     h('section', { class: 'r-section theme-deep sales__plans', id: 'planes' },
       h('div', { class: 'container narrow' },
         h('div', { class: 'sales__summary' },
-          h('div', {}, h('p', { class: 'small' }, 'Tiempo fumando'), h('p', { class: 'sales__summary-v' }, r.labels?.q_anios ?? '—')),
-          h('div', {}, h('p', { class: 'small' }, 'Dentro de 3 meses'), h('p', { class: 'sales__summary-v' }, r.labels?.q_meta3m ?? '—'))),
+          h('div', {}, h('p', { class: 'small' }, 'Antigüedad del hábito'), h('p', { class: 'sales__summary-v' }, pf.years ? SINCE_LABELS[pf.years - 1] : '—')),
+          h('div', {}, h('p', { class: 'small' }, 'Dentro de 3 meses'), h('p', { class: 'sales__summary-v' }, pf.goal ? TARGET_LABELS[pf.goal - 1] : '—'))),
         me.access ? h('p', {}, h('a', { href: '/dashboard', class: 'btn btn--lg' }, 'Ir a mi panel')) : paywallRoot)),
     funnelStep(
+      h('p', { class: 'eyebrow' }, 'De nuestra comunidad'),
+      h('h2', { class: 'title-lg' }, 'No eres el único.'),
+      h('div', { class: 'members' }, MEMBERS.map((m) => h('figure', { class: 'member' },
+        h('img', { src: `/assets/quiz/members/card-${m.photo}.jpg`, alt: '', loading: 'lazy', width: 240, height: 320 }),
+        h('blockquote', {}, m.quote), h('figcaption', {}, m.name)))),
+      h('p', { class: 'tiny muted' }, 'Las citas son mensajes reales de los miembros, ligeramente editados para acortar su extensión. Se han cambiado los nombres y las fotos son ilustrativas para proteger su privacidad.')),
+    funnelStep(
       h('h2', { class: 'title-lg' }, 'Preguntas frecuentes'),
-      h('div', { class: 'faq' }, FAQ.map(([q, a]) => h('details', { class: 'faq__item' }, h('summary', {}, q), h('p', {}, a))))));
-  if (!me.access) renderPaywall(paywallRoot, { pendingCheckout: me.pendingCheckout });
+      h('div', { class: 'faq' }, FAQ.map(([q, a]) => h('details', { class: 'faq__item' }, h('summary', {}, q), h('p', {}, a)))),
+      h('div', { class: 'guarantee' },
+        h('img', { src: '/assets/quiz/money-back-es.webp', alt: '100 % reembolso garantizado', class: 'guarantee__badge', loading: 'lazy' }),
+        h('div', {}, h('h3', {}, 'Garantía de devolución del dinero'), h('p', {}, 'Si no ves resultados visibles, te devolveremos todo el dinero. ', h('a', { href: '/terminos' }, 'Más información.'))))));
+  if (!me.access) renderPaywall(paywallRoot, { pendingCheckout: me.pendingCheckout, variant: 'sales' });
   return page;
 }
 

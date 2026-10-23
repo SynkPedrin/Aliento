@@ -17,9 +17,9 @@ const billing = createBilling({ db, stripe: null, config });
 
 // Respuestas de referencia (una persona que fuma 10 cigarrillos al día).
 const ANSWERS = {
-  q_diario: 'si', q_genero: 'hombre', q_edad: '35-44', q_medico: 'no', q_producto: 'cigarrillos', q_anios: '11a20',
+  q_diario: 'si', q_genero: 'hombre', q_edad: '35-44', q_medico: 'no', q_producto: 'cigarrillos', q_anios: '6a9',
   q_cantidad: '21mas', q_primer: '30min', q_enfermo: 'no', q_prohibido: 'irritado', q_sin24h: 'cualquiera', q_patron: 'automatico',
-  q_gatillos: ['cafe', 'estres'], q_preocupacion: 'ansiedad', q_secreto: 'igual', q_amigo: 'no', q_disfrute: ['pausa'],
+  q_gatillos: ['comida', 'estres'], q_preocupacion: 'ansiedad', q_secreto: 'igual', q_amigo: 'no', q_disfrute: ['pausa'],
   q_metodos: ['golpe'], q_objetivo: 'gradual', q_gasto: '150a299', q_ahorro: 'viajar', q_meta3m: 'control',
 };
 

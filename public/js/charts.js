@@ -151,8 +151,11 @@ export function gauge(score, max, labels) {
     h('div', { class: 'gauge__scale' }, labels.map((l) => h('span', {}, l))));
 }
 
-/** Radar (araña) de 0–100 por eje, con etiqueta y porcentaje en cada vértice. Se dibuja desde el centro. */
-export function radarChart(axes, { caption = 'Perfil', size = 320 } = {}) {
+/**
+ * Radar (araña) de 0–100 por eje, con etiqueta y porcentaje en cada vértice. Crece desde el centro.
+ * cycle: lista de perfiles (arrays de valores) que se van alternando con transición suave (portada del quiz).
+ */
+export function radarChart(axes, { caption = 'Perfil', size = 320, cycle = null } = {}) {
   const c = size / 2, R = size * 0.3, n = axes.length;
   const at = (i, r) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [c + r * Math.cos(a), c + r * Math.sin(a)]; };
   const ring = (k) => axes.map((_, i) => at(i, R * k).join(',')).join(' ');
@@ -162,20 +165,38 @@ export function radarChart(axes, { caption = 'Perfil', size = 320 } = {}) {
   const shape = s('polygon', { points: ring(0), class: 'radar__shape' });
   svg.append(shape);
   const dots = axes.map(() => { const d = s('circle', { cx: c, cy: c, r: 4, class: 'radar__dot' }); svg.append(d); return d; });
-  axes.forEach((x, i) => {
+  const valueEls = axes.map((x, i) => {
     const [lx, ly] = at(i, R + 34);
     const t = s('text', { x: lx, y: ly - 4, 'text-anchor': 'middle', class: 'radar__label' }); t.textContent = x.label;
-    const v = s('text', { x: lx, y: ly + 14, 'text-anchor': 'middle', class: 'radar__value' }); v.textContent = `${x.value}%`;
+    const v = s('text', { x: lx, y: ly + 14, 'text-anchor': 'middle', class: 'radar__value' });
     svg.append(t, v);
+    return v;
   });
-  // Animación de crecimiento (se respeta prefers-reduced-motion).
-  const final = axes.map((x, i) => at(i, R * Math.max(0.04, x.value / 100)));
-  const draw = (p) => {
-    const pts = final.map(([x, y]) => [c + (x - c) * p, c + (y - c) * p]);
+  const draw = (vals) => {
+    const pts = vals.map((v, i) => at(i, R * Math.max(0.04, v / 100)));
     shape.setAttribute('points', pts.map((q) => q.join(',')).join(' '));
-    pts.forEach(([x, y], i) => { dots[i].setAttribute('cx', x); dots[i].setAttribute('cy', y); });
+    pts.forEach(([x, y], i) => { dots[i].setAttribute('cx', x); dots[i].setAttribute('cy', y); valueEls[i].textContent = `${Math.round(vals[i])}%`; });
   };
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) draw(1);
-  else { const t0 = performance.now(); const step = (t) => { const p = Math.min(1, (t - t0) / 900); draw(1 - (1 - p) ** 3); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+  const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const tween = (from, to, ms, done) => {
+    if (reduced) { draw(to); done?.(); return; }
+    const t0 = performance.now();
+    const step = (t) => {
+      if (!svg.isConnected && t - t0 > 100) return;
+      const p = Math.min(1, (t - t0) / ms), e = -(Math.cos(Math.PI * p) - 1) / 2;
+      draw(from.map((v, i) => v + (to[i] - v) * e));
+      if (p < 1) requestAnimationFrame(step); else done?.();
+    };
+    requestAnimationFrame(step);
+  };
+  const zero = axes.map(() => 0);
+  if (cycle?.length) {
+    let k = 0;
+    const next = () => { if (!svg.isConnected) return; const from = cycle[k]; k = (k + 1) % cycle.length; tween(from, cycle[k], 2200, () => setTimeout(next, 1600)); };
+    draw(cycle[0]);
+    setTimeout(next, 1600);
+  } else {
+    tween(zero, axes.map((x) => x.value), 900);
+  }
   return h('div', { class: 'radar-wrap' }, svg);
 }
