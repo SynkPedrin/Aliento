@@ -101,7 +101,7 @@ export function trackRoutes({ db, config, growth, store, log = console }) {
     const ctx = { ...info, language, page: clip(b.page, 300) };
     if (visitorId) await tracker.touchVisitor({ visitorId, touch: att, ctx });
     const { leadId, created } = await tracker.createLead({
-      email, visitorId, language, topic: program, assessmentId, userId: req.user?.id ?? null, touch: att, ip: info.ip,
+      email, firstName: clip(String(b.name ?? '').trim(), 40) || null, visitorId, language, topic: program, assessmentId, userId: req.user?.id ?? null, touch: att, ip: info.ip,
       consents: { health_data: true, marketing_email: b.consents?.marketing_email === true, cookies_marketing: b.consents?.cookies_marketing === true },
     });
     let eventId = null;

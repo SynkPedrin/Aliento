@@ -155,10 +155,10 @@ export function track(name, props = {}, { pixel = true, id = uuid() } = {}) {
 export function pixelFor(name, eventId, extra) { return firePixels(name, eventId, extra); }
 
 /** Alta de lead tras el quiz. */
-export async function submitLead({ email, program, marketingEmail }) {
+export async function submitLead({ email, name, program, marketingEmail }) {
   const res = await fetch('/api/lead', {
     method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, program, language: language(), page: location.pathname, visitorId: visitorId(),
+    body: JSON.stringify({ email, name, program, language: language(), page: location.pathname, visitorId: visitorId(),
       consents: { health_data: true, marketing_email: Boolean(marketingEmail), cookies_marketing: marketingConsent() } }),
   });
   const data = await res.json().catch(() => ({}));

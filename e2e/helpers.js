@@ -24,53 +24,33 @@ export async function login(page, email, next = '/dashboard') {
   await page.waitForURL((u) => u.pathname === next.split('?')[0]);
 }
 
-/** Responde el cuestionario completo por la interfaz (SEM FUMO).
- *  Sincronizado por título de paso (h1) para no competir con el auto-avance del cuestionario. */
+/** Responde el cuestionario completo por la interfaz (SEM FUMO, v3): primera opción de cada pantalla,
+ *  «Sí» en los micro-compromisos del análisis y e-mail + nombre antes del resultado. */
 export async function completeQuiz(page) {
   await page.goto('/test?nuevo');
-  const step = (title) => page.getByRole('heading', { level: 1, name: title }).waitFor({ timeout: 30_000 });
-  // q_producto (single → avanza solo con la opción)
-  await page.getByRole('button', { name: 'Cigarrillos de cajetilla' }).click();
-  await step('En un día normal, ¿cuántos cigarrillos fumas?');
-  // q_cantidad (number → Continuar con el default válido)
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await step('¿Cuánto gastas en tabaco a la semana?');
-  // q_gasto (number → Continuar con el default válido)
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await step('¿Cuántos años llevas fumando?');
-  // q_anios (single)
-  await page.getByRole('button', { name: 'Entre 1 y 5 años' }).click();
-  await step('¿Cuánto tardas en fumar el primer cigarrillo tras despertar?');
-  // q_primer (single)
-  await page.getByRole('button', { name: 'Entre 6 y 30 minutos' }).click();
-  await step('Cada persona tiene su propio patrón');
-  // info_dependencia
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await step('¿En qué momentos te cuesta más no fumar?');
-  // q_gatillos (multi → selecciona 1 y Continuar)
-  await page.getByRole('button', { name: 'Con el café' }).click();
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await step('De todos ellos, ¿cuál es el más difícil de evitar?');
-  // q_dificil (single)
-  await page.getByRole('button', { name: 'Con el café' }).click();
-  await step('Saberlo es el 50 % del camino');
-  // info_gatillos
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await step('¿Cuántas veces has intentado dejarlo antes?');
-  // q_intentos (single)
-  await page.getByRole('button', { name: 'Es mi primera vez' }).click();
-  await step('¿Qué es lo que más te preocupa de dejarlo?');
-  // q_preocupacion (single)
-  await page.getByRole('button', { name: 'La ansiedad y el estrés' }).click();
-  await step('¿Cuáles son tus principales motivos para dejar de fumar?');
-  // q_motivos (multi → selecciona 1 y Continuar)
-  await page.getByRole('button', { name: 'Mejorar mi salud y respirar mejor' }).click();
-  await page.getByRole('button', { name: 'Continuar' }).click();
-  await step('¿Qué ritmo encaja mejor contigo?');
-  // q_objetivo (single)
-  await page.getByRole('button', { name: 'Reducir poco a poco hasta llegar a cero' }).click();
-  await step('¿Cuál es tu rango de edad?');
-  // q_edad (single → completo, redirige a resultados)
-  await page.getByRole('button', { name: 'De 25 a 34 años' }).click();
+  const options = '.option, .option-card, .option-pair';
+  for (let i = 0; i < 80 && !/\/resultados/.test(page.url()); i++) {
+    if (await page.locator('#lead-email').isVisible()) {
+      await page.fill('#lead-email', `e2e-${randomUUID().slice(0, 8)}@example.com`);
+      await page.check('#lead-health');
+      await page.getByRole('button', { name: 'Ver mi resultado' }).click();
+      await page.fill('#lead-name', 'Lucía');
+      await page.getByRole('button', { name: 'Continuar' }).click();
+      break;
+    }
+    const commit = page.locator('.commit button', { hasText: 'Sí' });
+    if (await commit.isVisible()) { await commit.click(); continue; }
+    const hash = await page.evaluate(() => location.hash);
+    const screen = page.locator('.quiz__screen');
+    if (await screen.locator('.option__check').count()) {
+      await screen.locator('.option').first().click();
+      await screen.getByRole('button', { name: 'Continuar' }).click();
+    } else if (await screen.locator(options).count()) {
+      await screen.locator(options).first().click();
+    } else if (await screen.getByRole('button', { name: 'Continuar' }).count()) {
+      await screen.getByRole('button', { name: 'Continuar' }).click();
+    }
+    await page.waitForFunction((prev) => location.hash !== prev || document.querySelector('.commit, #lead-email') || location.pathname.startsWith('/resultados'), hash, { timeout: 30_000 });
+  }
   await page.waitForURL(/\/resultados/, { timeout: 30_000 });
 }

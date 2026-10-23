@@ -3,7 +3,7 @@
 // el cliente recibe una copia sin puntuaciones internas.
 // Si cambias preguntas u opciones, incrementa QUIZ_VERSION.
 
-export const QUIZ_VERSION = 2;
+export const QUIZ_VERSION = 3;
 
 // ============================================================
 // 1. PROGRAMA SEM FUMO
@@ -28,7 +28,54 @@ export const HABIT_GROUPS = [
   { id: 'concentracion', label: 'Concentración' },
 ];
 
+const YES_NO = [{ id: 'si', label: 'Sí' }, { id: 'no', label: 'No' }];
+
+// Estructura del embudo (v3): una pregunta por pantalla, apertura con radar, pantalla informativa
+// personalizada, análisis con micro-compromisos y e-mail antes del resultado. Ver docs/QUIZ_REFERENCIA.md.
+// layout: 'hero' (apertura), 'cards' (tarjetas con icono), 'pair' (Sí/No grandes). Sin layout: lista.
 export const STEPS = [
+  {
+    id: 'q_diario',
+    type: 'single',
+    layout: 'hero',
+    eyebrow: 'Test gratuito · 3 minutos',
+    title: 'Descubre qué sostiene tu hábito de fumar',
+    lead: 'Tu hábito tiene seis caras. Este test te muestra cuál pesa más en ti y cómo trabajarla.',
+    question: '¿Fumas o vapeas a diario?',
+    options: YES_NO,
+  },
+  {
+    id: 'q_genero',
+    type: 'single',
+    layout: 'cards',
+    title: '¿Cómo te identificas?',
+    options: [
+      { id: 'hombre', label: 'Hombre', icon: 'male' },
+      { id: 'mujer', label: 'Mujer', icon: 'female' },
+      { id: 'otro', label: 'Prefiero no decirlo', icon: 'dot' },
+    ],
+  },
+  {
+    id: 'q_edad',
+    type: 'single',
+    title: '¿Qué edad tienes?',
+    options: [
+      { id: '18-24', label: '18–24' },
+      { id: '25-34', label: '25–34' },
+      { id: '35-44', label: '35–44' },
+      { id: '45-54', label: '45–54' },
+      { id: '55-64', label: '55–64' },
+      { id: '65+', label: '65 o más' },
+    ],
+  },
+  {
+    id: 'q_medico',
+    type: 'single',
+    layout: 'pair',
+    title: '¿Algún profesional de la salud te ha aconsejado dejarlo?',
+    subtitle: 'Alento se basa en técnicas de cambio de hábito que se usan en programas para dejar de fumar.',
+    options: YES_NO,
+  },
   {
     id: 'q_producto',
     type: 'single',
@@ -37,34 +84,16 @@ export const STEPS = [
       { id: 'cigarrillos', label: 'Cigarrillos de cajetilla' },
       { id: 'liar', label: 'Tabaco de liar' },
       { id: 'vapeador', label: 'Vapeador con nicotina' },
-      { id: 'calentado', label: 'Tabaco calentado' },
+      { id: 'calentado', label: 'Tabaco calentado (tipo IQOS)' },
       { id: 'puros', label: 'Puros o pipa' },
+      { id: 'shisha', label: 'Cachimba o shisha' },
+      { id: 'snus', label: 'Bolsas de nicotina o snus' },
     ],
-  },
-  {
-    id: 'q_cantidad',
-    type: 'number',
-    title: 'En un día normal, ¿cuántos cigarrillos fumas?',
-    subtitle: 'Si vapeas o usas otro producto, cuenta cada sesión de consumo como uno.',
-    unit: 'al día',
-    min: 1,
-    max: 80,
-    default: 10,
-  },
-  {
-    id: 'q_gasto',
-    type: 'number',
-    title: '¿Cuánto gastas en tabaco a la semana?',
-    subtitle: 'Una cifra aproximada basta. La usamos para estimar tu ahorro.',
-    unit: 'currency',
-    min: 0,
-    max: 1000,
-    default: 25,
   },
   {
     id: 'q_anios',
     type: 'single',
-    title: '¿Cuántos años llevas fumando?',
+    title: '¿Cuánto tiempo llevas fumando con regularidad?',
     options: [
       { id: 'menos1', label: 'Menos de 1 año' },
       { id: '1a5', label: 'Entre 1 y 5 años' },
@@ -74,115 +103,222 @@ export const STEPS = [
     ],
   },
   {
+    id: 'q_cantidad',
+    type: 'single',
+    title: 'En un día normal, ¿cuántas veces fumas o vapeas?',
+    subtitle: 'Cuenta cada cigarrillo o cada sesión de vapeo.',
+    // n: valor que usa el cálculo de resultados (cigarrillos al día).
+    options: [
+      { id: '1a2', label: '1–2', n: 2 },
+      { id: '3a5', label: '3–5', n: 4 },
+      { id: '6a10', label: '6–10', n: 8 },
+      { id: '11a20', label: '11–20', n: 15 },
+      { id: '21mas', label: 'Más de 20', n: 25 },
+    ],
+  },
+  {
     id: 'q_primer',
     type: 'single',
-    title: '¿Cuánto tardas en fumar el primer cigarrillo tras despertar?',
-    subtitle: 'Es uno de los mejores indicadores del grado de dependencia física.',
+    title: 'Al despertar, ¿cuánto tardas en fumar el primero?',
     options: [
       { id: '5min', label: 'Menos de 5 minutos' },
       { id: '30min', label: 'Entre 6 y 30 minutos' },
       { id: '60min', label: 'Entre 31 y 60 minutos' },
-      { id: 'mas60', label: 'Más de 60 minutos' },
+      { id: 'mas60', label: 'Más de una hora' },
     ],
   },
   {
-    id: 'info_dependencia',
-    type: 'info',
-    title: 'Cada persona tiene su propio patrón',
-    body: 'El tiempo hasta el primer cigarrillo y la cantidad diaria nos indican si tu mayor reto está en la dependencia física o en los hábitos adquiridos. Tu plan se adaptará a lo que tú necesitas.',
+    id: 'q_enfermo',
+    type: 'single',
+    layout: 'pair',
+    title: '¿Sigues fumando aunque estés enfermo o en cama?',
+    options: YES_NO,
+  },
+  {
+    id: 'q_prohibido',
+    type: 'single',
+    title: '¿Cómo te sientes en sitios donde no se puede fumar?',
+    options: [
+      { id: 'calma', label: 'Tranquilo, puedo esperar' },
+      { id: 'incomodo', label: 'Algo incómodo, pero lo llevo bien' },
+      { id: 'irritado', label: 'Irritable o distraído hasta que fumo' },
+      { id: 'tension', label: 'Con mucha tensión: lo necesito de verdad' },
+    ],
+  },
+  {
+    id: 'q_sin24h',
+    type: 'single',
+    title: 'Si te quedaras 24 horas sin tabaco, ¿qué harías?',
+    options: [
+      { id: 'aguantar', label: 'Aguantaría sin más' },
+      { id: 'cualquiera', label: 'Compraría lo primero que encontrara' },
+      { id: 'pedir', label: 'Se lo pediría a alguien' },
+      { id: 'sustituir', label: 'Café, comida o chicle para compensar' },
+      { id: 'parches', label: 'Usaría parches o chicles de nicotina' },
+      { id: 'lejos', label: 'Iría donde hiciera falta para conseguirlo' },
+    ],
+  },
+  {
+    id: 'q_patron',
+    type: 'single',
+    title: 'Tu consumo es, sobre todo…',
+    options: [
+      { id: 'programado', label: 'Programado: a horas y en sitios fijos' },
+      { id: 'automatico', label: 'Automático: sin darme cuenta' },
+      { id: 'mixto', label: 'Una mezcla de los dos' },
+    ],
   },
   {
     id: 'q_gatillos',
     type: 'multi',
-    title: '¿En qué momentos te cuesta más no fumar?',
+    title: '¿Qué te lleva a encender un cigarrillo?',
     subtitle: 'Elige todos los que encajen contigo.',
     minSelected: 1,
     options: Object.entries(TRIGGERS).map(([id, t]) => ({ id, label: t.label })),
   },
   {
-    id: 'q_dificil',
-    type: 'single',
-    title: 'De todos ellos, ¿cuál es el más difícil de evitar?',
-    options: Object.entries(TRIGGERS).map(([id, t]) => ({ id, label: t.label })),
-  },
-  {
-    id: 'info_gatillos',
-    type: 'info',
-    title: 'Saberlo es el 50 % del camino',
-    body: 'Muchos cigarrillos se fuman por pura inercia. Cuando identificas con claridad en qué situaciones fumas sin pensar, podemos diseñar sustitutos concretos para esos momentos.',
-  },
-  {
-    id: 'q_intentos',
-    type: 'single',
-    title: '¿Cuántas veces has intentado dejarlo antes?',
-    options: [
-      { id: '0', label: 'Es mi primera vez' },
-      { id: '1', label: '1 vez' },
-      { id: '2a3', label: '2 o 3 veces' },
-      { id: '4mas', label: '4 veces o más' },
-    ],
-  },
-  {
     id: 'q_preocupacion',
     type: 'single',
-    title: '¿Qué es lo que más te preocupa de dejarlo?',
+    title: '¿Qué es lo que más miedo te da de dejarlo?',
     options: [
-      { id: 'ansiedad', label: 'La ansiedad y el estrés' },
-      { id: 'peso', label: 'Ganar peso' },
-      { id: 'social', label: 'Perder momentos con amigos o compañeros' },
-      { id: 'recaer', label: 'No ser capaz y volver a recaer' },
-      { id: 'vacio', label: 'Sentir un vacío o echarlo de menos' },
+      { id: 'peso', label: 'Engordar o comer más' },
+      { id: 'ansiedad', label: 'Sentir más estrés o ansiedad', group: 'emocional' },
+      { id: 'social', label: 'Perder momentos con otras personas', group: 'social' },
+      { id: 'vacio', label: 'Sentir un vacío o aburrirme', group: 'emocional' },
+      { id: 'foco', label: 'No poder relajarme ni concentrarme', group: 'concentracion' },
     ],
   },
   {
-    id: 'q_motivos',
+    id: 'q_secreto',
+    type: 'single',
+    title: 'Si nadie supiera que fumas, ¿te costaría más o menos dejarlo?',
+    options: [
+      { id: 'facil', label: 'Me costaría menos' },
+      { id: 'dificil', label: 'Me costaría más' },
+      { id: 'igual', label: 'Daría igual' },
+    ],
+  },
+  {
+    id: 'q_amigo',
+    type: 'single',
+    title: 'Si tu amigo fumador más cercano lo dejara, ¿te ayudaría a ti?',
+    options: [
+      { id: 'si', label: 'Sí, mucho' },
+      { id: 'no', label: 'No' },
+      { id: 'igual', label: 'No cambiaría nada' },
+    ],
+  },
+  {
+    id: 'q_disfrute',
     type: 'multi',
-    title: '¿Cuáles son tus principales motivos para dejar de fumar?',
-    subtitle: 'Tus razones serán el ancla cuando las ganas aprieten.',
+    title: '¿Qué es lo que más disfrutas del momento de fumar?',
+    subtitle: 'Elige todo lo que te pase.',
     minSelected: 1,
     options: [
-      { id: 'salud', label: 'Mejorar mi salud y respirar mejor' },
-      { id: 'dinero', label: 'Ahorrar dinero' },
-      { id: 'familia', label: 'Estar bien para mi familia o dar ejemplo' },
-      { id: 'libertad', label: 'No depender de un paquete para vivir mi día' },
-      { id: 'energia', label: 'Tener más energía y mejor aspecto' },
+      { id: 'gesto', label: 'El gesto de llevarlo a la boca' },
+      { id: 'sabor', label: 'El sabor o la sensación en la garganta' },
+      { id: 'inhalar', label: 'Inhalar y soltar el aire' },
+      { id: 'pausa', label: 'La pausa: un momento para mí' },
+      { id: 'social', label: 'Compartirlo con otras personas' },
+      { id: 'foco', label: 'Me ayuda a concentrarme' },
+    ],
+  },
+  {
+    id: 'info_disfrute',
+    type: 'info',
+    personalizedBy: 'q_disfrute',
+    image: '/assets/images/IMG_012_SMALL_WINS.jpg', // shortcut: foto provisional, sustituir por la imagen generada del quiz
+    title: 'Lo que disfrutas tiene explicación',
+    body: 'Cada cigarrillo te da algo concreto. Cuando sabes qué es, puedes conseguirlo de otra forma, sin la nicotina.',
+    // Un párrafo por cada opción elegida (máximo dos), en el orden de la pregunta.
+    variants: {
+      gesto: 'El gesto de la mano a la boca es una rutina que tu cuerpo repite cientos de veces al mes. No necesitas eliminarlo de golpe: lo vas a sustituir por otro gesto que ocupe su lugar.',
+      sabor: 'Esa sensación intensa en la garganta gusta porque la nicotina llega al cerebro en segundos. Es normal echarla de menos al principio; tu plan la reduce poco a poco para que el cerebro deje de buscarla.',
+      inhalar: 'Inhalar hondo y soltar el aire despacio relaja de verdad, pero no por el humo: es la respiración. Vas a aprender a hacer lo mismo sin cigarrillo y con el mismo alivio.',
+      pausa: 'Lo que buscas en realidad es la pausa. El cigarrillo solo es la excusa para parar. Tu plan te da pausas igual de buenas, sin tener que salir a fumar.',
+      social: 'Fumar con otros crea complicidad. Esa conexión no depende del tabaco: vas a practicar cómo mantener esos momentos aunque el resto siga fumando.',
+      foco: 'La sensación de concentración aparece porque calmas la falta de nicotina, no porque fumar te haga pensar mejor. Cuando baja la dependencia, la concentración vuelve sola.',
+    },
+  },
+  {
+    id: 'q_metodos',
+    type: 'multi',
+    title: '¿Qué has probado ya para fumar menos o dejarlo?',
+    subtitle: 'Elige todo lo que hayas intentado.',
+    minSelected: 1,
+    options: [
+      { id: 'nada', label: 'Nada todavía', exclusive: true },
+      { id: 'golpe', label: 'Dejarlo de golpe' },
+      { id: 'parches', label: 'Parches, chicles o pastillas' },
+      { id: 'medicacion', label: 'Medicación' },
+      { id: 'terapia', label: 'Terapia o coaching' },
+      { id: 'hipnosis', label: 'Hipnosis' },
+      { id: 'apps', label: 'Otras apps o programas' },
     ],
   },
   {
     id: 'q_objetivo',
     type: 'single',
-    title: '¿Qué ritmo encaja mejor contigo?',
-    subtitle: 'Elige con honestidad. Las dos formas funcionan si se hacen con método.',
+    title: '¿Qué quieres conseguir ahora?',
     options: [
-      { id: 'parar', label: 'Fijar una fecha de corte y prepararme para ese día' },
-      { id: 'gradual', label: 'Reducir poco a poco hasta llegar a cero' },
-      { id: 'reducir', label: 'Bajar mi consumo a la mitad primero y luego decidir' },
+      { id: 'parar', label: 'Dejarlo por completo, con una fecha' },
+      { id: 'gradual', label: 'Ir reduciendo hasta llegar a cero' },
+      { id: 'reducir', label: 'Fumar bastante menos, de momento' },
     ],
   },
   {
-    id: 'q_edad',
+    id: 'q_gasto',
     type: 'single',
-    title: '¿Cuál es tu rango de edad?',
-    subtitle: 'Nos ayuda a comparar tus estimaciones con datos de personas en tu misma etapa.',
+    title: '¿Cuánto gastas más o menos al mes en tabaco o vapeo?',
+    // weekly: gasto semanal que usa el cálculo (mitad del rango ÷ 4,33).
     options: [
-      { id: '18-24', label: 'De 18 a 24 años' },
-      { id: '25-34', label: 'De 25 a 34 años' },
-      { id: '35-44', label: 'De 35 a 44 años' },
-      { id: '45-54', label: 'De 45 a 54 años' },
-      { id: '55+', label: '55 años o más' },
+      { id: '0a49', label: 'Menos de $50', weekly: 6 },
+      { id: '50a149', label: '$50 – $149', weekly: 23 },
+      { id: '150a299', label: '$150 – $299', weekly: 52 },
+      { id: '300mas', label: 'Más de $300', weekly: 81 },
+    ],
+  },
+  {
+    id: 'q_ahorro',
+    type: 'single',
+    title: '¿Qué harías con el dinero que vas a ahorrar?',
+    options: [
+      { id: 'ahorrar', label: 'Ahorrarlo o invertirlo' },
+      { id: 'viajar', label: 'Viajes y escapadas' },
+      { id: 'cuidarme', label: 'Cuidarme: salud, deporte, bienestar' },
+      { id: 'familia', label: 'Darme un capricho con mi gente' },
+      { id: 'deudas', label: 'Pagar deudas' },
+    ],
+  },
+  {
+    id: 'q_meta3m',
+    type: 'single',
+    title: '¿Cómo te gustaría estar dentro de 3 meses?',
+    options: [
+      { id: 'dormir', label: 'Durmiendo mejor y con la mente despejada' },
+      { id: 'control', label: 'Con más confianza y más control' },
+      { id: 'social', label: 'Disfrutando de planes sin depender del tabaco' },
+      { id: 'animo', label: 'Más tranquilo y con mejor ánimo' },
+      { id: 'foco', label: 'Más productivo y concentrado' },
     ],
   },
   {
     id: 'analisis',
     type: 'analysis',
-    title: 'Preparando tus resultados',
+    title: 'Analizando tus respuestas…',
     items: [
-      'Analizando tu consumo actual',
-      'Identificando tus gatillos',
-      'Calculando tu índice de dependencia',
-      'Diseñando tu plan personalizado',
+      'Perfil y contexto diario',
+      'Patrones y desencadenantes',
+      'Intentos anteriores y obstáculos',
+      'Objetivo y plan personalizado',
     ],
-    durationMs: 4000,
+    // Micro-compromisos: la barra se detiene hasta que la persona responde.
+    popups: [
+      { at: 0.3, question: '¿Estás listo para tomar el control a partir de hoy?' },
+      { at: 0.55, question: '¿Te vendrían bien trucos rápidos para los antojos?' },
+      { at: 0.8, question: '¿Quieres un plan claro, paso a paso?' },
+    ],
+    durationMs: 9000,
   },
 ];
 
@@ -595,7 +731,7 @@ export function publicQuiz(program = 'sem-fumo') {
     version: QUIZ_VERSION,
     steps: stepList.map((s) => ({
       ...s,
-      options: s.options?.map(({ id, label, exclusive }) => ({ id, label, ...(exclusive ? { exclusive } : {}) })),
+      options: s.options?.map(({ id, label, exclusive, icon }) => ({ id, label, ...(exclusive ? { exclusive } : {}), ...(icon ? { icon } : {}) })),
     })),
   };
 }

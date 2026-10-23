@@ -18,10 +18,14 @@ async function payInStripe(page, card) {
 test('embudo: cuestionario → resultados → plan → cuenta → pago test → bienvenida → instalación → configuración → panel', async ({ page }) => {
   test.setTimeout(900_000);
   await completeQuiz(page);
-  // TEST 2: resultado personalizado con datos reales del cuestionario.
-  await expect(page.getByRole('heading', { name: 'Este es tu punto de partida' })).toBeVisible();
-  await expect(page.getByText('Imagina lo que podrías conseguir')).toBeVisible();
+  // TEST 2: resultado personalizado (tipo de fumador → explicación → proyección → venta).
+  await expect(page.getByText('Tu tipo de fumador')).toBeVisible();
+  await page.getByRole('link', { name: 'Continuar' }).click();
+  await expect(page.getByRole('heading', { name: /Lucía, esto es lo que hace única tu situación/ })).toBeVisible();
+  await page.getByRole('link', { name: 'Continuar' }).click();
   await expect(page.getByText('Estimación').first()).toBeVisible();
+  await page.getByRole('link', { name: 'Continuar' }).click();
+  await expect(page.getByRole('heading', { name: 'No tienes que dejarlo hoy.' })).toBeVisible();
   // TEST 3: selección de plan (solo planes configurados en Stripe).
   await page.locator('#planes').scrollIntoViewIfNeeded();
   const rows = page.locator('#planes .plan-row');
@@ -71,6 +75,7 @@ test('embudo: cuestionario → resultados → plan → cuenta → pago test → 
 test('pago rechazado: la tarjeta se rechaza en Stripe y no se activa nada (TEST 24)', async ({ page }) => {
   test.setTimeout(900_000);
   await completeQuiz(page);
+  await page.goto('/resultados?program=sem-fumo#planes');
   await page.locator('#planes .plan-row[data-id="semanal"]').click();
   await page.getByRole('button', { name: 'Comenzar mi transformación' }).click();
   const email = `e2e-${randomUUID().slice(0, 8)}@example.com`;

@@ -1,4 +1,4 @@
-import { HABIT_GROUPS, QUESTIONS, TRIGGERS } from './quiz.js';
+import { HABIT_GROUPS, QUESTIONS, STEPS, TRIGGERS } from './quiz.js';
 
 const WEEKS_PER_MONTH = 52 / 12;
 const PROJECTION_WEEKS = 12;
@@ -122,6 +122,77 @@ function initialGoals(strategyId, perDay, answers, triggers) {
   }
   return goals;
 }
+
+const optionLabel = (questionId, value) => STEPS.find((q) => q.id === questionId)?.options?.find((o) => o.id === value)?.label ?? null;
+
+/** Respuesta por rangos (v3) o número (v2): devuelve el número que usa el cálculo. */
+function numericAnswer(questionId, value, field) {
+  if (typeof value === 'number') return value;
+  return STEPS.find((q) => q.id === questionId)?.options?.find((o) => o.id === value)?.[field] ?? 0;
+}
+
+// Radar de 6 ejes: puntos por respuesta / máximo posible del eje (0–100).
+const RADAR_AXES = [
+  { id: 'ansia', label: 'Ansia' }, { id: 'habito', label: 'Hábito' }, { id: 'estres', label: 'Estrés' },
+  { id: 'pertenecer', label: 'Pertenecer' }, { id: 'enfoque', label: 'Enfoque' }, { id: 'placer', label: 'Placer' },
+];
+const RADAR_MAX = { ansia: 11, habito: 11, estres: 10, pertenecer: 10, enfoque: 10, placer: 8 };
+
+export function radarScores(a) {
+  const pts = Object.fromEntries(RADAR_AXES.map((x) => [x.id, 0]));
+  const has = (list, id) => (list ?? []).includes(id);
+  const groupCount = (g) => (a.q_gatillos ?? []).filter((t) => TRIGGERS[t]?.group === g).length;
+  pts.ansia += ({ '5min': 3, '30min': 2, '60min': 1 })[a.q_primer] ?? 0;
+  pts.ansia += a.q_enfermo === 'si' ? 2 : 0;
+  pts.ansia += ({ incomodo: 1, irritado: 2, tension: 3 })[a.q_prohibido] ?? 0;
+  pts.ansia += ({ sustituir: 1, parches: 1, pedir: 2, cualquiera: 2, lejos: 3 })[a.q_sin24h] ?? 0;
+  pts.habito += ({ programado: 3, automatico: 3, mixto: 2 })[a.q_patron] ?? 0;
+  pts.habito += Math.min(4, groupCount('automatico'));
+  pts.habito += ({ '1a5': 1, '6a10': 2, '11a20': 3, mas20: 3 })[a.q_anios] ?? 0;
+  pts.habito += has(a.q_disfrute, 'gesto') ? 1 : 0;
+  pts.estres += Math.min(4, groupCount('emocional') * 2);
+  pts.estres += ({ ansiedad: 3, vacio: 2 })[a.q_preocupacion] ?? 0;
+  pts.estres += has(a.q_disfrute, 'pausa') ? 2 : 0;
+  pts.estres += a.q_meta3m === 'animo' ? 1 : 0;
+  pts.pertenecer += Math.min(4, groupCount('social') * 2);
+  pts.pertenecer += a.q_amigo === 'si' ? 3 : 0;
+  pts.pertenecer += has(a.q_disfrute, 'social') ? 2 : 0;
+  pts.pertenecer += a.q_preocupacion === 'social' ? 1 : 0;
+  pts.enfoque += groupCount('concentracion') ? 3 : 0;
+  pts.enfoque += has(a.q_disfrute, 'foco') ? 3 : 0;
+  pts.enfoque += a.q_preocupacion === 'foco' ? 2 : 0;
+  pts.enfoque += a.q_meta3m === 'foco' ? 2 : 0;
+  pts.placer += (has(a.q_disfrute, 'gesto') ? 2 : 0) + (has(a.q_disfrute, 'sabor') ? 3 : 0) + (has(a.q_disfrute, 'inhalar') ? 3 : 0);
+  return RADAR_AXES.map((x) => ({ ...x, value: Math.min(100, Math.round((pts[x.id] / RADAR_MAX[x.id]) * 100)) }));
+}
+
+// Tipo de fumador según el eje dominante.
+export const SMOKER_TYPES = {
+  habito: {
+    name: 'El piloto automático',
+    body: 'Tus cigarrillos siguen un guion: las mismas horas, los mismos sitios, las mismas señales. Por eso parece imposible romperlo, y por eso mismo tiene solución: lo que es predecible se puede reentrenar. Cambiar el orden de una rutina, mover un horario unos minutos o sustituir el primer cigarrillo del café son cambios pequeños que, repetidos, le enseñan a tu cerebro un guion nuevo. La constancia que creó este hábito es la misma que lo va a deshacer.',
+  },
+  ansia: {
+    name: 'El impulso químico',
+    body: 'En tu caso, la nicotina marca el ritmo: el primer cigarrillo llega pronto y la falta se nota rápido. No es falta de voluntad, es una dependencia física que tu cuerpo ha aprendido. La buena noticia es que el ansia sube, llega a un pico y baja en pocos minutos. Tu plan te enseña a atravesar esos minutos con técnicas concretas y a bajar la dosis de forma gradual, para que el cuerpo se adapte sin pasarlo mal.',
+  },
+  estres: {
+    name: 'El refugio emocional',
+    body: 'Para ti, fumar es una forma de bajar la tensión: un momento de calma cuando el día aprieta. El problema es que el alivio dura poco y, con el tiempo, la nicotina aumenta la sensación de estrés entre cigarrillo y cigarrillo. Tu plan te da otras salidas para esos momentos, como respiraciones cortas y pausas guiadas, para que conserves la calma sin depender del cigarrillo.',
+  },
+  pertenecer: {
+    name: 'El conector social',
+    body: 'Tu hábito vive en los demás: las salidas, los descansos compartidos, la complicidad de fumar juntos. Eso lo hace muy fuerte, porque dejarlo parece alejarte de tu gente. Pero esa conexión no depende del tabaco. Tu plan te prepara para cada situación social con frases y estrategias concretas, para que sigas en el grupo sin necesitar el cigarrillo.',
+  },
+  enfoque: {
+    name: 'El combustible mental',
+    body: 'Usas el cigarrillo para arrancar, concentrarte o cerrar una tarea. Sientes que te ayuda a pensar, pero en realidad calma la falta de nicotina que interrumpe tu concentración. Cuando la dependencia baja, el foco vuelve solo. Tu plan sustituye las pausas de cigarrillo por pausas de enfoque de pocos minutos que funcionan igual de bien.',
+  },
+  placer: {
+    name: 'El ritual sensorial',
+    body: 'Lo que más te engancha es la experiencia: el gesto, el sabor, la sensación al inhalar. Es un ritual que disfrutas, y por eso no basta con la fuerza de voluntad. Tu plan no te pide renunciar al placer de golpe: te ayuda a encontrar sustitutos para cada parte del ritual y a reducirlo de forma gradual, sin sensación de pérdida.',
+  },
+};
 
 // ------------------------------------------------------------
 // CÁLCULO PARA ALCOHOL
@@ -416,8 +487,10 @@ export function computeResult(answers, options = {}) {
   if (program === 'sueno') return computeSuenoResult(answers);
 
   // Sem Fumo por defecto (mantiene 100 % fidelidad original)
-  const perDay = Number(answers.q_cantidad);
-  const weeklySpend = Number(answers.q_gasto);
+  const perDay = numericAnswer('q_cantidad', answers.q_cantidad, 'n');
+  const weeklySpend = numericAnswer('q_gasto', answers.q_gasto, 'weekly');
+  const radar = radarScores(answers);
+  const top = [...radar].sort((x, y) => y.value - x.value)[0];
   const strategyId = options.strategyOverride ?? answers.q_objetivo;
   const strategy = STRATEGIES[strategyId] || STRATEGIES.gradual;
 
@@ -460,6 +533,10 @@ export function computeResult(answers, options = {}) {
     dependence,
     profile,
     triggers,
+    radar,
+    smokerType: { id: top.id, ...SMOKER_TYPES[top.id] },
+    // Textos de respuestas que la página de resultado repite («{años} fumando», «dentro de 3 meses…»).
+    labels: Object.fromEntries(['q_anios', 'q_meta3m', 'q_ahorro', 'q_producto'].map((id) => [id, optionLabel(id, answers[id])])),
     projection: {
       weeks: PROJECTION_WEEKS,
       schedule,

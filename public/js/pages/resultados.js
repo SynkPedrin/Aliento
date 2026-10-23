@@ -1,6 +1,7 @@
 import { $, api, h, icon, money, num, renderFooter, renderHeader, revealOnScroll } from '../ui.js';
-import { gauge, hbars, xyChart } from '../charts.js';
+import { gauge, hbars, radarChart, xyChart } from '../charts.js';
 import { renderPaywall } from '../paywall.js';
+import { track } from '../track.js';
 
 const root = $('[data-root]');
 renderFooter($('[data-footer]'));
@@ -364,6 +365,122 @@ function semFumoResults(data, me) {
   if (location.hash === '#planes') document.getElementById('planes')?.scrollIntoView();
 }
 
+// ---------------------------------------------------------------- Embudo v3 (Sem Fumo, sin suscripción)
+// Perfil → explicación → proyección → página de venta. Cada paso tiene su #hash para que «atrás» funcione.
+const FUNNEL = ['perfil', 'explicacion', 'proyeccion', 'planes'];
+const savedName = () => { try { return localStorage.getItem('alento-name') || ''; } catch { return ''; } };
+const shortDate = (d) => new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' }).format(d);
+const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d; };
+
+const FAQ = [
+  ['¿Tengo que dejarlo el primer día?', 'No. La primera semana sigues con tu consumo normal mientras registras cuándo y por qué fumas. Con esos datos, Alento te propone el siguiente paso, a tu ritmo.'],
+  ['¿Y si no quiero dejarlo del todo?', 'También puedes empezar reduciendo. Eliges tu objetivo y el plan se adapta: menos cigarrillos, retrasar el primero del día o dejarlo por completo.'],
+  ['¿Qué pasa si tengo una recaída?', 'Es parte del proceso. El plan no se reinicia ni te juzga: registras lo que pasó, ves qué lo provocó y sigues desde donde estabas.'],
+  ['¿Cuánto tiempo al día necesito?', 'Entre 5 y 10 minutos: una tarea breve, el registro de tu consumo y, cuando aprietan las ganas, un ejercicio de respiración de 2 minutos.'],
+  ['¿Alento sustituye a un médico?', 'No. Alento es un programa de apoyo para cambiar el hábito. Si tienes dudas sobre tu salud o sobre medicación para dejar de fumar, consulta a un profesional sanitario.'],
+];
+
+// Recuperación del cuerpo tras el último cigarrillo (OMS).
+const RECOVERY = [
+  [0, '20 minutos', 'Bajan la frecuencia cardiaca y la presión arterial.'],
+  [1, '12 horas', 'El monóxido de carbono en sangre vuelve a la normalidad.'],
+  [14, '2 semanas', 'Mejoran la circulación y la función pulmonar.'],
+  [30, '1 mes', 'Disminuyen la tos y la falta de aliento.'],
+];
+
+function funnelStep(...children) {
+  return h('section', { class: 'funnel-step' }, h('div', { class: 'container narrow' }, ...children));
+}
+
+function semFumoFunnel(data, me) {
+  const { result: r, currency, locale } = data;
+  const fmt = (v, d) => money(v, currency, locale, d);
+  const name = savedName();
+  const p = r.projection;
+  const next = (to) => h('div', { class: 'sticky-cta' }, h('a', { class: 'btn btn--lg', href: `#${to}` }, 'Continuar'));
+
+  const screens = {
+    perfil: () => funnelStep(
+      h('p', { class: 'eyebrow' }, 'Tu tipo de fumador'),
+      h('h1', { class: 'title-lg funnel-step__title' }, r.smokerType.name),
+      h('p', { class: 'subtitle' }, 'Este gráfico muestra qué sostiene tu hábito. En la página siguiente verás qué significa tu perfil.'),
+      h('div', { class: 'card funnel-radar' }, radarChart(r.radar, { caption: 'Tu perfil' })),
+      next('explicacion')),
+    explicacion: () => funnelStep(
+      h('h1', { class: 'title-lg funnel-step__title' }, name ? `${name}, esto es lo que hace única tu situación` : 'Esto es lo que hace única tu situación'),
+      h('p', { class: 'funnel-step__body' }, r.smokerType.body),
+      next('proyeccion')),
+    proyeccion: () => funnelStep(
+      h('h1', { class: 'title-lg funnel-step__title' }, 'Lo que puede cambiar en 12 semanas'),
+      h('p', {}, h('span', { class: 'estimate-tag' }, 'Estimación')),
+      h('div', { class: 'stats u-mt-16' },
+        p.reductionPercent >= 100 ? stat('En la semana 12', 'Sin fumar', 'si sigues tu plan') : stat('Menos consumo', `−${p.reductionPercent}%`, 'en la semana 12'),
+        stat('Ahorro en 1 año', fmt(p.savingsYear, 0), r.labels?.q_ahorro ? `para «${r.labels.q_ahorro.toLowerCase()}»` : 'estimado')),
+      h('div', { class: 'card u-mt-16' },
+        h('h3', {}, 'Tu objetivo diario, semana a semana'),
+        xyChart({
+          labels: p.schedule.map((_, i) => (i === 0 ? 'Hoy' : `S${i}`)),
+          caption: 'Objetivo diario por semana',
+          format: (v) => num(Math.round(v), locale),
+          series: [{ label: 'Objetivo de tu plan', kind: 'area', values: p.schedule }, { label: 'Consumo actual', kind: 'dashed', values: p.schedule.map(() => r.current.perDay) }],
+        })),
+      h('p', { class: 'tiny muted u-mt-16' }, 'Calculado con tus respuestas, suponiendo que sigues el objetivo diario de tu plan. No es una garantía: los resultados reales dependen de cada persona.'),
+      next('planes')),
+    planes: () => salesPage(r, fmt, name, me),
+  };
+
+  const show = () => {
+    const step = FUNNEL.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'perfil';
+    root.replaceChildren(screens[step]());
+    revealOnScroll([...root.querySelectorAll('.r-section')]);
+    window.scrollTo({ top: 0 });
+    track('results_step', { program: 'sem-fumo', step }, { pixel: false });
+  };
+  window.addEventListener('hashchange', show);
+  show();
+}
+
+function salesPage(r, fmt, name, me) {
+  const week = Array.from({ length: 7 }, (_, i) => addDays(i));
+  const paywallRoot = h('div');
+  const page = h('div', { class: 'sales' },
+    funnelStep(
+      h('h1', { class: 'title-xl sales__hook' }, 'No tienes que dejarlo hoy.'),
+      h('p', { class: 'lead' }, 'Fumar es automático: la mano va sola antes de que lo pienses. Por eso, durante la primera semana sigues como siempre mientras Alento aprende tu patrón. Después te decimos cuándo y cómo dar cada paso.'),
+      h('div', { class: 'card week-strip' },
+        h('ol', {}, week.map((d) => h('li', {}, h('strong', {}, d.getDate()), h('span', {}, new Intl.DateTimeFormat('es', { weekday: 'short' }).format(d))))),
+        h('p', { class: 'week-strip__stamp' }, 'Semana de observación')),
+      h('div', { class: 'stats u-mt-16' },
+        stat(r.current.product === 'vapeador' ? 'Sesiones al año' : 'Cigarrillos al año', num(r.current.perYear), 'a tu ritmo actual'),
+        stat('Gasto al año', fmt(r.current.yearlySpend, 0), 'si sigues igual'))),
+    funnelStep(
+      h('p', { class: 'eyebrow' }, 'Tu objetivo principal'),
+      h('h2', { class: 'title-lg' }, r.labels?.q_meta3m ?? 'Recuperar el control'),
+      h('p', { class: 'lead' }, `${name ? `${name}, ` : ''}${(r.labels?.q_anios ?? '').toLowerCase()} fumando. Tu cuerpo empieza a recuperarse a los 20 minutos del último cigarrillo.`),
+      h('ol', { class: 'timeline' }, RECOVERY.map(([days, when, what]) => h('li', {},
+        h('p', { class: 'timeline__when' }, when, h('span', { class: 'muted' }, ` · ${days ? shortDate(addDays(days)) : 'hoy'}`)),
+        h('p', {}, what)))),
+      h('p', { class: 'tiny muted' }, 'Fuente: Organización Mundial de la Salud. Las fechas cuentan desde hoy como ejemplo.')),
+    funnelStep(
+      h('p', { class: 'eyebrow' }, 'Lo que ganas'),
+      h('ul', { class: 'feature-list' }, [
+        ['Menos motivos para fumar', 'Practicas cómo atravesar pausas, estrés y planes sociales sin cigarrillo.'],
+        ['Más libertad en tu día', 'Tus pausas, tus tardes y tus planes dejan de girar alrededor del tabaco.'],
+        ['Más dinero en el bolsillo', `Hasta ${fmt(r.projection.savingsYear, 0)} al año según tu plan.`],
+      ].map(([t, d]) => h('li', {}, icon('check'), h('span', {}, h('strong', {}, t), h('br'), d))))),
+    h('section', { class: 'r-section theme-deep sales__plans', id: 'planes' },
+      h('div', { class: 'container narrow' },
+        h('div', { class: 'sales__summary' },
+          h('div', {}, h('p', { class: 'small' }, 'Tiempo fumando'), h('p', { class: 'sales__summary-v' }, r.labels?.q_anios ?? '—')),
+          h('div', {}, h('p', { class: 'small' }, 'Dentro de 3 meses'), h('p', { class: 'sales__summary-v' }, r.labels?.q_meta3m ?? '—'))),
+        me.access ? h('p', {}, h('a', { href: '/dashboard', class: 'btn btn--lg' }, 'Ir a mi panel')) : paywallRoot)),
+    funnelStep(
+      h('h2', { class: 'title-lg' }, 'Preguntas frecuentes'),
+      h('div', { class: 'faq' }, FAQ.map(([q, a]) => h('details', { class: 'faq__item' }, h('summary', {}, q), h('p', {}, a))))));
+  if (!me.access) renderPaywall(paywallRoot, { pendingCheckout: me.pendingCheckout });
+  return page;
+}
+
 async function init() {
   const params = new URLSearchParams(location.search);
   const program = SLUGS.includes(params.get('program')) ? params.get('program') : 'sem-fumo';
@@ -385,7 +502,8 @@ async function init() {
     renderHeader($('[data-header]'), { links: [{ href: '/acceso', label: 'Entrar' }] });
   }
   const programSlug = SLUGS.includes(data.program) ? data.program : program;
-  if (programSlug === 'sem-fumo') semFumoResults(data, me);
+  if (programSlug === 'sem-fumo' && data.result.smokerType && !me.access) semFumoFunnel(data, me);
+  else if (programSlug === 'sem-fumo') semFumoResults(data, me);
   else programResults(programSlug, data, me);
 }
 

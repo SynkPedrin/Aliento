@@ -80,9 +80,10 @@ function client() {
 }
 
 const ANSWERS = {
-  q_producto: 'cigarrillos', q_cantidad: 20, q_gasto: 35, q_anios: '11a20', q_primer: '30min',
-  q_gatillos: ['cafe', 'estres'], q_dificil: 'cafe', q_intentos: '1', q_preocupacion: 'ansiedad',
-  q_motivos: ['salud', 'dinero'], q_objetivo: 'gradual', q_edad: '35-44',
+  q_diario: 'si', q_genero: 'hombre', q_edad: '35-44', q_medico: 'no', q_producto: 'cigarrillos', q_anios: '11a20',
+  q_cantidad: '21mas', q_primer: '30min', q_enfermo: 'no', q_prohibido: 'irritado', q_sin24h: 'cualquiera', q_patron: 'automatico',
+  q_gatillos: ['cafe', 'estres'], q_preocupacion: 'ansiedad', q_secreto: 'igual', q_amigo: 'no', q_disfrute: ['pausa'],
+  q_metodos: ['golpe'], q_objetivo: 'gradual', q_gasto: '150a299', q_ahorro: 'viajar', q_meta3m: 'control',
 };
 
 async function completeQuiz(c) {
@@ -156,7 +157,7 @@ test('1 · nuevo usuario: cuestionario → resultados → cuenta → checkout �
   await completeQuiz(c);
   const result = await c('/api/assessment/result');
   assert.equal(result.status, 200);
-  assert.equal(result.body.result.current.perDay, 20);
+  assert.equal(result.body.result.current.perDay, 25); // rango «Más de 20»
 
   assert.equal((await c('/api/checkout', { method: 'POST', body: { plan: 'trimestral' } })).body.code, 'AUTH_REQUIRED');
   await register(c);
@@ -261,7 +262,7 @@ test('6 · registrar cigarrillo actualiza panel y gráficos; sin duplicados por 
   const dash = (await c('/api/app/dashboard')).body;
   assert.equal(dash.todayStatus.cigarettes, 2);
   assert.equal(dash.week.at(-1).cigarettes, 2);
-  assert.equal(dash.totals.estimated.cigarettesAvoided, 18);
+  assert.equal(dash.totals.estimated.cigarettesAvoided, 23); // 25 al día (rango «Más de 20») − 2
 
   const progress = (await c('/api/app/progress?days=7')).body;
   assert.equal(progress.series.at(-1).cigarettes, 2);

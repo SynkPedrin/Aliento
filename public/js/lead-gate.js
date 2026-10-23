@@ -6,6 +6,7 @@ import { submitLead, track } from './track.js';
 
 const FLAG = 'alento-lead';
 export const hasLead = () => { try { return localStorage.getItem(FLAG) === '1'; } catch { return false; } };
+export const markLead = () => { try { localStorage.setItem(FLAG, '1'); } catch { /* modo privado */ } };
 
 /** ¿Hay que pedir el e-mail antes de mostrar los planes? Solo a visitantes sin cuenta ni lead previo. */
 export async function needsLead() {

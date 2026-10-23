@@ -150,3 +150,32 @@ export function gauge(score, max, labels) {
     h('div', { class: 'gauge__track' }, Array.from({ length: max + 1 }, (_, i) => h('span', { class: `gauge__seg${i <= score ? ' is-on' : ''}` }))),
     h('div', { class: 'gauge__scale' }, labels.map((l) => h('span', {}, l))));
 }
+
+/** Radar (araña) de 0–100 por eje, con etiqueta y porcentaje en cada vértice. Se dibuja desde el centro. */
+export function radarChart(axes, { caption = 'Perfil', size = 320 } = {}) {
+  const c = size / 2, R = size * 0.3, n = axes.length;
+  const at = (i, r) => { const a = -Math.PI / 2 + (i * 2 * Math.PI) / n; return [c + r * Math.cos(a), c + r * Math.sin(a)]; };
+  const ring = (k) => axes.map((_, i) => at(i, R * k).join(',')).join(' ');
+  const svg = s('svg', { viewBox: `0 0 ${size} ${size}`, role: 'img', 'aria-label': `${caption}: ${axes.map((x) => `${x.label} ${x.value}%`).join(', ')}`, class: 'radar' });
+  for (const k of [1 / 3, 2 / 3, 1]) svg.append(s('polygon', { points: ring(k), class: 'radar__grid' }));
+  axes.forEach((_, i) => { const [x, y] = at(i, R); svg.append(s('line', { x1: c, y1: c, x2: x, y2: y, class: 'radar__grid' })); });
+  const shape = s('polygon', { points: ring(0), class: 'radar__shape' });
+  svg.append(shape);
+  const dots = axes.map(() => { const d = s('circle', { cx: c, cy: c, r: 4, class: 'radar__dot' }); svg.append(d); return d; });
+  axes.forEach((x, i) => {
+    const [lx, ly] = at(i, R + 34);
+    const t = s('text', { x: lx, y: ly - 4, 'text-anchor': 'middle', class: 'radar__label' }); t.textContent = x.label;
+    const v = s('text', { x: lx, y: ly + 14, 'text-anchor': 'middle', class: 'radar__value' }); v.textContent = `${x.value}%`;
+    svg.append(t, v);
+  });
+  // Animación de crecimiento (se respeta prefers-reduced-motion).
+  const final = axes.map((x, i) => at(i, R * Math.max(0.04, x.value / 100)));
+  const draw = (p) => {
+    const pts = final.map(([x, y]) => [c + (x - c) * p, c + (y - c) * p]);
+    shape.setAttribute('points', pts.map((q) => q.join(',')).join(' '));
+    pts.forEach(([x, y], i) => { dots[i].setAttribute('cx', x); dots[i].setAttribute('cy', y); });
+  };
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) draw(1);
+  else { const t0 = performance.now(); const step = (t) => { const p = Math.min(1, (t - t0) / 900); draw(1 - (1 - p) ** 3); if (p < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }
+  return h('div', { class: 'radar-wrap' }, svg);
+}

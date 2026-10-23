@@ -126,7 +126,7 @@ export function createTracker({ db, settings, config, log = console }) {
   }
 
   /** Alta de lead (e-mail + consentimientos). Idempotente por e-mail. */
-  async function createLead({ email, visitorId, language, topic, assessmentId, userId, touch, consents = {}, ip, ctx = {} }) {
+  async function createLead({ email, firstName = null, visitorId, language, topic, assessmentId, userId, touch, consents = {}, ip, ctx = {} }) {
     const em = String(email ?? '').trim().toLowerCase();
     const existing = await q.one('select lead_id from growth_pii.lead_pii where lower(email) = $1', [em]);
     let leadId = existing?.lead_id;
@@ -135,8 +135,9 @@ export function createTracker({ db, settings, config, log = console }) {
       leadId = randomUUID();
       await q.exec(`insert into growth.leads (lead_id, visitor_id, user_id, assessment_id, language, topic, attribution) values ($1,$2,$3,$4,$5,$6,$7::jsonb)`,
         [leadId, isUuid(visitorId) ? visitorId : null, userId ?? null, assessmentId ?? null, language ?? null, topic ?? null, JSON.stringify(attribution)]);
-      await q.exec('insert into growth_pii.lead_pii (lead_id, email, email_hash) values ($1, $2, $3)', [leadId, em, hashEmail(em)]);
+      await q.exec('insert into growth_pii.lead_pii (lead_id, email, email_hash, first_name) values ($1, $2, $3, $4)', [leadId, em, hashEmail(em), firstName]);
     } else {
+      if (firstName) await q.exec('update growth_pii.lead_pii set first_name = $2 where lead_id = $1', [leadId, firstName]);
       await q.exec(`update growth.leads set visitor_id = coalesce(visitor_id, $2), user_id = coalesce($3, user_id), assessment_id = coalesce($4, assessment_id),
         topic = coalesce($5, topic) where lead_id = $1`, [leadId, isUuid(visitorId) ? visitorId : null, userId ?? null, assessmentId ?? null, topic ?? null]);
     }

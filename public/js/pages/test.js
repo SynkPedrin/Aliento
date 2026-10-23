@@ -1,5 +1,7 @@
 import { $, api, h, ICONS, MARK_SVG, setBusy, toast } from '../ui.js';
-import { giveHealthConsent, hasHealthConsent, track } from '../track.js';
+import { giveHealthConsent, submitLead, track } from '../track.js';
+import { radarChart } from '../charts.js';
+import { markLead, needsLead } from '../lead-gate.js';
 
 const screenEl = $('[data-screen]');
 const backBtn = $('[data-back]');
@@ -65,6 +67,7 @@ function updateChrome() {
   progressEl.firstElementChild.style.width = `${pct}%`;
   progressEl.setAttribute('aria-valuenow', pct);
   backBtn.disabled = index === 0 || step.type === 'analysis';
+  document.body.classList.toggle('quiz--hero', step.layout === 'hero');
   document.body.classList.toggle('theme-deep', step.tone === 'dark');
 }
 
@@ -74,22 +77,61 @@ function optionButton(opt, selected, { multi, onClick }) {
     multi ? h('span', { class: 'option__check', html: ICONS.check }) : h('span', { class: 'option__radio', 'aria-hidden': 'true' }));
 }
 
+const OPTION_ICONS = {
+  male: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="14" r="5"/><path d="M14 10l6-6M15 4h5v5"/></svg>',
+  female: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="9" r="5"/><path d="M12 14v7M9 18h6"/></svg>',
+  dot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg>',
+};
+
+// Perfil de ejemplo para la portada (no son datos de la persona).
+const DEMO_RADAR = [
+  { label: 'Ansia', value: 72 }, { label: 'Hábito', value: 61 }, { label: 'Estrés', value: 44 },
+  { label: 'Pertenecer', value: 29 }, { label: 'Enfoque', value: 39 }, { label: 'Placer', value: 37 },
+];
+
+function pick(step, o) {
+  return (e) => {
+    e.currentTarget.parentElement.querySelectorAll('[aria-pressed]').forEach((b) => { b.classList.remove('is-selected'); b.setAttribute('aria-pressed', 'false'); });
+    e.currentTarget.classList.add('is-selected');
+    e.currentTarget.setAttribute('aria-pressed', 'true');
+    if (index === 0) giveHealthConsent(); // aviso visible junto a la primera pregunta
+    answerAndNext(step, o.id);
+  };
+}
+
+function renderHero(step) {
+  return h('section', { class: 'quiz__screen hero-screen' },
+    h('p', { class: 'eyebrow' }, step.eyebrow),
+    h('h1', { class: 'title-lg' }, step.title),
+    h('p', { class: 'subtitle' }, step.lead),
+    radarChart(DEMO_RADAR, { caption: 'Ejemplo de perfil' }),
+    h('h2', { class: 'hero-screen__q' }, step.question),
+    h('div', { class: 'options options--pair' }, step.options.map((o) =>
+      h('button', { type: 'button', class: 'option-pair', 'aria-pressed': String(answers[step.id] === o.id), onclick: pick(step, o) }, o.label))),
+    h('p', { class: 'help hero-screen__legal' },
+      'Al responder, aceptas los ', h('a', { href: '/terminos', target: '_blank' }, 'Términos'),
+      ' y que tratemos tus respuestas, incluidas las relativas a tu salud y tus hábitos, solo para calcular tu resultado. Si no creas una cuenta, se eliminan en 30 días. ',
+      h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.'));
+}
+
 function renderSingle(step) {
+  if (step.layout === 'hero') return renderHero(step);
   const current = answers[step.id];
+  const item = (o) => {
+    const attrs = { type: 'button', 'aria-pressed': String(current === o.id), onclick: pick(step, o) };
+    if (step.layout === 'cards') {
+      return h('button', { ...attrs, class: `option-card${current === o.id ? ' is-selected' : ''}` },
+        h('span', { class: 'option-card__icon', html: OPTION_ICONS[o.icon] ?? '' }), h('span', {}, o.label));
+    }
+    if (step.layout === 'pair') return h('button', { ...attrs, class: `option-pair${current === o.id ? ' is-selected' : ''}` }, o.label);
+    return optionButton(o, current === o.id, { onClick: attrs.onclick });
+  };
   return h('section', { class: 'quiz__screen' },
     h('h1', {}, step.title),
     step.subtitle ? h('p', { class: 'subtitle' }, step.subtitle) : null,
-    h('div', { class: 'options' }, step.options.map((o) => optionButton(o, current === o.id, {
-      onClick: (e) => {
-        e.currentTarget.parentElement.querySelectorAll('.option').forEach((b) => b.classList.remove('is-selected'));
-        e.currentTarget.classList.add('is-selected');
-        answerAndNext(step, o.id);
-      },
-    }))),
+    h('div', { class: `options${step.layout ? ` options--${step.layout}` : ''}` }, step.options.map(item)),
     index === 0 ? h('p', { class: 'help u-mt-16' },
-      PROGRAM === 'sem-fumo'
-        ? 'Al responder, aceptas que tratemos tus respuestas —incluidas las relativas a tu consumo de tabaco y tu bienestar— solo para calcular tus resultados. Si no creas una cuenta, se eliminan en 30 días. '
-        : 'Al responder, aceptas que tratemos tus respuestas —incluidas las relativas a tu bienestar y tus hábitos— solo para calcular tus resultados. Si no creas una cuenta, se eliminan en 30 días. ',
+      'Al responder, aceptas que tratemos tus respuestas —incluidas las relativas a tu bienestar y tus hábitos— solo para calcular tus resultados. Si no creas una cuenta, se eliminan en 30 días. ',
       h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.') : null);
 }
 
@@ -160,31 +202,59 @@ function renderInfo(step) {
       try { await save(null, null, steps[index + 1]?.id); goTo(index + 1); } catch (e) { toast(e.message); }
     },
   }, 'Continuar');
+  // Pantalla personalizada: un párrafo por respuesta elegida (máx. 2), en el orden de las variantes.
+  const picked = step.personalizedBy ? [].concat(answers[step.personalizedBy] ?? []) : [];
+  const paras = Object.keys(step.variants ?? {}).filter((k) => picked.includes(k)).slice(0, 2).map((k) => step.variants[k]);
   return h('section', { class: 'quiz__screen info-screen' },
-    h('div', { html: MARK_SVG }),
-    h('p', { class: 'eyebrow' }, step.eyebrow),
+    step.image ? h('img', { class: 'info-screen__img', src: step.image, alt: '', loading: 'eager' }) : h('div', { html: MARK_SVG }),
+    step.eyebrow ? h('p', { class: 'eyebrow' }, step.eyebrow) : null,
     h('h1', { class: 'title-lg' }, step.title),
-    h('p', {}, step.body),
+    ...(paras.length ? paras : [step.body]).map((t) => h('p', {}, t)),
     h('div', { class: 'sticky-cta' }, cta));
 }
 
 function renderAnalysis(step) {
-  const ring = h('div', { class: 'ring', style: '--p:0' }, h('span', {}, '0%'));
+  const bar = h('div', { class: 'progress progress--lg', role: 'progressbar', 'aria-label': 'Análisis', 'aria-valuemin': '0', 'aria-valuemax': '100' }, h('span'));
+  const pctEl = h('p', { class: 'analysis__pct' }, '0%');
   const items = step.items.map((t) => h('li', {}, h('span', { class: 'checklist__dot', 'aria-hidden': 'true' }), t));
   const status = h('p', { class: 'sr-only', 'aria-live': 'polite' });
-  const section = h('section', { class: 'quiz__screen analysis' }, ring, h('h1', {}, step.title), h('ul', { class: 'checklist' }, items), status);
+  const section = h('section', { class: 'quiz__screen analysis' }, h('h1', {}, step.title), pctEl, bar, h('ul', { class: 'checklist' }, items),
+    h('p', { class: 'help analysis__note' }, 'Tus respuestas son privadas y solo se usan para crear tu plan.'), status);
 
   const completion = api('/api/assessment/complete', { method: 'POST', body: { program: PROGRAM } });
-  const t0 = performance.now();
+  completion.catch(() => {}); // el error se trata en finish()
+  const popups = [...(step.popups ?? [])];
+  let elapsed = 0, last = performance.now(), paused = false;
+
+  // Micro-compromiso: la barra se detiene hasta que la persona responde (cualquier respuesta sigue).
+  function popup({ question }) {
+    paused = true;
+    const answer = (value) => () => {
+      track('quiz_commitment', { program: PROGRAM, question, answer: value }, { pixel: false });
+      overlay.remove(); paused = false; last = performance.now();
+    };
+    const no = h('button', { type: 'button', class: 'btn btn--ghost btn--lg', onclick: answer('no') }, 'No');
+    const overlay = h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'pp-q' },
+      h('div', { class: 'card modal__card commit' },
+        h('p', { class: 'help' }, 'Para continuar, dinos'),
+        h('h2', { class: 'title-md', id: 'pp-q' }, question),
+        h('div', { class: 'commit__btns' }, no, h('button', { type: 'button', class: 'btn btn--lg', onclick: answer('si') }, 'Sí'))));
+    document.body.append(overlay);
+    no.focus();
+  }
+
   const tick = (t) => {
-    const p = Math.min(1, (t - t0) / step.durationMs);
+    if (!section.isConnected) return;
+    if (!paused) elapsed += t - last;
+    last = t;
+    const p = Math.min(1, elapsed / step.durationMs);
     const pct = Math.round(p * 100);
-    ring.style.setProperty('--p', pct);
-    ring.firstChild.textContent = `${pct}%`;
+    bar.firstChild.style.width = `${pct}%`;
+    bar.setAttribute('aria-valuenow', pct);
+    pctEl.textContent = `${pct}%`;
     const per = 1 / items.length;
-    items.forEach((li, i) => {
-      li.className = p >= per * (i + 1) ? 'is-done' : p >= per * i ? 'is-active' : '';
-    });
+    items.forEach((li, i) => { li.className = p >= per * (i + 1) ? 'is-done' : p >= per * i ? 'is-active' : ''; });
+    if (!paused && popups.length && p >= popups[0].at) popup(popups.shift());
     if (p < 1) requestAnimationFrame(tick);
     else finish();
   };
@@ -194,7 +264,8 @@ function renderAnalysis(step) {
     try {
       await completion;
       status.textContent = 'Resultados listos';
-      window.location.assign(`/resultados?program=${PROGRAM}`);
+      if (await needsLead()) renderLeadEmail();
+      else window.location.assign(`/resultados?program=${PROGRAM}`);
     } catch (err) {
       if (err.data?.missing?.length) {
         toast('Falta alguna respuesta. Vamos a completarla.');
@@ -207,6 +278,66 @@ function renderAnalysis(step) {
     }
   }
   return section;
+}
+
+// ---- E-mail y nombre antes del resultado (como en el embudo de referencia).
+const lead = { email: '', marketing: false };
+
+function leadScreen(...children) {
+  countEl.textContent = '';
+  backBtn.disabled = true;
+  screenEl.replaceChildren(h('section', { class: 'quiz__screen lead-screen' }, ...children));
+  screenEl.querySelector('input')?.focus();
+}
+
+function renderLeadEmail(error = '') {
+  const email = h('input', { type: 'email', class: 'input', id: 'lead-email', autocomplete: 'email', inputmode: 'email', required: true, placeholder: 'tu@correo.com', value: lead.email });
+  const health = h('input', { type: 'checkbox', id: 'lead-health' });
+  const mkt = h('input', { type: 'checkbox', id: 'lead-mkt', checked: lead.marketing || null });
+  const err = h('p', { class: 'form-error', role: 'alert' }, error);
+  const form = h('form', { class: 'stack', novalidate: true },
+    h('label', { class: 'field', for: 'lead-email' }, h('span', { class: 'field__label' }, 'Tu e-mail'), email),
+    h('label', { class: 'check', for: 'lead-health' }, health,
+      h('span', {}, 'Acepto que Alento use mis respuestas, incluidas las relativas a mi salud y mis hábitos, para crear mi plan. ', h('a', { href: '/privacidad', target: '_blank', rel: 'noopener' }, 'Política de privacidad'), '.')),
+    h('label', { class: 'check', for: 'lead-mkt' }, mkt, h('span', {}, 'Quiero recibir consejos y recordatorios por e-mail (opcional).')),
+    err,
+    h('button', { type: 'submit', class: 'btn btn--lg btn--block' }, 'Ver mi resultado'));
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.value.trim())) { err.textContent = 'Introduce un e-mail válido.'; return; }
+    if (!health.checked) { err.textContent = 'Necesitamos tu consentimiento para usar tus respuestas en tu plan.'; return; }
+    Object.assign(lead, { email: email.value.trim(), marketing: mkt.checked });
+    renderLeadName();
+  });
+  leadScreen(h('p', { class: 'eyebrow' }, 'Tu resultado está listo'),
+    h('h1', { class: 'title-lg' }, 'Consulta tu resultado'),
+    h('p', { class: 'subtitle' }, 'Escribe tu e-mail para ver tu perfil y recibir tu plan personalizado.'),
+    form);
+  track('lead_form_shown', { program: PROGRAM }, { pixel: false });
+}
+
+function renderLeadName() {
+  const name = h('input', { class: 'input', id: 'lead-name', autocomplete: 'given-name', maxlength: '40', placeholder: 'Tu nombre' });
+  const cta = h('button', { type: 'submit', class: 'btn btn--lg btn--block' }, 'Continuar');
+  const form = h('form', { class: 'stack', novalidate: true },
+    h('label', { class: 'field', for: 'lead-name' }, h('span', { class: 'field__label' }, 'Tu nombre'), name), cta);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const first = name.value.trim();
+    setBusy(cta, true, 'Preparando tu resultado…');
+    try {
+      await submitLead({ email: lead.email, name: first, program: PROGRAM, marketingEmail: lead.marketing });
+    } catch (ex) {
+      // E-mail rechazado: se vuelve a pedir. Cualquier otro fallo no bloquea el resultado.
+      if (['INVALID', 'CONSENT_REQUIRED', 'RATE_LIMITED'].includes(ex.code)) { renderLeadEmail(ex.message); return; }
+    }
+    markLead();
+    try { if (first) localStorage.setItem('alento-name', first); } catch { /* modo privado */ }
+    window.location.assign(`/resultados?program=${PROGRAM}`);
+  });
+  leadScreen(h('h1', { class: 'title-lg' }, '¿Cómo te llamamos?'),
+    h('p', { class: 'subtitle' }, 'Así personalizamos tu resultado y tu plan.'),
+    form);
 }
 
 function render() {
@@ -224,23 +355,6 @@ window.addEventListener('popstate', (e) => {
   if (i >= 0 && steps[index].type !== 'analysis') goTo(i, { push: false });
 });
 backBtn.addEventListener('click', () => history.back());
-
-/** Consentimiento explícito (datos de salud) antes de la primera pregunta. */
-function renderConsent(next) {
-  countEl.textContent = '';
-  backBtn.disabled = true;
-  const box = h('input', { type: 'checkbox', id: 'q-consent' });
-  const cta = h('button', { type: 'button', class: 'btn btn--lg', disabled: true }, 'Empezar el cuestionario');
-  box.addEventListener('change', () => { cta.disabled = !box.checked; });
-  cta.addEventListener('click', () => { giveHealthConsent(); next(); });
-  screenEl.replaceChildren(h('section', { class: 'quiz__screen' },
-    h('h1', { tabindex: '-1' }, 'Antes de empezar'),
-    h('p', { class: 'subtitle' }, 'Para crear tu plan te haremos preguntas sobre tus hábitos y tu bienestar. Son datos de salud y solo los usamos con tu permiso.'),
-    h('label', { class: 'check', for: 'q-consent' }, box,
-      h('span', {}, 'Acepto que Alento trate mis respuestas, incluidas las relativas a mi salud y mis hábitos, solo para calcular mis resultados y mi plan. Si no creo una cuenta, se eliminan en 30 días. ',
-        h('a', { href: '/privacidad', target: '_blank', rel: 'noopener' }, 'Política de privacidad'), '.')),
-    cta));
-}
 
 async function init() {
   if (!PROGRAM_OK) return window.location.replace('/test');
@@ -263,8 +377,8 @@ async function init() {
     if (steps[i].type === 'analysis' && firstMissing >= 0) i = firstMissing;
     index = i;
     history.replaceState({ step: steps[index].id }, '', `${restart ? location.pathname : ''}#${steps[index].id}`);
-    const begin = () => { track('quiz_started', { program: PROGRAM }); render(); };
-    if (hasHealthConsent()) begin(); else renderConsent(begin);
+    track('quiz_started', { program: PROGRAM });
+    render();
   } catch (err) {
     screenEl.replaceChildren(h('p', { class: 'notice' }, err.message));
   }
