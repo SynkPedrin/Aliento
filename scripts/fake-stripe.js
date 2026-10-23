@@ -6,6 +6,10 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
     folego_semanal: { id: 'price_s', active: true, unit_amount: 799, currency: 'usd', recurring: { interval: 'week', interval_count: 1 } },
     folego_mensual: { id: 'price_m', active: true, unit_amount: 1999, currency: 'usd', recurring: { interval: 'month', interval_count: 1 } },
     folego_trimestral: { id: 'price_t', active: true, unit_amount: 3499, currency: 'usd', recurring: { interval: 'month', interval_count: 3 } },
+    // Precio pleno a partir del 2.º cobro (solo Sem Fumo; los demás programas quedan con precio fijo).
+    folego_semanal_renovacion: { id: 'price_s_full', active: true, unit_amount: 1999, currency: 'usd', recurring: { interval: 'week', interval_count: 1 } },
+    folego_mensual_renovacion: { id: 'price_m_full', active: true, unit_amount: 5599, currency: 'usd', recurring: { interval: 'month', interval_count: 1 } },
+    folego_trimestral_renovacion: { id: 'price_t_full', active: true, unit_amount: 9999, currency: 'usd', recurring: { interval: 'month', interval_count: 3 } },
   };
   // Programas adicionales (mismos importes que Sem Fumo).
   for (const program of ['alcohol', 'azucar', 'ansiedad', 'sueno']) {
@@ -15,13 +19,14 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
   }
   const sessions = new Map();
   const subs = new Map();
+  const schedules = new Map();
   const invoiceSubs = new Map();
   let n = 0;
   // Prefijo aleatorio por ejecución: IDs únicos aunque varios procesos compartan la base local.
   const run = Math.random().toString(36).slice(2, 8);
   const calls = { sessionsCreated: 0, expired: 0 };
   return {
-    calls, sessions, subs, invoiceSubs,
+    calls, sessions, subs, invoiceSubs, schedules,
     webhooks,
     prices: {
       list: async ({ lookup_keys }) => ({ data: lookup_keys.map((k) => prices[k]).filter(Boolean) }),
@@ -41,6 +46,17 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
       },
       retrieve: async (id) => structuredClone(subs.get(id)),
       cancel: async (id) => { const sub = subs.get(id); sub.status = 'canceled'; return structuredClone(sub); },
+    },
+    subscriptionSchedules: {
+      create: async ({ from_subscription }) => {
+        const sub = subs.get(from_subscription);
+        const now = Math.floor(Date.now() / 1000);
+        const sched = { id: `sub_sched_${run}${++n}`, subscription: sub.id, phases: [{ start_date: now, end_date: sub.items.data[0].current_period_end, items: [{ price: sub.items.data[0].price.id }], discounts: [] }] };
+        sub.schedule = sched.id;
+        schedules.set(sched.id, sched);
+        return structuredClone(sched);
+      },
+      update: async (id, params) => Object.assign(schedules.get(id), params),
     },
     checkout: {
       sessions: {

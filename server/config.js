@@ -18,6 +18,12 @@ export function priceRefFor(env, program, plan) {
   return env[envKey] || `lookup:alento_${program}_${plan}`;
 }
 
+/** Precio de renovación (pleno) que sustituye al de entrada a partir del 2.º cobro. Opcional: sin él, precio fijo. */
+export function renewalRefFor(env, program, plan) {
+  const envKey = `STRIPE_RENEWAL_${program.replace(/-/g, '_').toUpperCase()}_${plan.toUpperCase()}`;
+  return env[envKey] || (program === 'sem-fumo' ? `lookup:folego_${plan}_renovacion` : `lookup:alento_${program}_${plan}_renovacion`);
+}
+
 export const PLAN_META = {
   // unit: texto para "precio por …"; charge: periodicidad visible en la tarjeta;
   // months: solo si el período es de varios meses (muestra el equivalente mensual).
@@ -91,6 +97,9 @@ export function loadConfig(env = process.env) {
       // Precios por lookup_key (creados con `npm run stripe:setup`) o por ID explícito.
       prices: Object.fromEntries(
         PROGRAM_IDS.map((p) => [p, Object.fromEntries(PLAN_IDS.map((pl) => [pl, priceRefFor(env, p, pl)]))]),
+      ),
+      renewals: Object.fromEntries(
+        PROGRAM_IDS.map((p) => [p, Object.fromEntries(PLAN_IDS.map((pl) => [pl, renewalRefFor(env, p, pl)]))]),
       ),
       // Oferta de salida: cupón real de Stripe aplicado solo al primer pago de un plan.
       exitOffer: {

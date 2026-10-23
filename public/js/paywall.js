@@ -112,7 +112,9 @@ export function planList(plans, selected, onSelect, { compact = false } = {}) {
   h('span', { class: 'plan-row__radio', 'aria-hidden': 'true' }),
   h('span', { class: 'plan-row__main' },
     h('span', { class: 'plan-row__name' }, p.title),
-    h('span', { class: 'plan-row__total' }, p.available ? `${(p.displayPrice ?? moneyCents(p.amount, p.currency))} ${p.periodLabel}` : 'Precio no disponible')),
+    h('span', { class: 'plan-row__total' }, !p.available ? 'Precio no disponible'
+      : p.renewalAmount ? [h('s', {}, moneyCents(p.renewalAmount, p.currency)), ' ', h('strong', {}, p.displayPrice ?? moneyCents(p.amount, p.currency)), ' el primer período']
+        : `${(p.displayPrice ?? moneyCents(p.amount, p.currency))} ${p.periodLabel}`)),
   p.available && !p.native ? h('span', { class: 'plan-row__day' }, h('strong', {}, perDay(p)), h('span', {}, 'al día')) : null));
   return h('div', { class: 'plan-list', role: 'radiogroup', 'aria-label': 'Elige tu plan' }, rows);
 }
@@ -162,7 +164,7 @@ function showExitOffer(offer, program = 'sem-fumo') {
     h('div', { class: 'offer-box' },
       h('p', { class: 'small' }, offer.title),
       h('p', { class: 'u-mt-8' }, h('s', {}, price), h('strong', {}, discounted)),
-      h('p', { class: 'help u-mt-8' }, `Primer pago: ${discounted}. Después, ${price} ${offer.periodLabel} hasta que canceles.`)),
+      h('p', { class: 'help u-mt-8' }, `Primer pago: ${discounted}. Después, ${offer.renewalAmount ? moneyCents(offer.renewalAmount, offer.currency) : price} ${offer.periodLabel} hasta que canceles.`)),
     h('p', { class: 'help' }, 'Esta oferta solo se muestra una vez.'),
     h('div', { class: 'stack u-mt-16' }, accept, h('button', { class: 'link', onclick: close }, 'No, gracias')));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
@@ -217,7 +219,9 @@ export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo
     const price = (p.displayPrice ?? moneyCents(p.amount, p.currency));
     terms.replaceChildren(h('dl', {},
       h('div', {}, h('dt', {}, 'Precio total'), h('dd', {}, `${price} por ${p.unit}. El primer cargo se realiza hoy al confirmar el pago.`)),
-      h('div', {}, h('dt', {}, 'Renovación'), h('dd', {}, `Se renueva automáticamente ${p.periodLabel} por ${price} hasta que la canceles.`)),
+      h('div', {}, h('dt', {}, 'Renovación'), h('dd', {}, p.renewalAmount
+        ? `Precio de introducción solo en el primer período. Después se renueva automáticamente por ${moneyCents(p.renewalAmount, p.currency)} ${p.periodLabel} hasta que la canceles.`
+        : `Se renueva automáticamente ${p.periodLabel} por ${price} hasta que la canceles.`)),
       h('div', {}, h('dt', {}, 'Cancelación'), h('dd', {}, 'Cancela cuando quieras desde Mi cuenta. Conservas el acceso hasta el final del período ya pagado.')),
     ));
   }

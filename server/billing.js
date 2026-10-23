@@ -17,6 +17,7 @@ export class BillingError extends Error {
   }
 }
 
+const money = (cents, currency) => new Intl.NumberFormat('es', { style: 'currency', currency }).format(cents / 100);
 const toDate = (unix) => (unix ? new Date(unix * 1000).toISOString() : null);
 
 export function createBilling({ db, stripe, config, log = console }) {
@@ -58,7 +59,15 @@ export function createBilling({ db, stripe, config, log = console }) {
           log.error(`[billing] El precio del plan "${id}" no existe o no coincide con la periodicidad esperada.`);
           return base;
         }
-        return { ...base, available: true, priceId: price.id, amount: price.unit_amount, currency: price.currency.toUpperCase() };
+        // Precio de renovación: misma periodicidad y moneda, más caro que el de entrada. Si falta, el precio es fijo.
+        const renewalRef = config.stripe.renewals?.[program]?.[id];
+        const renewal = renewalRef ? await resolvePrice(renewalRef).catch(() => null) : null;
+        const validRenewal = renewal?.active && renewal.recurring?.interval === rec.interval && renewal.recurring?.interval_count === rec.interval_count
+          && renewal.currency === price.currency && renewal.unit_amount > price.unit_amount;
+        return {
+          ...base, available: true, priceId: price.id, amount: price.unit_amount, currency: price.currency.toUpperCase(),
+          ...(validRenewal ? { renewalPriceId: renewal.id, renewalAmount: renewal.unit_amount } : {}),
+        };
       } catch (err) {
         log.error(`[billing] No se pudo cargar el precio "${program}/${id}": ${err.message}`);
         return base;
@@ -89,7 +98,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         : Math.max(0, planInfo.amount - (coupon.amount_off ?? 0));
       return {
         plan, couponId, percentOff: coupon.percent_off ?? null,
-        amount: planInfo.amount, discountedAmount: discounted, currency: planInfo.currency,
+        amount: planInfo.amount, discountedAmount: discounted, currency: planInfo.currency, renewalAmount: planInfo.renewalAmount ?? null,
         title: planInfo.title, periodLabel: planInfo.periodLabel,
       };
     } catch (err) {
@@ -245,7 +254,11 @@ export function createBilling({ db, stripe, config, log = console }) {
         subscription_data: { metadata },
         locale: 'es',
         custom_text: {
-          submit: { message: 'El acceso a Alento empieza de inmediato. La suscripción se renueva automáticamente al mismo precio hasta que la canceles desde «Mi suscripción».' },
+          submit: {
+            message: planInfo.renewalAmount
+              ? `El acceso a Alento empieza de inmediato. Tu primer período tiene precio de introducción; después la suscripción se renueva automáticamente a ${money(planInfo.renewalAmount, planInfo.currency)} ${planInfo.periodLabel} hasta que la canceles desde «Mi suscripción».`
+              : 'El acceso a Alento empieza de inmediato. La suscripción se renueva automáticamente al mismo precio hasta que la canceles desde «Mi suscripción».',
+          },
         },
         success_url: `${config.appUrl}/bienvenida?session_id={CHECKOUT_SESSION_ID}`,
         // Sin cancel_url Stripe no muestra el botón «volver». El «atrás» del navegador abre la oferta de salida (paywall.js).
@@ -377,6 +390,35 @@ export function createBilling({ db, stripe, config, log = console }) {
       }
       if (ACCESS_STATUSES.includes(sub.status)) await ensureActivated(q, userId, session.metadata?.assessment_id, program);
     });
+    await scheduleRenewal(sub, program);
+  }
+
+  /**
+   * Precio de introducción: el 1.er período se cobra al precio de entrada y, desde el 2.º, al de renovación.
+   * Se hace con un calendario (subscription schedule) creado tras la compra. Si falla, el acceso no se toca:
+   * queda en revisión para corregirlo a mano (el cliente seguiría pagando el precio de entrada).
+   */
+  async function scheduleRenewal(sub, program) {
+    if (sub.schedule) return; // reintento del webhook: ya programado
+    const priceId = sub.items?.data?.[0]?.price?.id;
+    const plan = (await getPlans(program)).find((p) => p.priceId === priceId);
+    if (!plan?.renewalPriceId) return;
+    try {
+      const sched = await stripe.subscriptionSchedules.create({ from_subscription: sub.id });
+      const [first] = sched.phases;
+      await stripe.subscriptionSchedules.update(sched.id, {
+        end_behavior: 'release',
+        phases: [
+          { items: [{ price: priceId, quantity: 1 }], start_date: first.start_date, end_date: first.end_date, ...(first.discounts?.length ? { discounts: first.discounts.map((d) => (d.discount ? { discount: d.discount } : { coupon: d.coupon })) } : {}) },
+          { items: [{ price: plan.renewalPriceId, quantity: 1 }], iterations: 1 },
+        ],
+      });
+    } catch (err) {
+      log.error(`[billing] No se pudo programar la renovación de ${sub.id}: ${err.message}`);
+      await db.service.exec(`insert into public.billing_reconciliation_reviews (stripe_subscription_id, stripe_customer_id, reason)
+        values ($1, $2, 'Renovación al precio pleno sin programar') on conflict do nothing`,
+      [sub.id, typeof sub.customer === 'string' ? sub.customer : sub.customer?.id]);
+    }
   }
 
   async function syncFromStripe(sub) {

@@ -1,10 +1,12 @@
 // Crea en Stripe el producto Alento y los tres precios recurrentes.
 // Los importes los decides tú; este script no inventa precios.
 //
-//   npm run stripe:setup -- --currency usd --semanal 7.99 --mensual 19.99 --trimestral 34.99
+//   npm run stripe:setup -- --currency usd --semanal 7.99 --mensual 19.99 --trimestral 34.99 \
+//     --semanal-renovacion 19.99 --mensual-renovacion 55.99 --trimestral-renovacion 99.99
 //
 // Usa lookup_keys (folego_semanal, folego_mensual, folego_trimestral), así que
 // el servidor los encuentra sin copiar IDs. Ejecútalo primero en modo test.
+// Los --*-renovacion son opcionales: precio pleno que se cobra desde el 2.º período (folego_<plan>_renovacion).
 import Stripe from 'stripe';
 import { parseArgs } from 'node:util';
 
@@ -14,6 +16,9 @@ const { values } = parseArgs({
     semanal: { type: 'string' },
     mensual: { type: 'string' },
     trimestral: { type: 'string' },
+    'semanal-renovacion': { type: 'string' },
+    'mensual-renovacion': { type: 'string' },
+    'trimestral-renovacion': { type: 'string' },
   },
 });
 
@@ -36,6 +41,11 @@ const PLANS = [
   { key: 'folego_mensual', nickname: 'Mensual', amount: toCents(values.mensual), recurring: { interval: 'month', interval_count: 1 } },
   { key: 'folego_trimestral', nickname: 'Trimestral', amount: toCents(values.trimestral), recurring: { interval: 'month', interval_count: 3 } },
 ];
+for (const p of [...PLANS]) {
+  const plan = p.key.replace('folego_', '');
+  const full = values[`${plan}-renovacion`];
+  if (full) PLANS.push({ ...p, key: `${p.key}_renovacion`, nickname: `${p.nickname} (renovación)`, amount: toCents(full) });
+}
 
 const existing = await stripe.products.search({ query: "metadata['app']:'folego'" });
 const product = existing.data[0] ?? await stripe.products.create({

@@ -390,6 +390,23 @@ test('oferta de salida: real, una sola vez, 20 % sobre el plan elegido', async (
   assert.equal((await d('/api/checkout', { method: 'POST', body: { plan: 'semanal', exitOffer: true } })).body.code, 'OFFER_UNAVAILABLE');
 });
 
+test('precio de introducción: el 2.º período se programa al precio pleno, una sola vez', async () => {
+  const plans = (await client()('/api/plans?program=sem-fumo')).body.plans;
+  const tri = plans.find((p) => p.id === 'trimestral');
+  assert.equal(tri.amount, 3499);
+  assert.equal(tri.renewalAmount, 9999);
+  const { session, sub } = await payingUser('trimestral');
+  assert.match(session.custom_text.submit.message, /99,99/);
+  const sched = [...stripe.schedules.values()].find((x) => x.subscription === sub.id);
+  assert.ok(sched, 'calendario creado');
+  assert.deepEqual(sched.phases.map((ph) => ph.items[0].price), ['price_t', 'price_t_full']);
+  assert.equal(sched.end_behavior, 'release');
+  // Webhook repetido: no se crea otro calendario.
+  const before = stripe.schedules.size;
+  assert.equal(await sendEvent('checkout.session.completed', session), 200);
+  assert.equal(stripe.schedules.size, before);
+});
+
 test('respiración: no se registra como completada si no pasó el tiempo', async () => {
   const { c } = await payingUser();
   const s = (await c('/api/app/breathing/sessions', { method: 'POST', body: { exercise: 'calma-4-6', plannedSeconds: 60 } })).body.session;
