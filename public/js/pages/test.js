@@ -45,15 +45,23 @@ function goTo(i, { push = true } = {}) {
   render();
 }
 
+// Um toque por vez: com a rede lenta, um segundo toque durante o save pulava uma pergunta
+// e a análise depois voltava para a que ficou sem resposta.
+let saving = false;
+
 async function answerAndNext(step, value, btn) {
-  const next = steps[index + 1];
+  if (saving) return;
+  saving = true;
+  const at = index;
   try {
     if (btn) setBusy(btn, true, 'Guardando…');
-    await save(step.id, value, next?.id);
-    goTo(index + 1);
+    await save(step?.id ?? null, value, steps[at + 1]?.id);
+    goTo(at + 1);
   } catch (err) {
     if (btn) setBusy(btn, false);
     toast(err.message);
+  } finally {
+    saving = false;
   }
 }
 
@@ -216,10 +224,7 @@ function personalText(step) {
 }
 
 const continueBtn = () => {
-  const cta = h('button', {
-    type: 'button', class: 'btn btn--lg',
-    onclick: async () => { try { await save(null, null, steps[index + 1]?.id); goTo(index + 1); } catch (e) { toast(e.message); } },
-  }, 'Continuar');
+  const cta = h('button', { type: 'button', class: 'btn btn--lg', onclick: () => answerAndNext(null, null, cta) }, 'Continuar');
   return h('div', { class: 'sticky-cta' }, cta);
 };
 

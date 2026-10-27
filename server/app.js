@@ -94,10 +94,16 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
     if (s.mode !== 'subscription' || !['paid', 'no_payment_required'].includes(s.payment_status)) return;
     const email = s.customer_details?.email ?? s.customer_email;
     if (!email) return;
-    const p = await db.service.one(`select p.name, p.locale, p.needs_password from public.profiles p join auth.users u on u.id = p.user_id
+    const p = await db.service.one(`select p.user_id, p.name, p.locale, p.needs_password, u.email from public.profiles p join auth.users u on u.id = p.user_id
       where ${s.metadata?.user_id ? 'p.user_id = $1' : 'lower(u.email) = lower($1)'}`, [s.metadata?.user_id ?? email]);
     const needsPassword = Boolean(p?.needs_password);
-    const link = (needsPassword && await auth.recoveryLink(email)) || `${config.appUrl}/acceso?modo=entrar&email=${encodeURIComponent(email)}`;
+    // Comprou sem cadastro e digitou outro e-mail na Stripe: a conta passa a usar o do pagamento.
+    if (needsPassword && p.email.toLowerCase() !== email.toLowerCase()) {
+      if (await auth.setEmail(p.user_id, email).catch(() => false)) p.email = email;
+      else log.warn(`[mail] compra ${s.id}: o e-mail do pagamento já tem outra conta; a conta segue com o do quiz.`);
+    }
+    const account = p?.email ?? email;
+    const link = (needsPassword && await auth.recoveryLink(account)) || `${config.appUrl}/acceso?modo=entrar&email=${encodeURIComponent(account)}`;
     const msg = purchaseEmail({ locale: p?.locale, name: p?.name, plan: s.metadata?.plan, amountCents: s.amount_total, currency: s.currency,
       link, needsPassword, supportUrl: `${config.appUrl}/soporte`, appUrl: config.appUrl });
     await mailer.send({ to: email, ...msg, idempotencyKey: `purchase-${s.id}` });

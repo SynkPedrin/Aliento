@@ -232,7 +232,10 @@ export function createBilling({ db, stripe, config, log = console }) {
       }
 
       const hadCustomer = Boolean(await customerIdOf(user.id));
-      const customer = await ensureCustomer(user);
+      // Comprou sem cadastro: sem customer a Stripe deixa a pessoa digitar (e corrigir) o e-mail;
+      // a assinatura cria o customer e o webhook ajusta o e-mail da conta.
+      const guest = !hadCustomer && Boolean((await db.service.one('select needs_password from public.profiles where user_id = $1', [user.id]))?.needs_password);
+      const customer = guest ? null : await ensureCustomer(user);
       // Defensa adicional: si Stripe ya tiene una suscripción viva de ESTE programa (p. ej.
       // webhook pendiente), no crear otra. Suscripciones de otros programas son independientes.
       if (hadCustomer) {
@@ -249,7 +252,7 @@ export function createBilling({ db, stripe, config, log = console }) {
       if (assessment) metadata.assessment_id = assessment.id;
       const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
-        customer,
+        ...(customer ? { customer } : {}),
         client_reference_id: user.id,
         line_items: [{ price: planInfo.priceId, quantity: 1 }],
         ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
