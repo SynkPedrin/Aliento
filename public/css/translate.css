@@ -17,3 +17,6 @@ body { top: 0 !important; }
 .goog-text-highlight { background: none !important; box-shadow: none !important; }
 #gt-root, .skiptranslate { display: none; }
 body > .skiptranslate { display: none !important; }
+/* Quiz e resultado: no canto superior, menor. */
+.gt-btn--top { top: calc(10px + env(safe-area-inset-top)); bottom: auto; padding: 7px 10px; font-size: 12px; box-shadow: none; }
+.gt-menu--top { top: calc(48px + env(safe-area-inset-top)); bottom: auto; }

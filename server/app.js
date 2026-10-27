@@ -2,7 +2,7 @@ import express from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
-import { ACCESS_COOKIE, AuthError, REFRESH_COOKIE, clearSessionCookies, parseCookies, setSessionCookies } from './auth.js';
+import { ACCESS_COOKIE, AuthError, REFRESH_COOKIE, clearSessionCookies, isValidEmail, parseCookies, setSessionCookies, sharedRateLimiter } from './auth.js';
 import { BillingError } from './billing.js';
 import { JourneyError } from './services/journey.js';
 import { accountRoutes } from './routes/account.js';
@@ -13,6 +13,7 @@ import { storeRoutes } from './routes/store.js';
 import { trackRoutes } from './routes/track.js';
 import { growthRoutes, growthCron } from './routes/growth.js';
 import { HttpError } from './routes/util.js';
+import { createMailer, purchaseEmail } from './services/mailer.js';
 
 const PUBLIC_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'public');
 
@@ -35,7 +36,8 @@ const GT_CONN = ' https://translate.googleapis.com https://translate-pa.googleap
 
 const NO_NOTIFIER = { enabled: false, publicKey: '', runDue: async () => ({ disabled: true }), notifyAchievements() {}, test: async () => 'disabled' };
 
-export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, storeSync = null, apple = null, googlePlay = null, growth = null, log = console }) {
+export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, programs, storeSync = null, apple = null, googlePlay = null, growth = null, mailer = null, log = console }) {
+  mailer ??= createMailer({ config, log });
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -80,12 +82,29 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
     try {
       await billing.handleEvent(event);
       if (growth) await growth.hooks.onStripeEvent(event); // rastreo/atribución: nunca bloquea el cobro
+      await sendPurchaseEmail(event).catch((err) => log.warn(`[mail] compra ${event.id}: ${err.message}`)); // e-mail nunca bloqueia o cobro
       res.json({ received: true });
     } catch (err) {
       log.error(`[webhook] Error procesando ${event.type} (${event.id}):`, err.message);
       res.status(500).send('Error');
     }
   });
+
+  /** Primeira compra paga: e-mail com o acesso (criar senha, se comprou sem cadastro). */
+  async function sendPurchaseEmail(event) {
+    if (!['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type)) return;
+    const s = event.data.object;
+    if (s.mode !== 'subscription' || !['paid', 'no_payment_required'].includes(s.payment_status)) return;
+    const email = s.customer_details?.email ?? s.customer_email;
+    if (!email) return;
+    const p = await db.service.one(`select p.name, p.locale, p.needs_password from public.profiles p join auth.users u on u.id = p.user_id
+      where ${s.metadata?.user_id ? 'p.user_id = $1' : 'lower(u.email) = lower($1)'}`, [s.metadata?.user_id ?? email]);
+    const needsPassword = Boolean(p?.needs_password);
+    const link = (needsPassword && await auth.recoveryLink(email)) || `${config.appUrl}/acceso?modo=entrar&email=${encodeURIComponent(email)}`;
+    const msg = purchaseEmail({ locale: p?.locale, name: p?.name, plan: s.metadata?.plan, amountCents: s.amount_total, currency: s.currency,
+      link, needsPassword, supportUrl: `${config.appUrl}/soporte` });
+    await mailer.send({ to: email, ...msg, idempotencyKey: `purchase-${s.id}` });
+  }
 
   // ---------- Tarea programada: recordatorios (Vercel Cron o pg_cron de Supabase) ----------
   app.all('/api/cron/notifications', async (req, res) => {
@@ -140,6 +159,23 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
     const origin = req.get('origin');
     if (origin && origin !== new URL(config.appUrl).origin) return res.status(403).json({ error: 'Origen no permitido.' });
     next();
+  });
+
+  // Suporte (página pública /soporte): o formulário vira e-mail para a caixa do suporte.
+  const supportLimiter = sharedRateLimiter(db, { windowSeconds: 60 * 60, max: 5 });
+  app.post('/api/support', async (req, res, next) => {
+    try {
+      const b = req.body ?? {};
+      if (b.website) return res.json({ ok: true }); // campo-isca: robô
+      const name = String(b.name ?? '').trim().slice(0, 80), email = String(b.email ?? '').trim().toLowerCase();
+      const orderId = String(b.orderId ?? '').trim().slice(0, 80), message = String(b.message ?? '').trim();
+      if (!name) throw new HttpError(422, 'Escribe tu nombre.', 'INVALID', { field: 'name' });
+      if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
+      if (message.length < 10 || message.length > 4000) throw new HttpError(422, 'Cuéntanos un poco más (entre 10 y 4000 caracteres).', 'INVALID', { field: 'message' });
+      if (!(await supportLimiter(`support:${req.ip}`))) throw new HttpError(429, 'Has enviado varios mensajes. Inténtalo de nuevo en una hora.', 'RATE_LIMITED');
+      await mailer.sendSupport({ name, email, orderId, message, page: String(b.page ?? '').slice(0, 200) });
+      res.json({ ok: true });
+    } catch (err) { next(err); }
   });
 
   const store = createAssessmentStore({ db, config });

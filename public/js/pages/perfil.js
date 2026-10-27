@@ -19,12 +19,22 @@ async function load() {
   const zones = [...new Set([p.timezone, userTimezone(), ...ZONES])];
   const name = h('input', { class: 'input', id: 'name', value: p.name, maxlength: 80, autocomplete: 'given-name', required: true });
   const tz = h('select', { class: 'select', id: 'tz' }, zones.map((z) => h('option', { value: z, selected: z === p.timezone }, z.replace(/_/g, ' '))));
-  const lang = h('select', { class: 'select', id: 'lang', disabled: true }, h('option', { value: 'es' }, 'Español'));
+  // Idioma da conta: o app é traduzido para ele (translate.js) em qualquer aparelho.
+  const LANGS = [['es', 'Español'], ['en', 'English'], ['pt', 'Português'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano']];
+  const lang = h('select', { class: 'select notranslate', id: 'lang', translate: 'no' }, LANGS.map(([v, l]) => h('option', { value: v, selected: v === p.locale }, l)));
   const saveBtn = h('button', { class: 'btn btn--sm', type: 'submit' }, 'Guardar');
   const personal = h('form', { class: 'card stack', onsubmit: async (e) => {
     e.preventDefault();
     setBusy(saveBtn, true);
-    try { await api('/api/profile', { method: 'PATCH', body: { name: name.value, timezone: tz.value } }); toast('Datos guardados.'); } catch (err) { toast(err.message); } finally { setBusy(saveBtn, false); }
+    try {
+      await api('/api/profile', { method: 'PATCH', body: { name: name.value, timezone: tz.value, locale: lang.value } });
+      if (lang.value !== p.locale) {
+        // Mesmas chaves do translate.js: ao recarregar, a tela já abre no idioma novo.
+        try { localStorage.setItem('alento-gt', lang.value); localStorage.setItem('alento-lang', lang.value === 'pt' ? 'pt-BR' : lang.value); } catch { /* modo privado */ }
+        return location.reload();
+      }
+      toast('Datos guardados.');
+    } catch (err) { toast(err.message); } finally { setBusy(saveBtn, false); }
   } },
   h('h2', { class: 'title-md' }, 'Datos personales'),
   h('div', { class: 'form-grid' },

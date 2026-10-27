@@ -22,7 +22,7 @@ async function init() {
   ]);
   if (me.access) {
     // Ya hay algún programa activo: el pago del nuevo funil se hace desde el catálogo.
-    if (!me.programs?.includes(program)) return window.location.replace(program === 'sem-fumo' ? '/dashboard' : `/programas?pago=nuevo`);
+    if (!me.programs?.includes(program)) return window.location.replace('/dashboard');
     return window.location.replace(program === 'sem-fumo' ? '/dashboard' : `/programa?p=${program}`);
   }
   // Sin cuestionario completado no hay plan que ofrecer: primero el test del programa.

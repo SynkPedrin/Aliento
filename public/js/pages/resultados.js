@@ -119,7 +119,7 @@ const heroBlock = (me, program, name) => h('section', { class: 'results-hero the
     h('h1', { class: 'title-xl' }, 'Ya tienes tu punto de partida'),
     h('p', { class: 'lead' }, `Recorre tus resultados de ${name}: primero tu situación actual, después tu posible camino y, al final, tu plan.`),
     me.access
-      ? h('p', { class: 'u-mt-16' }, h('a', { class: 'btn', href: '/programas?catalogo' }, 'Ir a Mis programas'))
+      ? h('p', { class: 'u-mt-16' }, h('a', { class: 'btn', href: '/dashboard' }, 'Ir a mi app'))
       : h('p', { class: 'u-mt-16' }, h('a', { class: 'btn', href: '#planes' }, 'Ver mi plan y suscribirme')),
     h('p', { class: 'small muted' }, h('a', { href: `/quiz/${program}?nuevo` }, 'Repetir el test'))));
 
@@ -703,7 +703,7 @@ async function init() {
   if (me.user) {
     renderHeader($('[data-header]'), {
       links: me.access
-        ? [{ href: '/programas?catalogo', label: 'Mis programas', cls: 'btn btn--sm' }]
+        ? [{ href: '/dashboard', label: 'Mi app', cls: 'btn btn--sm' }]
         : [{ href: '/perfil', label: 'Mi perfil', cls: 'hide-sm' }],
     });
   } else {

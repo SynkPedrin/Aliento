@@ -9,6 +9,8 @@ import { HttpError, requireUser, wrap } from './util.js';
 
 import { attributionFromRequest, clientInfo, eventIdFor } from '../growth/context.js';
 
+const LOCALES = ['es', 'en', 'pt', 'fr', 'de', 'it'];
+
 export function accountRoutes({ db, auth, billing, config, store, programs, growth = null, log = console }) {
   const r = Router();
   // Límites compartidos entre instancias (Postgres): por IP y por cuenta.
@@ -82,6 +84,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
     // Solo un token del enlace de recuperación (no un token de sesión cualquiera).
     if (!user || !auth.isRecoveryToken(accessToken)) throw new HttpError(400, 'El enlace no es válido o ha caducado. Solicita uno nuevo.', 'INVALID_LINK');
     await auth.setPassword(user.id, req.body.password);
+    await db.service.exec('update public.profiles set needs_password = false where user_id = $1', [user.id]); // comprou sem cadastro e criou a senha pelo e-mail
     const session = await auth.signIn({ email: user.email, password: req.body.password });
     if (refreshToken) await auth.signOut(accessToken);
     setSessionCookies(res, config, session);
@@ -98,7 +101,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
     const onboarded = await db.service.one('select onboarded_at, needs_password from public.profiles where user_id = $1', [req.user.id]);
     const s = await store.current(req);
     res.json({
-      user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: req.user.is_admin },
+      user: { id: req.user.id, name: req.user.name, email: req.user.email, isAdmin: req.user.is_admin, locale: req.user.locale ?? 'es' },
       access: Boolean(active) || grants.length > 0,
       programs: [...new Set([...programs, ...grants.map((g) => g.program_slug)])],
       subscription: subscriptionView(active ?? await billing.latestSubscription(req.user.id)),
@@ -137,9 +140,10 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
     }
     const name = String(req.body?.name ?? '').trim().slice(0, 80) || email.split('@')[0];
     const session = await auth.register({ name, email, password: `${randomUUID()}${randomUUID()}`, timezone: isValidTimezone(req.body?.timezone) ? req.body.timezone : 'UTC' });
-    await db.service.exec('update public.profiles set needs_password = true where user_id = $1', [session.user.id]);
+    await db.service.exec('update public.profiles set needs_password = true, locale = $2 where user_id = $1',
+      [session.user.id, LOCALES.includes(req.body?.locale) ? req.body.locale : 'es']);
     setSessionCookies(res, config, session);
-    req.user = { id: session.user.id, email, name };
+    req.user = { id: session.user.id, email, name, locale: LOCALES.includes(req.body?.locale) ? req.body.locale : 'es' };
     return startCheckoutFor(req, res);
   }));
 
@@ -211,7 +215,7 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
 
   // ---------------------------------------------------------------- perfil
   r.get('/profile', requireUser, wrap(async (req, res) => {
-    res.json({ name: req.user.name, email: req.user.email, timezone: req.user.timezone, locale: 'es', createdAt: req.user.created_at });
+    res.json({ name: req.user.name, email: req.user.email, timezone: req.user.timezone, locale: req.user.locale ?? 'es', createdAt: req.user.created_at });
   }));
 
   r.patch('/profile', requireUser, wrap(async (req, res) => {
@@ -221,6 +225,11 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
     if (!isValidTimezone(timezone)) throw new HttpError(422, 'Zona horaria no válida.', 'INVALID', { field: 'timezone' });
     // Con el rol del usuario: RLS + permisos de columna (solo nombre y zona horaria).
     await db.asUser(req.user.id, (q) => q.exec('update public.profiles set name = $1, timezone = $2 where user_id = $3', [name, timezone, req.user.id]));
+    // Idioma: fora das colunas que o usuário edita direto; validado aqui e gravado pelo servidor.
+    if (req.body?.locale !== undefined) {
+      if (!LOCALES.includes(req.body.locale)) throw new HttpError(422, 'Idioma no válido.', 'INVALID', { field: 'locale' });
+      await db.service.exec('update public.profiles set locale = $1 where user_id = $2', [req.body.locale, req.user.id]);
+    }
     res.json({ ok: true });
   }));
 

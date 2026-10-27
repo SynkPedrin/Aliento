@@ -17,6 +17,10 @@ Ordered by priority. Everything here is planned; nothing in this list has been e
   - Mostrar uma única vez por sessão; registrar `results_step` (ou evento próprio) para medir quantos trocam.
   - Onde: `renderSalesPlans` / `goToCheckout` em `public/js/paywall.js`.
 
+- [ ] **Tradução humana do quiz e da página de venda** (EN primeiro, depois DE). Hoje fora do espanhol é Google Translate (`public/js/translate.js`); a home já tem textos próprios em 6 idiomas (`public/i18n.js`).
+- [ ] **Textos do checkout Stripe por idioma** (`custom_text` em `server/billing.js` ainda em espanhol).
+- [ ] **E-mail para quem não comprou** (lead sem compra; Resend já integrado em `server/services/mailer.js`).
+
 ## P1 — complete the five programs
 
 - [ ] Clinical review of the four draft journeys (Alcohol, Azúcar, Ansiedad, Sueño). Only after review may they be published/commercialized.

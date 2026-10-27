@@ -176,3 +176,11 @@ export function revealOnScroll(elements) {
   }, { threshold: 0.12 });
   elements.forEach((el) => io.observe(el));
 }
+
+/** Idioma da pessoa (o mesmo que o translate.js usa): escolha salva → navegador → espanhol. */
+export function uiLocale() {
+  const ok = ['es', 'en', 'pt', 'fr', 'de', 'it'];
+  const base = (c) => String(c ?? '').toLowerCase().split('-')[0];
+  try { const s = base(localStorage.getItem('alento-gt') ?? localStorage.getItem('alento-lang')); if (ok.includes(s)) return s; } catch { /* modo privado */ }
+  return (navigator.languages ?? [navigator.language]).map(base).find((c) => ok.includes(c)) ?? 'es';
+}

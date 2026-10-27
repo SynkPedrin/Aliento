@@ -40,7 +40,8 @@
     document.querySelector('.lang__code').textContent = lang.short;
     document.querySelectorAll('.lang__menu [data-lang]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.lang === lang.code)));
     if (save) {
-      try { localStorage.setItem('alento-lang', lang.code); } catch (e) {}
+      // alento-gt: o mesmo idioma no quiz e no app (traduzidos pelo translate.js)
+      try { localStorage.setItem('alento-lang', lang.code); localStorage.setItem('alento-gt', lang.code.split('-')[0].toLowerCase()); } catch (e) {}
       const u = new URL(location.href); u.searchParams.set('lang', lang.code); history.replaceState(null, '', u);
     }
   }
@@ -54,9 +55,20 @@
   document.addEventListener('click', e => { if (!langBox.contains(e.target)) openMenu(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !langMenu.hidden) { openMenu(false); langBtn.focus(); } });
 
+  // Idioma inicial: ?lang= → escolha salva → idioma do navegador → espanhol.
+  const fromBrowser = () => {
+    for (const c of navigator.languages || [navigator.language]) {
+      const l = String(c || '').toLowerCase();
+      if (l === 'pt-pt') return 'pt-PT';
+      if (l.startsWith('pt')) return 'pt-BR';
+      const base = pick(l.split('-')[0]);
+      if (base) return base.code;
+    }
+    return DEFAULT;
+  };
   let initial = new URLSearchParams(location.search).get('lang');
   if (!pick(initial)) { try { initial = localStorage.getItem('alento-lang'); } catch (e) { initial = null; } }
-  setLang(pick(initial) ? initial : DEFAULT, false);
+  setLang(pick(initial) ? initial : fromBrowser(), false);
 
   // PWA: el service worker queda listo desde la primera visita (navegación offline en toda la web)
   window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });

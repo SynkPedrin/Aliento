@@ -172,7 +172,7 @@ export function createBilling({ db, stripe, config, log = console }) {
     const existing = await customerIdOf(user.id);
     if (existing) return existing;
     const customer = await stripe.customers.create(
-      { email: user.email, name: user.name, preferred_locales: ['es'], metadata: { user_id: user.id } },
+      { email: user.email, name: user.name, preferred_locales: [user.locale ?? 'es'], metadata: { user_id: user.id } },
       { idempotencyKey: `customer-${user.id}` },
     );
     await db.service.exec('update public.profiles set stripe_customer_id = $1 where user_id = $2 and stripe_customer_id is null', [customer.id, user.id]);
@@ -252,7 +252,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
         metadata,
         subscription_data: { metadata },
-        locale: 'es',
+        locale: user.locale ?? 'es', // pt/en/fr/de/it: o Stripe mostra a página de pagamento no idioma da pessoa
         custom_text: {
           submit: {
             message: planInfo.renewalAmount

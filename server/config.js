@@ -84,6 +84,12 @@ export function loadConfig(env = process.env) {
       packageName: env.GOOGLE_PLAY_PACKAGE_NAME || '',
       serviceAccountJson: env.GOOGLE_SERVICE_ACCOUNT_JSON || '',
     },
+    // E-mails transacionais (Resend). Sem chave: nada é enviado (só log).
+    email: {
+      apiKey: env.RESEND_API_KEY || '',
+      from: env.EMAIL_FROM || 'Alento <hola@alentohealth.com>',
+      support: env.SUPPORT_EMAIL || env.LEGAL_EMAIL || '',
+    },
     // Identidad legal del responsable (se muestra en Términos y Privacidad).
     legal: {
       name: env.LEGAL_NAME || '',

@@ -1,6 +1,6 @@
-// Painel v2: visão geral, funis (retenção tela a tela, estilo VTurb), vendas, traqueamento por pixel e configurações.
+// Painel v2: visão geral, analytics (retenção tela a tela, estilo VTurb), vendas, leads, traqueamento por pixel, melhorias futuras e configurações.
 import { h, toast } from '../ui.js';
-import { act, dt, emptyEl, eur, field, gapi, int, load, pct, state } from './lib.js';
+import { act, csvButton, dt, emptyEl, eur, field, gapi, int, load, pct, state } from './lib.js';
 import { GROUPS, groupForm, staffSection } from './settings.js';
 
 const PROGRAM_NAMES = { 'sem-fumo': 'Sem Fumo · ES', alcohol: 'Álcool', azucar: 'Açúcar', ansiedad: 'Ansiedade', sueno: 'Sono' };
@@ -48,7 +48,7 @@ export async function home(root) {
     body.replaceChildren(
       h('div', { class: 'v2-grid v2-grid--3' }, k('today', 'Hoje'), k('d7', 'Últimos 7 dias'), k('d30', 'Últimos 30 dias')),
       h('div', { class: 'v2-grid v2-grid--2 v2-mt' },
-        card(h('h2', {}, 'Funis hoje'), d.funnels.length
+        card(h('h2', {}, 'Quizzes hoje'), d.funnels.length
           ? table(['Funil', N('Iniciaram'), N('Conversão'), N('Faturamento')], d.funnels.map((f) => [PROGRAM_NAMES[f.program] ?? f.program, int(f.started), pct(f.conversion_pct), eur(f.revenue_cents)]),
             { onRow: (i) => goto('funnel', { p: d.funnels[i].program, days: '1' }) })
           : emptyEl('Sem visitas hoje', 'Quando alguém abrir um quiz, ele aparece aqui.')),
@@ -60,7 +60,7 @@ export async function home(root) {
 
 // ---------------------------------------------------------------- Funis
 export async function funnels(root, _f, params) {
-  root.replaceChildren(head('Funis', 'Cada quiz é um funil. Clique para ver a retenção tela a tela.', periodSeg(params, (p) => goto('funnels', p))), h('div', { 'data-body': '' }));
+  root.replaceChildren(head('Analytics', 'Cada quiz é um funil. Clique para ver a retenção e comparar anúncios.', periodSeg(params, (p) => goto('funnels', p))), h('div', { 'data-body': '' }));
   const body = root.querySelector('[data-body]');
   await load(body, async () => {
     const d = await gapi(`/funnels?days=${params.days ?? '7'}`);
@@ -89,50 +89,99 @@ function sparkline(values) {
   return svg;
 }
 
-const DIM_TABS = [['', 'Retenção geral'], ['country', 'Países'], ['device', 'Dispositivos'], ['source', 'Origem do tráfego'], ['language', 'Idioma']];
+// Recortes abaixo do gráfico. Campanha/conjunto/anúncio vêm das UTMs do link (TikTok: __CAMPAIGN_NAME__, __AID_NAME__, __CID_NAME__).
+const DIM_TABS = [['', 'Geral'], ['campaign', 'Campanha'], ['adset', 'Conjunto'], ['ad', 'Anúncio'], ['country', 'País'], ['device', 'Dispositivo'], ['source', 'Origem'], ['language', 'Idioma']];
+// Cores das linhas em classes (.v2-s0…s5): o CSP do site bloqueia style inline.
+const DEVICES = { mobile: 'Celular', desktop: 'Computador', tablet: 'Tablet' };
+const regionNames = new Intl.DisplayNames(['pt-BR'], { type: 'region' });
+const languageNames = new Intl.DisplayNames(['pt-BR'], { type: 'language' });
+function segLabel(dim, v) {
+  try {
+    if (dim === 'country' && /^[a-z]{2}$/i.test(v)) return regionNames.of(v.toUpperCase());
+    if (dim === 'language' && /^[a-z]{2,3}(-[a-z0-9]+)?$/i.test(v)) return languageNames.of(v);
+  } catch { /* código desconhecido: mostra como veio */ }
+  return dim === 'device' ? (DEVICES[v] ?? v) : v;
+}
 
 export async function funnel(root, _f, params) {
   const program = params.p ?? 'sem-fumo';
-  const back = h('button', { type: 'button', class: 'v2-back', onclick: () => goto('funnels', { days: params.days }) }, '← Funis');
+  const dim = DIM_TABS.some(([k]) => k === params.dim) ? params.dim ?? '' : '';
+  const nav = (extra) => goto('funnel', { p: program, days: params.days, dim, ...extra });
+  const back = h('button', { type: 'button', class: 'v2-back', onclick: () => goto('funnels', { days: params.days }) }, '← Analytics');
   root.replaceChildren(head(PROGRAM_NAMES[program] ?? program, null, periodSeg(params, (p) => goto('funnel', p))), h('div', { 'data-body': '' }));
   root.querySelector('.v2-head > div').prepend(back);
   const body = root.querySelector('[data-body]');
   await load(body, async () => {
-    const qs = new URLSearchParams({ days: params.days ?? '7', ...(params.dim ? { dim: params.dim } : {}), ...(params.val ? { val: params.val } : {}) });
+    const qs = new URLSearchParams({ days: params.days ?? '7', ...(dim ? { dim } : {}), ...(dim && params.val ? { val: params.val } : {}) });
     const d = await gapi(`/funnels/${encodeURIComponent(program)}?${qs}`);
     state.currency = d.currency;
-    const tabs = h('div', { class: 'v2-tabs', role: 'tablist' }, DIM_TABS.map(([k, l]) =>
-      h('button', { type: 'button', role: 'tab', class: (params.dim ?? '') === k ? 'on' : '', 'aria-selected': String((params.dim ?? '') === k), onclick: () => goto('funnel', { p: program, days: params.days, dim: k }) }, l)));
-    const segs = params.dim ? h('div', { class: 'v2-segs' }, d.segments.length ? d.segments.map((s) =>
-      h('button', { type: 'button', class: `v2-chip v2-chip--btn${params.val === s.value ? ' on' : ''}`, onclick: () => goto('funnel', { p: program, days: params.days, dim: params.dim, val: params.val === s.value ? '' : s.value }) },
-        `${s.value} · ${int(s.people)}`)) : h('span', { class: 'muted' }, 'Sem dados para separar.')) : null;
+    const dimName = DIM_TABS.find(([k]) => k === dim)[1];
+    const series = d.series.map((x, i) => ({ ...x, name: segLabel(dim, x.value), cls: `v2-s${i % 6}` }));
+
+    // Filtros embaixo do gráfico: dimensão + valores (nome completo, sem abreviar).
+    const tabs = h('div', { class: 'v2-tabs', role: 'tablist', 'aria-label': 'Separar por' }, DIM_TABS.map(([k, l]) =>
+      h('button', { type: 'button', role: 'tab', class: dim === k ? 'on' : '', 'aria-selected': String(dim === k), onclick: () => goto('funnel', { p: program, days: params.days, dim: k }) }, l)));
+    const segs = dim ? h('div', { class: 'v2-segs' }, d.segments.length
+      ? [h('button', { type: 'button', class: `v2-chip v2-chip--btn${params.val ? '' : ' on'}`, onclick: () => nav({ val: '' }) }, `Comparar (${Math.min(d.segments.length, 6)} linhas)`),
+        ...d.segments.map((s) => h('button', { type: 'button', class: `v2-chip v2-chip--btn${params.val === s.value ? ' on' : ''}`, onclick: () => nav({ val: params.val === s.value ? '' : s.value }) },
+          `${segLabel(dim, s.value)} · ${int(s.people)}`))]
+      : h('span', { class: 'muted' }, 'Sem dados para separar neste período.')) : null;
+
     const worst = d.screens.reduce((w, s) => (s.drop_pp > (w?.drop_pp ?? 0) ? s : w), null);
-    const m = d.metrics;
-    body.replaceChildren(
-      card(tabs, segs, d.screens[0].people
+    const chart = series.length
+      ? [retentionChart(d.screens, series), h('ul', { class: 'v2-legend' }, series.map((x) => h('li', {}, h('i', { class: x.cls }), x.name)))]
+      : d.screens[0].people
         ? [retentionChart(d.screens), worst ? h('p', { class: 'v2-note' }, 'Maior queda: ', h('b', { class: 'v2-down' }, `${worst.label} · ${worst.title} (−${worst.drop_pp} p.p.)`)) : null]
-        : emptyEl('Sem dados neste período', 'Quando alguém abrir o quiz, a curva aparece aqui.')),
-      h('h2', { class: 'v2-h2' }, 'Métricas'),
+        : emptyEl('Sem dados neste período', 'Quando alguém abrir o quiz, a curva aparece aqui.');
+    const best = series.reduce((b, x) => (x.people >= 5 && x.purchase_pct > (b?.purchase_pct ?? -1) ? x : b), null);
+    const compare = series.length ? card(h('h2', {}, `Comparativo por ${dimName.toLowerCase()}`),
+      table([dimName, N('Iniciaram'), N('Terminaram o quiz'), N('Leads'), N('Viram a oferta'), N('Compras'), N('Até a compra')], series.map((x) => [
+        h('span', { class: 'v2-namecell' }, h('i', { class: `v2-swatch ${x.cls}` }), x.name, x === best ? chip('melhor', 'up') : null),
+        int(x.people), pct(x.finished_pct), int(x.leads), int(x.offer), int(x.purchases), h('b', {}, pct(x.purchase_pct))])),
+      h('p', { class: 'v2-note' }, 'Linhas = os 6 valores com mais pessoas. Clique num valor acima do gráfico para ver só ele.')) : null;
+
+    const m = d.metrics;
+    const screensTable = h('details', { class: 'v2-card v2-details v2-mt' }, h('summary', {}, 'Tela a tela'),
+      table(['Nº', 'Tela', N('Pessoas'), N('Retenção'), N('Saída nesta tela')],
+        d.screens.map((s) => [s.label, h('span', { class: 'v2-wrap' }, s.title), int(s.people), pct(s.retention_pct), h('span', { class: s.drop_pp >= 5 ? 'v2-down' : '' }, s.drop_pp ? `−${s.drop_pp} p.p.` : '—')])));
+    const reset = state.role === 'admin' ? h('div', { class: 'v2-reset' },
+      d.since ? h('span', { class: 'muted' }, `Contando desde ${dt(d.since)}`) : null,
+      h('button', { type: 'button', class: 'v2-link', onclick: (e) => {
+        const typed = prompt('Isto zera as métricas deste quiz no painel (as vendas e os dados continuam guardados).\n\nDigite RESETAR para confirmar:');
+        if (typed == null) return;
+        if (typed.trim() !== 'RESETAR') { toast('Não zerado: era preciso digitar RESETAR.'); return; }
+        act(e.currentTarget, () => gapi(`/funnels/${encodeURIComponent(program)}/reset`, { method: 'POST', body: { confirm: 'RESETAR' } }), 'Métricas zeradas', () => funnel(root, _f, params));
+      } }, 'Zerar métricas')) : null;
+
+    body.replaceChildren(
+      card(...[chart].flat(), h('div', { class: 'v2-filters' }, tabs, segs)),
+      compare,
+      h('h2', { class: 'v2-h2' }, params.val ? `Métricas · ${segLabel(dim, params.val)}` : 'Métricas'),
       h('div', { class: 'v2-grid v2-grid--6' },
         metric(int(m.started), 'Iniciaram o quiz'), metric(int(m.finished), 'Chegaram à análise'), metric(int(m.leads), 'Leads (e-mail)'),
         metric(pct(m.lead_pct), 'Taxa de lead'), metric(int(m.offer), 'Viram a oferta'), metric(int(m.checkouts), 'Abriram checkout'),
-        metric(int(m.purchases), 'Compras'), metric(pct(m.conversion_pct), 'Conversão'), metric(eur(m.revenue_cents), 'Faturamento'), metric(eur(m.ticket_cents), 'Ticket médio')),
-      card(h('h2', {}, 'Tela a tela'), table(['Nº', 'Tela', N('Pessoas'), N('Retenção'), N('Saída nesta tela')],
-        d.screens.map((s) => [s.label, h('span', { class: 'v2-wrap' }, s.title), int(s.people), pct(s.retention_pct), h('span', { class: s.drop_pp >= 5 ? 'v2-down' : '' }, s.drop_pp ? `−${s.drop_pp} p.p.` : '—')]))));
+        metric(int(m.purchases), 'Compras'), metric(pct(m.conversion_pct), 'Conversão'),
+        m.revenue_cents == null ? null : metric(eur(m.revenue_cents), 'Faturamento'), m.ticket_cents == null ? null : metric(eur(m.ticket_cents), 'Ticket médio')),
+      screensTable, reset);
   });
 }
 
-/** Curva em degraus (estilo VTurb). No eixo: o número de cada pergunta (P1…) e as etapas finais. */
-function retentionChart(screens) {
+/** Curva em degraus (estilo VTurb). Com `series`, uma linha por recorte (sem área). No eixo: P1… e as etapas finais. */
+function retentionChart(screens, series = null) {
   const NS = 'http://www.w3.org/2000/svg';
   const W = 1000, H = 340, L = 44, R = 40, T = 14, B = 58, iw = W - L - R, ih = H - T - B, n = screens.length;
   const x = (i) => L + (i / (n - 1)) * iw, y = (v) => T + ih - (Math.min(100, v) / 100) * ih;
   const el = (tag, attrs, text) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (text != null) e.textContent = text; return e; };
   const svg = el('svg', { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'none', class: 'v2-ret', role: 'img', 'aria-label': 'Retenção por tela do quiz' });
   for (const v of [0, 20, 40, 60, 80, 100]) { svg.append(el('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'v2-ret__grid' })); svg.append(el('text', { x: L - 8, y: y(v) + 4, 'text-anchor': 'end', class: 'v2-ret__y' }, `${v}%`)); }
-  let d = `M${x(0)},${y(screens[0].retention_pct)}`;
-  screens.forEach((s, i) => { if (i) d += ` H${x(i)} V${y(s.retention_pct)}`; });
-  svg.append(el('path', { d: `${d} V${y(0)} H${x(0)} Z`, class: 'v2-ret__area' }), el('path', { d, class: 'v2-ret__line' }));
+  const stepPath = (vals) => { let d = `M${x(0)},${y(vals[0])}`; vals.forEach((v, i) => { if (i) d += ` H${x(i)} V${y(v)}`; }); return d; };
+  const lines = series ?? [{ retention: screens.map((s) => s.retention_pct) }];
+  if (!series) {
+    const d = stepPath(lines[0].retention);
+    svg.append(el('path', { d: `${d} V${y(0)} H${x(0)} Z`, class: 'v2-ret__area' }), el('path', { d, class: 'v2-ret__line' }));
+  } else {
+    for (const s of lines) svg.append(el('path', { d: stepPath(s.retention), class: `v2-ret__line ${s.cls}` }));
+  }
   // Eixo X: perguntas (P1…) discretas; etapas fora do quiz em destaque.
   let stageRow = 0;
   screens.forEach((s, i) => {
@@ -145,8 +194,8 @@ function retentionChart(screens) {
     }
   });
   const cross = el('line', { y1: T, y2: T + ih, class: 'v2-ret__cross', visibility: 'hidden' });
-  const dot = el('circle', { r: 4.5, class: 'v2-ret__dot', visibility: 'hidden' });
-  svg.append(cross, dot);
+  const dots = lines.map((s) => el('circle', { r: 4.5, class: `v2-ret__dot ${s.cls ?? ''}`, visibility: 'hidden' }));
+  svg.append(cross, ...dots);
   const tip = h('div', { class: 'v2-tip', hidden: true });
   const hit = el('rect', { x: L, y: T, width: iw, height: ih, fill: 'transparent' });
   svg.append(hit);
@@ -155,13 +204,15 @@ function retentionChart(screens) {
     const i = Math.max(0, Math.min(n - 1, Math.round(((((evt.clientX - r.left) / r.width) * W) - L) / iw * (n - 1))));
     const s = screens[i];
     cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('visibility', 'visible');
-    dot.setAttribute('cx', x(i)); dot.setAttribute('cy', y(s.retention_pct)); dot.setAttribute('visibility', 'visible');
-    tip.replaceChildren(h('strong', {}, `${s.label} · ${s.title}`), h('span', {}, `${pct(s.retention_pct)} chegaram (${int(s.people)} pessoas)`), s.drop_pp ? h('span', { class: 'v2-down' }, `Saída aqui: −${s.drop_pp} p.p.`) : null);
+    lines.forEach((ln, k) => { dots[k].setAttribute('cx', x(i)); dots[k].setAttribute('cy', y(ln.retention[i])); dots[k].setAttribute('visibility', 'visible'); });
+    tip.replaceChildren(h('strong', {}, `${s.label} · ${s.title}`), ...(series
+      ? series.map((ln) => h('span', { class: 'v2-tip__row' }, h('i', { class: ln.cls }), `${ln.name}: ${pct(ln.retention[i])}`))
+      : [h('span', {}, `${pct(s.retention_pct)} chegaram (${int(s.people)} pessoas)`), s.drop_pp ? h('span', { class: 'v2-down' }, `Saída aqui: −${s.drop_pp} p.p.`) : null]));
     tip.hidden = false;
     tip.style.left = `${Math.min(Math.max((x(i) / W) * 100, 12), 88)}%`;
   };
   hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show);
-  hit.addEventListener('pointerleave', () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); dot.setAttribute('visibility', 'hidden'); });
+  hit.addEventListener('pointerleave', () => { tip.hidden = true; cross.setAttribute('visibility', 'hidden'); dots.forEach((dt0) => dt0.setAttribute('visibility', 'hidden')); });
   return h('div', { class: 'v2-ret-wrap' }, svg, tip);
 }
 
@@ -215,7 +266,22 @@ async function openSale(id) {
 }
 
 // ---------------------------------------------------------------- Traqueamento
-const NETS = [['meta', 'Meta (Facebook / Instagram)'], ['tiktok', 'TikTok Ads'], ['google', 'Google Ads']];
+const NETS = [['tiktok', 'TikTok Ads'], ['meta', 'Meta Ads'], ['google', 'Google Ads']];
+// Marcas simplificadas (só para identificar a rede no painel).
+const NET_LOGOS = {
+  tiktok: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#000"/><path d="M15.6 5c.3 1.6 1.4 2.8 3 3v2.4a6 6 0 0 1-3-.9v4.8a4.6 4.6 0 1 1-4.6-4.6h.4v2.5a2.1 2.1 0 1 0 1.7 2.1V5z" fill="#25F4EE" transform="translate(-.6 -.4)"/><path d="M15.6 5c.3 1.6 1.4 2.8 3 3v2.4a6 6 0 0 1-3-.9v4.8a4.6 4.6 0 1 1-4.6-4.6h.4v2.5a2.1 2.1 0 1 0 1.7 2.1V5z" fill="#FE2C55" transform="translate(.6 .4)"/><path d="M15.6 5c.3 1.6 1.4 2.8 3 3v2.4a6 6 0 0 1-3-.9v4.8a4.6 4.6 0 1 1-4.6-4.6h.4v2.5a2.1 2.1 0 1 0 1.7 2.1V5z" fill="#fff"/></svg>',
+  meta: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#0866FF"/><path d="M5 14.6c0-3 1.6-5.6 3.4-5.6 1.4 0 2.4 1.3 3.6 3.4 1.2-2.1 2.2-3.4 3.6-3.4 1.8 0 3.4 2.6 3.4 5.6 0 1.6-.7 2.4-1.7 2.4-1.3 0-2.3-1.6-3.3-3.3l-2-3.4m0 0C10.6 13 9.6 17 7 17c-1.2 0-2-1-2-2.4" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  google: '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#fff"/><path d="M19 12.2c0-.5 0-1-.1-1.4H12v2.7h3.9a3.4 3.4 0 0 1-1.4 2.2v1.8h2.3c1.4-1.2 2.2-3 2.2-5.3z" fill="#4285F4"/><path d="M12 19c1.9 0 3.5-.6 4.7-1.7l-2.3-1.8c-.6.4-1.4.7-2.4.7-1.8 0-3.4-1.2-3.9-2.9H5.7v1.9A7 7 0 0 0 12 19z" fill="#34A853"/><path d="M8.1 13.3a4.2 4.2 0 0 1 0-2.6V8.8H5.7a7 7 0 0 0 0 6.4z" fill="#FBBC05"/><path d="M12 7.8c1 0 2 .4 2.7 1.1l2-2A7 7 0 0 0 5.7 8.8l2.4 1.9C8.6 9 10.2 7.8 12 7.8z" fill="#EA4335"/></svg>',
+};
+const netLogo = (net) => { const s = h('span', { class: 'v2-netlogo' }); s.innerHTML = NET_LOGOS[net] ?? ''; return s; };
+/** Link pronto para colar no anúncio: quiz + UTMs da rede + px do pixel. */
+const adLink = (net, code, appUrl) => `${appUrl}/quiz/sem-fumo?${UTM[net]}&px=${encodeURIComponent(code)}`;
+function copyBtn(text, label = 'Copiar link') {
+  return h('button', { type: 'button', class: 'v2-btn ghost sm', onclick: (e) => {
+    e.stopPropagation();
+    navigator.clipboard?.writeText(text).then(() => toast('Link copiado'), () => prompt('Copie o link:', text));
+  } }, label);
+}
 const UTM = {
   meta: 'utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_term={{adset.name}}&utm_content={{ad.name}}',
   tiktok: 'utm_source=tiktok&utm_medium=paid&utm_campaign=__CAMPAIGN_NAME__&utm_term=__AID_NAME__&utm_content=__CID_NAME__',
@@ -223,7 +289,7 @@ const UTM = {
 };
 
 export async function tracking(root, _f, params) {
-  const net = NETS.some(([k]) => k === params.net) ? params.net : 'meta';
+  const net = NETS.some(([k]) => k === params.net) ? params.net : 'tiktok';
   root.replaceChildren(head('Traqueamento', 'Pixel no navegador + API de conversões no servidor. Cada perfil de anúncio tem o seu pixel.'), h('div', { 'data-body': '' }));
   const body = root.querySelector('[data-body]');
   await load(body, async () => {
@@ -232,7 +298,7 @@ export async function tracking(root, _f, params) {
     const open = list.find((p) => p.key === params.px);
     const nav = h('nav', { class: 'v2-netnav', 'aria-label': 'Redes' }, NETS.map(([k, l]) => {
       const n = d.rows.filter((p) => p.platform === k).length;
-      return h('a', { href: `#/tracking?net=${k}`, class: k === net ? 'on' : '' }, h('span', { class: `v2-dot${n ? '' : ' off'}` }), l, h('small', {}, n ? `${n} ${n === 1 ? 'pixel' : 'pixels'}` : 'nenhum'));
+      return h('a', { href: `#/tracking?net=${k}`, class: k === net ? 'on' : '' }, netLogo(k), l, h('small', {}, h('span', { class: `v2-dot${n ? '' : ' off'}` }), n ? `${n} ${n === 1 ? 'pixel' : 'pixels'}` : 'nenhum'));
     }));
     const panel = open || params.px === 'novo' ? pixelForm(net, open, d.appUrl) : pixelList(net, list, d.appUrl);
     body.replaceChildren(h('div', { class: 'v2-net' }, nav, panel), queueHealth());
@@ -256,23 +322,21 @@ function queueHealth() {
 
 function pixelList(net, list, appUrl) {
   const add = state.canEdit ? h('button', { type: 'button', class: 'v2-btn', onclick: () => goto('tracking', { net, px: 'novo' }) }, '+ Adicionar pixel') : null;
+  const title = h('h2', { class: 'v2-row v2-row--start' }, netLogo(net), NETS.find(([k]) => k === net)[1]);
   if (net === 'google') {
-    return card(h('div', { class: 'v2-row' }, h('h2', {}, 'Google Ads'), chip('em breve')),
-      h('p', { class: 'muted' }, 'O envio de conversões para o Google Ads ainda não está ligado. Você já pode guardar os pixels aqui.'), list.length ? pixelTable(net, list) : null, add);
+    return card(h('div', { class: 'v2-row' }, title, chip('em breve')),
+      h('p', { class: 'muted' }, 'O envio de conversões para o Google Ads ainda não está ligado. Você já pode guardar os pixels aqui.'), list.length ? pixelTable(net, list, appUrl) : null, add);
   }
-  return card(h('div', { class: 'v2-row' }, h('h2', {}, NETS.find(([k]) => k === net)[1]), add),
-    list.length ? pixelTable(net, list) : emptyEl('Nenhum pixel', 'Adicione o pixel de cada perfil de anúncio (ex.: PIXEL PERFIL 10).'),
-    h('h3', { class: 'v2-mt' }, 'Link do anúncio'),
-    h('p', { class: 'muted' }, 'Coloque nos parâmetros de URL do anúncio. Troque o px pelo código do pixel daquele perfil.'),
-    h('input', { class: 'v2-input mono', readonly: true, value: `${UTM[net]}&px=CODIGO_DO_PIXEL`, onfocus: (e) => e.target.select(), 'aria-label': 'Parâmetros de URL' }),
-    h('p', { class: 'v2-note' }, `Exemplo: ${appUrl}/test?utm_source=${net === 'meta' ? 'facebook' : net}&px=perfil10`));
+  return card(h('div', { class: 'v2-row' }, title, add),
+    list.length ? pixelTable(net, list, appUrl) : emptyEl('Nenhum pixel', 'Adicione o pixel de cada perfil de anúncio (ex.: PIXEL PERFIL 10).'));
 }
 
-function pixelTable(net, list) {
-  return table(['Nome', 'Código no link (px)', 'ID', 'Status', N('Eventos 24 h')], list.map((p) => [
+function pixelTable(net, list, appUrl) {
+  return table(['Nome', 'Código no link (px)', 'ID', 'Status', N('Eventos 24 h'), 'Link'], list.map((p) => [
     h('span', {}, h('strong', {}, p.name), p.isDefault ? chip('padrão') : ''), h('code', {}, p.code), h('span', { class: 'mono muted' }, p.pixelId || '—'),
     p.active === false ? chip('pausado') : !p.hasToken ? chip('sem token', 'down') : chip('ativo', 'up'),
-    int((p.events24h?.sent ?? 0) + (p.events24h?.pending ?? 0)) + (p.events24h?.failed ? ` · ${p.events24h.failed} com falha` : '')]),
+    int((p.events24h?.sent ?? 0) + (p.events24h?.pending ?? 0)) + (p.events24h?.failed ? ` · ${p.events24h.failed} com falha` : ''),
+    p.code ? copyBtn(adLink(net, p.code, appUrl)) : h('span', { class: 'muted' }, 'sem código')]),
   { onRow: (i) => goto('tracking', { net, px: list[i].key }) });
 }
 
@@ -299,7 +363,84 @@ function pixelForm(net, px, appUrl) {
   });
   if (!state.canEdit) form.querySelectorAll('input, button[type=submit]').forEach((x) => { x.disabled = true; });
   return card(h('button', { type: 'button', class: 'v2-back', onclick: () => goto('tracking', { net }) }, '← Pixels'), h('h2', {}, px ? px.name : 'Novo pixel'),
-    px?.code ? h('p', { class: 'v2-note' }, `Link do anúncio: ${appUrl}/test?…&px=${px.code}`) : null, form);
+    px?.code ? h('div', { class: 'v2-row v2-row--start v2-mb' }, h('code', { class: 'v2-wrap muted' }, adLink(net, px.code, appUrl)), copyBtn(adLink(net, px.code, appUrl))) : null, form);
+}
+
+// ---------------------------------------------------------------- Leads
+export async function leads(root, _f, params) {
+  const search = h('input', { class: 'v2-input', type: 'search', placeholder: 'Buscar por nome ou e-mail', value: params.q ?? '', 'aria-label': 'Buscar lead' });
+  search.addEventListener('change', () => goto('leads', { ...params, q: search.value.trim() }));
+  root.replaceChildren(head('Leads', 'E-mails deixados no quiz. Quem já comprou aparece marcado.', periodSeg(params, (p) => goto('leads', p))), h('div', { 'data-body': '' }));
+  const body = root.querySelector('[data-body]');
+  await load(body, async () => {
+    const d = await gapi(`/leads?${new URLSearchParams({ days: params.days ?? '7', q: params.q ?? '' })}`);
+    const bought = d.rows.filter((x) => x.bought).length;
+    body.replaceChildren(
+      h('div', { class: 'v2-grid v2-grid--3' }, metric(int(d.total), 'Leads no período'), metric(int(bought), 'Já compraram'), metric(int(d.total - bought), 'Ainda não compraram')),
+      card(h('div', { class: 'v2-row v2-mb' }, search, csvButton('/leads', {}, { days: params.days ?? '7', q: params.q ?? '' })),
+        d.rows.length ? table(['Quando', 'Nome', 'E-mail', 'País', 'Origem', 'Anúncio', 'Status'], d.rows.map((x) => [
+          dt(x.created_at), x.first_name ?? '—', x.email, x.country ? segLabel('country', x.country) : '—', chip(x.utm_source ?? 'direto'),
+          h('span', { class: 'muted v2-wrap' }, x.utm_content ?? '—'), x.bought ? chip('comprou', 'up') : chip('lead')]))
+          : emptyEl('Nenhum lead neste período', 'Quando alguém deixar o e-mail no quiz, aparece aqui.')));
+  });
+}
+
+// ---------------------------------------------------------------- Melhorias futuras
+const TAGS = [['funil', 'Funil'], ['app', 'App'], ['email', 'E-mail'], ['trafego', 'Tráfego'], ['outro', 'Outro']];
+export async function roadmap(root, _f, params) {
+  const showDone = params.v === 'feitas';
+  root.replaceChildren(head('Melhorias futuras', 'Anote cada ideia. Quando estiver pronta, marque como feita.'), h('div', { 'data-body': '' }));
+  const body = root.querySelector('[data-body]');
+  await load(body, async () => {
+    let items = (await gapi('/roadmap')).items;
+    const save = async (next, msg) => {
+      try { items = (await gapi('/roadmap', { method: 'PUT', body: { items: next } })).items; if (msg) toast(msg); draw(); }
+      catch (err) { toast(err.message); }
+    };
+    const title = h('input', { class: 'v2-input', id: 'rm-title', maxlength: '160', placeholder: 'Ex.: Adicionar order bump no checkout', required: true });
+    const note = h('textarea', { class: 'v2-input', id: 'rm-note', rows: '2', maxlength: '2000', placeholder: 'Detalhes (opcional)' });
+    const tag = h('select', { class: 'v2-input', id: 'rm-tag', 'aria-label': 'Área' }, TAGS.map(([v, l]) => h('option', { value: v }, l)));
+    const add = h('form', { class: 'v2-card v2-rm-add', onsubmit: (e) => {
+      e.preventDefault();
+      if (!title.value.trim()) return;
+      save([{ id: crypto.randomUUID(), title: title.value, note: note.value, tag: tag.value, done: false, created_at: new Date().toISOString() }, ...items], 'Melhoria anotada');
+      title.value = ''; note.value = '';
+    } }, h('div', { class: 'v2-rm-add__row' }, title, tag, h('button', { type: 'submit', class: 'v2-btn' }, 'Anotar')), note);
+    const list = h('div', { class: 'v2-rm' });
+    function draw() {
+      const todo = items.filter((x) => !x.done), done = items.filter((x) => x.done);
+      const shown = showDone ? done : todo;
+      const move = (it, dir) => {
+        const arr = [...items]; const i = arr.indexOf(it);
+        let j = i + dir; while (arr[j] && arr[j].done !== it.done) j += dir; // pula as da outra lista
+        if (!arr[j]) return;
+        [arr[i], arr[j]] = [arr[j], arr[i]]; save(arr);
+      };
+      list.replaceChildren(
+        h('div', { class: 'v2-seg v2-mb' },
+          h('button', { type: 'button', class: showDone ? '' : 'on', onclick: () => goto('roadmap') }, `A fazer (${todo.length})`),
+          h('button', { type: 'button', class: showDone ? 'on' : '', onclick: () => goto('roadmap', { v: 'feitas' }) }, `Feitas (${done.length})`)),
+        shown.length ? h('ol', { class: 'v2-rm__list' }, shown.map((it, k) => h('li', { class: `v2-card v2-rm__item${it.done ? ' is-done' : ''}` },
+          h('label', { class: 'v2-rm__check' }, h('input', { type: 'checkbox', checked: it.done || null, disabled: !state.canEdit || null, 'aria-label': `Marcar "${it.title}" como feita`,
+            onchange: (e) => save(items.map((x) => (x === it ? { ...x, done: e.target.checked, done_at: e.target.checked ? new Date().toISOString() : null } : x)), e.target.checked ? 'Feito!' : null) })),
+          h('div', { class: 'v2-rm__body' },
+            h('p', { class: 'v2-rm__title' }, showDone ? null : h('span', { class: 'v2-rm__n' }, `${k + 1}.`), it.title, ' ', chip(TAGS.find(([v]) => v === it.tag)?.[1] ?? 'Outro')),
+            it.note ? h('p', { class: 'v2-rm__note' }, it.note) : null,
+            h('p', { class: 'v2-rm__meta' }, it.done && it.done_at ? `Feita em ${dt(it.done_at)}` : `Anotada em ${dt(it.created_at)}`)),
+          state.canEdit ? h('div', { class: 'v2-rm__tools' },
+            showDone ? null : h('button', { type: 'button', class: 'v2-icon-btn', title: 'Subir prioridade', 'aria-label': 'Subir prioridade', onclick: () => move(it, -1) }, '↑'),
+            showDone ? null : h('button', { type: 'button', class: 'v2-icon-btn', title: 'Descer prioridade', 'aria-label': 'Descer prioridade', onclick: () => move(it, 1) }, '↓'),
+            h('button', { type: 'button', class: 'v2-icon-btn', title: 'Editar', 'aria-label': 'Editar', onclick: () => {
+              const t = prompt('Melhoria:', it.title); if (t == null || !t.trim()) return;
+              const nt = prompt('Detalhes (opcional):', it.note ?? ''); if (nt == null) return;
+              save(items.map((x) => (x === it ? { ...x, title: t, note: nt } : x)));
+            } }, '✎'),
+            h('button', { type: 'button', class: 'v2-icon-btn danger', title: 'Excluir', 'aria-label': 'Excluir', onclick: () => { if (confirm(`Excluir "${it.title}"?`)) save(items.filter((x) => x !== it), 'Excluída'); } }, '✕')) : null)))
+          : emptyEl(showDone ? 'Nada concluído ainda' : 'Nenhuma melhoria anotada', showDone ? 'Marque uma melhoria como feita e ela vem para cá.' : 'Use o campo acima para anotar a primeira.'));
+    }
+    draw();
+    body.replaceChildren(state.canEdit ? add : null, list);
+  });
 }
 
 // ---------------------------------------------------------------- Configurações
