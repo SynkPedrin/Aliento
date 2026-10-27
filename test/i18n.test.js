@@ -21,7 +21,7 @@ test('i18n: tabelas sem chave repetida e modelos com os mesmos {x}', () => {
   const seen = new Set();
   for (const row of loadRows()) {
     assert.ok(!seen.has(row[0]), `repetido: ${row[0]}`); seen.add(row[0]);
-    const vars = (s) => (s.match(/\{\w+\}/g) ?? []).sort().join();
+    const vars = (s) => [...new Set(s.match(/\{\w+\}/g) ?? [])].sort().join(); // repetir um {x} é permitido
     for (const tr of row.slice(1)) assert.equal(vars(tr), vars(row[0]), `variáveis diferentes em: ${row[0]}`);
   }
 });

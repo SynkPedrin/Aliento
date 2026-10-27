@@ -78,7 +78,7 @@ export const num = (n, locale = 'es-US') => new Intl.NumberFormat(numLocale(loca
 
 export function longDate(iso, locale = 'es-US') {
   const d = iso.length === 10 ? new Date(`${iso}T12:00:00`) : new Date(iso);
-  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  return new Intl.DateTimeFormat(numLocale(locale), { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
 }
 
 export function localDay(d = new Date()) {

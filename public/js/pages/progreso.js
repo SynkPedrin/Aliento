@@ -1,4 +1,4 @@
-import { $, api, h, money, num } from '../ui.js';
+import { $, api, h, money, num, locale } from '../ui.js';
 import { emptyState, errorState, initApp, loading, page, rangeTabs } from '../shell.js';
 import { hbars, xyChart } from '../charts.js';
 import { applyProgramNav, programSlug } from '../program/nav.js';
@@ -23,7 +23,7 @@ async function load() {
   const r = p.summary.recorded;
   const e = p.summary.estimated;
   const fmt = (v) => num(v, p.locale);
-  const labelDay = (iso) => new Intl.DateTimeFormat('es', days <= 30 ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' }).format(new Date(`${iso}T12:00:00`));
+  const labelDay = (iso) => new Intl.DateTimeFormat(locale, days <= 30 ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short' }).format(new Date(`${iso}T12:00:00`));
 
   root.append(
     h('h2', { class: 'section-title' }, 'Datos registrados'),
@@ -31,7 +31,7 @@ async function load() {
       stat('Cigarrillos registrados', fmt(r.cigarettes), `${r.trackedDays} días con registro`),
       stat('Promedio por día registrado', r.averagePerTrackedDay == null ? '—' : fmt(r.averagePerTrackedDay), `consumo inicial: ${p.baseline.perDay}/día`),
       stat('Días sin fumar', fmt(r.smokeFreeDays), 'marcados como «hoy no he fumado»'),
-      stat('Ganas superadas', `${fmt(r.cravingsResisted)} de ${fmt(r.cravings)}`, 'momentos de ganas registrados'),
+      stat('Ganas superadas', `${fmt(r.cravingsResisted)}/${fmt(r.cravings)}`, 'momentos de ganas registrados'),
       stat('Ejercicios de respiración', fmt(r.breathingSessions), 'completados'),
       stat('Lecciones completadas', fmt(r.lessonsCompleted), 'en este período')),
     h('div', { class: 'page-head', style: 'margin:28px 0 12px' }, h('h2', { class: 'section-title', style: 'margin:0' }, 'Estimaciones'), h('span', { class: 'pill pill--estimate' }, 'Estimación')),
@@ -71,13 +71,13 @@ async function load() {
   root.append(h('div', { class: 'grid-2 u-mt-16' },
     h('section', { class: 'card' }, h('h2', { class: 'title-md' }, 'Tu jornada'), h('p', { class: 'card__sub' }, `${p.journey.totals.completed} de ${p.journey.totals.lessons} lecciones`),
       h('ul', { class: 'list' }, p.journey.chapters.map((c) => h('li', {}, h('div', { class: 'list__main' },
-        h('strong', {}, `${c.number}. ${c.title}`),
+        h('strong', {}, `${c.number}. `, h('span', {}, c.title)), // título em nó próprio: o tradutor da tela o encontra inteiro
         h('div', { class: 'progress-line' }, h('span', { style: `width:${(c.completedLessons / c.totalLessons) * 100}%` }))),
       h('span', { class: 'help' }, `${c.completedLessons}/${c.totalLessons}`))))),
     h('section', { class: 'card' }, h('h2', { class: 'title-md' }, 'Evolución de tus objetivos'),
       h('ul', { class: 'list' }, p.goalHistory.slice().reverse().map((g) => h('li', {}, h('div', { class: 'list__main' },
         h('strong', {}, NAMES[g.strategy] ?? g.strategy, g.superseded_at ? '' : ' · actual'),
-        h('p', { class: 'list__meta' }, `${g.max_daily != null ? `máximo ${g.max_daily}/día` : 'máximo según el plan'} · desde el ${new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long' }).format(new Date(g.created_at))}`))))))));
+        h('p', { class: 'list__meta' }, `${g.max_daily != null ? `máximo ${g.max_daily}/día` : 'máximo según el plan'} · desde el ${new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }).format(new Date(g.created_at))}`))))))));
 }
 
 if (SLUG) {

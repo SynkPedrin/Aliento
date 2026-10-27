@@ -1,4 +1,4 @@
-import { $, api, h, icon, money, num, toast } from '../ui.js';
+import { $, api, h, icon, money, num, toast, locale } from '../ui.js';
 import { celebrate, cravingFlow, emptyState, errorState, greeting, initApp, loading, modal } from '../shell.js';
 import { installAction, installState } from '../install.js';
 import { xyChart } from '../charts.js';
@@ -88,7 +88,7 @@ async function render() {
     h('p', { class: 'help u-mt-16' }, `Estimado frente a tu consumo inicial del cuestionario, solo en los ${tot.recorded.trackedDays} días con registro.`));
 
   // ---- Semana
-  const fmtDay = (iso) => new Intl.DateTimeFormat('es', { weekday: 'short' }).format(new Date(`${iso}T12:00:00`));
+  const fmtDay = (iso) => new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(new Date(`${iso}T12:00:00`));
   const hasWeek = d.week.some((x) => x.cigarettes !== null);
   const week = h('section', { class: 'card' },
     h('h2', { class: 'title-md' }, 'Tu semana'),
@@ -136,7 +136,7 @@ async function render() {
     installCard,
     h('div', { class: 'page-head' },
       h('div', {},
-        h('p', { class: 'eyebrow' }, started ? `Día ${d.dayNumber} · ${d.strategy.name}` : `Empiezas el ${new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long' }).format(new Date(`${d.startDate}T12:00:00`))}`),
+        h('p', { class: 'eyebrow' }, started ? `Día ${d.dayNumber} · ${d.strategy.name}` : `Empiezas el ${new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long' }).format(new Date(`${d.startDate}T12:00:00`))}`),
         h('h1', { class: 'title-lg' }, greeting(me.user.name)),
         h('p', { class: 'muted page-intro' }, 'Cada paso cuenta.'))),
     notice,

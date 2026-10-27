@@ -1,5 +1,5 @@
 // Mi diario: estado de ánimo diario con nota, calendario mensual y evolución de 30 días.
-import { $, api, h, localDay, longDate, setBusy, toast } from '../ui.js';
+import { $, api, h, localDay, longDate, setBusy, toast, locale } from '../ui.js';
 import { celebrate, errorState, initApp, loading, page } from '../shell.js';
 import { xyChart } from '../charts.js';
 import { applyProgramNav, programError, programQuery, programRibbon, programSlug } from '../program/nav.js';
@@ -20,8 +20,8 @@ const DOW_FULL = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado
 const toDate = (iso) => new Date(`${iso}T12:00:00`);
 const dayKey = (v) => String(v).slice(0, 10);
 const addDays = (iso, n) => { const d = toDate(iso); d.setDate(d.getDate() + n); return localDay(d); };
-const shortLabel = (iso) => new Intl.DateTimeFormat('es-US', { day: 'numeric', month: 'short' }).format(toDate(iso));
-const monthTitle = (y, m) => new Intl.DateTimeFormat('es-US', { month: 'long', year: 'numeric' }).format(new Date(y, m, 1, 12));
+const shortLabel = (iso) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(toDate(iso));
+const monthTitle = (y, m) => new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(y, m, 1, 12));
 
 const state = { entries: new Map(), today: localDay(), selected: null, month: null };
 

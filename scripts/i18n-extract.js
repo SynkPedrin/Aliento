@@ -13,6 +13,17 @@ export const I18N_FILES = [
   'server/quiz.js', 'server/content/funnels/sem-fumo-es.js', 'server/results.js', 'server/routes/public.js', 'server/routes/account.js', 'server/routes/util.js',
   'public/js/ui.js', 'public/js/pages/test.js', 'public/js/pages/resultados.js', 'public/js/paywall.js', 'public/js/lead-gate.js', 'public/js/content/sem-fumo-es.js',
   'public/js/charts.js', 'public/js/pages/bienvenida.js', 'public/js/pages/acceso.js', 'public/js/pages/olvide.js', 'public/js/pages/restablecer.js', 'public/js/pages/soporte.js', 'public/js/install.js',
+  // App (Sem Fumo)
+  'public/js/shell.js', 'public/js/native-iap.js', 'public/js/program/nav.js',
+  'public/js/pages/dashboard.js', 'public/js/pages/jornada.js', 'public/js/pages/leccion.js', 'public/js/pages/registro.js', 'public/js/pages/progreso.js',
+  'public/js/pages/perfil.js', 'public/js/pages/objetivos.js', 'public/js/pages/diario.js', 'public/js/pages/logros.js', 'public/js/pages/respirar.js',
+  'public/js/pages/ayuda.js', 'public/js/pages/configuracion.js', 'public/js/pages/notificaciones.js', 'public/js/pages/suscripcion.js', 'public/js/pages/planes.js',
+  'server/routes/app.js', 'server/services/support.js', 'supabase/migrations/20261014120000_aliento_core.sql',
+  'public/dashboard.html', 'public/jornada.html', 'public/leccion.html', 'public/registro.html', 'public/progreso.html', 'public/perfil.html', 'public/objetivos.html',
+  'public/diario.html', 'public/logros.html', 'public/respirar.html', 'public/ayuda.html', 'public/configuracion.html', 'public/notificaciones.html',
+  'public/suscripcion.html', 'public/planes.html', 'public/offline.html', 'public/404.html',
+  // Lições e textos legais
+  'server/content/journey.js', 'public/js/pages/legal.js', 'public/terminos.html', 'public/privacidad.html',
   'public/test.html', 'public/resultados.html', 'public/acceso.html', 'public/bienvenida.html', 'public/olvide.html', 'public/restablecer.html', 'public/soporte.html',
 ];
 
@@ -28,6 +39,7 @@ function keysOf(src) {
     if (k.length < 2 || !/[A-Za-zÁÉÍÓÚáéíóúñ]/.test(k) || looksLikeCode(k) || k.startsWith('<svg') || k.startsWith('[') || EN_IDS.has(k)) return; // [log] e ids
     // Caminhos SVG, modelos com {a}{b} colados (montados letra a letra) e pedaços de ternário.
     if (/^[MS][\s{\d]/.test(k) || /\}\{/.test(k) || /^[:?]/.test(k)) return;
+    if (/^[A-Z][a-z]+\/[\w/]+$/.test(k) || k.includes('${') || /^[}<]/.test(k) || k === 'Notification') return; // fusos, pedaços de modelo aninhado, svg
     // Códigos de erro, cabeçalhos HTTP, ids de tipo (Ember-Storm), nomes de API e moedas.
     if (/^[A-Z0-9_]+$/.test(k) || /^[A-Z][a-z]+(-[A-Z][a-z]+)+$/.test(k) || /^[A-Z][a-z]+[A-Z]\w*$/.test(k) || /^[A-Z][a-z]+$/.test(k) && EN_IDS.has(k)) return;
     if (!/[A-ZÁÉÍÓÚ¿¡]/.test(k[0]) && !SPANISH.test(k)) return;
@@ -42,6 +54,19 @@ function keysOf(src) {
   }
   return out;
 }
+// Páginas com data-i18n-block: cada parágrafo/item/título é uma chave inteira (com as tags de dentro).
+function blockKeys(src) {
+  const out = new Set();
+  const main = src.slice(src.indexOf('data-i18n-block'));
+  for (const m of main.matchAll(/<(p|li|h1|h2|h3|th|td)\b[^>]*>([\s\S]*?)<\/\1>/g)) {
+    const k = m[2].replace(/\s+/g, ' ').trim();
+    if (/[A-Za-zÁÉÍÓÚáéíóúñ]/.test(k.replace(/<[^>]+>/g, ''))) out.add(k);
+  }
+  const head = src.slice(0, src.indexOf('data-i18n-block'));
+  for (const k of htmlKeys(head)) out.add(k);
+  return out;
+}
+
 function htmlKeys(src) {
   const out = new Set();
   const body = src.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/g, '');
@@ -56,15 +81,17 @@ const SKIP_LINES = {
   'server/results.js': [[187, 462]],
   'public/js/pages/resultados.js': [[20, 58], [128, 251]],
   'public/js/paywall.js': [[19, 50]],
+  // migração: só os textos de exercícios de respiração e conquistas
+  'supabase/migrations/20261014120000_aliento_core.sql': [[1, 485], [503, 99999]],
 };
 
 export function extract(files = I18N_FILES) {
   const keys = new Map();
   for (const f of files) {
     const lines = readFileSync(join(ROOT, f), 'utf8').split('\n');
-    for (const [a, b] of SKIP_LINES[f] ?? []) for (let i = a - 1; i < b; i++) lines[i] = '';
+    for (const [a, b] of SKIP_LINES[f] ?? []) for (let i = a - 1; i < Math.min(b, lines.length); i++) lines[i] = '';
     const src = lines.join('\n');
-    for (const k of (f.endsWith('.html') ? htmlKeys(src) : keysOf(src))) if (!keys.has(k)) keys.set(k, f);
+    for (const k of (f.endsWith('.html') ? (src.includes('data-i18n-block') ? blockKeys(src) : htmlKeys(src)) : keysOf(src))) if (!keys.has(k)) keys.set(k, f);
   }
   return keys;
 }

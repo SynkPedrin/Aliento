@@ -33,6 +33,16 @@ export function startDomTranslation(t) {
     for (let n = it.nextNode(); n; n = it.nextNode()) { if (n.nodeType === Node.TEXT_NODE) text(n); else attrs(n); }
   }
 
+  // Textos com negrito/links no meio (termos, privacidade): o parágrafo inteiro é a chave.
+  const BLOCKS = '[data-i18n-block] :is(p, li, h1, h2, h3, th, td)';
+  const htmlKey = (el) => el.innerHTML.replace(/\s+/g, ' ').trim();
+  function blocks(root) {
+    for (const el of root.querySelectorAll?.(BLOCKS) ?? []) {
+      const key = htmlKey(el), out = t(key);
+      if (out !== key) el.innerHTML = out;
+    }
+  }
+
   document.title = t(document.title.trim());
   new MutationObserver((list) => {
     for (const m of list) {
@@ -43,5 +53,6 @@ export function startDomTranslation(t) {
   }).observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
   const titleEl = document.querySelector('title');
   if (titleEl) new MutationObserver(() => { const tt = t(document.title.trim()); if (tt !== document.title) document.title = tt; }).observe(titleEl, { childList: true });
-  if (document.body) walk(document.body); else document.addEventListener('DOMContentLoaded', () => walk(document.body));
+  const start = () => { blocks(document.body); walk(document.body); };
+  if (document.body) start(); else document.addEventListener('DOMContentLoaded', start);
 }

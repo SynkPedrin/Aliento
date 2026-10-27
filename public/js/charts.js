@@ -146,7 +146,7 @@ export function hbars(items) {
 
 /** Indicador segmentado 0–max. */
 export function gauge(score, max, labels) {
-  return h('div', { class: 'gauge', role: 'img', 'aria-label': `${score} de ${max}` },
+  return h('div', { class: 'gauge', role: 'img', 'aria-label': `${score}/${max}` },
     h('div', { class: 'gauge__track' }, Array.from({ length: max + 1 }, (_, i) => h('span', { class: `gauge__seg${i <= score ? ' is-on' : ''}` }))),
     h('div', { class: 'gauge__scale' }, labels.map((l) => h('span', {}, l))));
 }

@@ -30,8 +30,8 @@ Esta versão continua a de 23/10 (veja `LEIA-ME_23-Out.md`). Foi feita e testada
   - Para voltar ao banner, basta apagar a linha que fica em `initTracking`.
 - **Idioma (sem Google Tradutor):** traduções próprias em **espanhol, inglês, francês, alemão, português do Brasil e de Portugal**.
   - A tela abre no idioma do navegador (ou `?lang=en` no link). O seletor fica em todas as telas: no quiz, discreto no topo. Com login, o idioma é salvo na conta (`profiles.locale`) e no perfil.
-  - **Já traduzido:** home (textos próprios dela), quiz, resultado, página de venda, planos, popups, checkout, login/cadastro, criar senha, boas-vindas, suporte, instalação do app, mensagens de erro do servidor, e-mail de compra. A página do Stripe abre no idioma da pessoa.
-  - **Ainda em espanhol:** as telas internas do app (painel, jornada, registros…), as lições e os termos/privacidade — próxima etapa.
+  - **Já traduzido (tudo):** home, quiz, resultado, página de venda, checkout, login, boas-vindas, suporte, todas as telas do app, as 30 lições da jornada, conquistas, respirações, guia de apoio, mensagens do servidor, e-mail de compra, termos e privacidade (o parágrafo inteiro é traduzido, com negritos e links). A página do Stripe abre no idioma da pessoa.
+  - **Revisão recomendada:** termos e privacidade traduzidos devem passar por um jurídico de cada país; vale um nativo ler a página de venda em FR e PT-PT antes de investir em tráfego.
   - **Como funciona (para o dev):** o texto-fonte continua o espanhol escrito no código. As traduções ficam em tabelas `i18n/*.json` (cada linha: espanhol + 5 idiomas) e `npm run i18n:build` gera os catálogos `public/js/lang/<idioma>.js`. No navegador, `public/js/lang/dom.js` troca cada texto da tela pelo do catálogo (sem marcar string por string); no servidor, toda resposta JSON da API sai traduzida pelo cabeçalho `X-Alento-Lang`. Textos com números usam modelos (`'Baja de {a} a {b} cigarrillos al día'`).
   - **Texto novo no código:** rode `npm run i18n:missing`; o teste `test/i18n.test.js` falha se algum texto dos arquivos traduzidos ficar sem tradução.
 - **Home:**
@@ -64,6 +64,7 @@ Esta versão continua a de 23/10 (veja `LEIA-ME_23-Out.md`). Foi feita e testada
 6. **Compra de teste de ponta a ponta:** conferir o e-mail que chega, o link de criar senha e a venda aparecendo em Vendas e em Leads ("comprou").
 
 ## Pendências
-- **Tradução das telas internas do app, das lições e dos termos/privacidade** (mesmo sistema: só falta escrever as tabelas). Termos e privacidade traduzidos devem passar por revisão jurídica de cada país.
+- **Revisão jurídica** dos termos e da privacidade traduzidos (EN, FR, DE, PT-BR, PT-PT).
+- **Textos do checkout no Stripe** (`custom_text` em `server/billing.js`) e **notificações push** ainda saem em espanhol.
 - **Textos do checkout:** o aviso de renovação e os textos do checkout no Stripe continuam em espanhol.
 - **Lista completa:** em `docs/NEXT_TASKS.md`.

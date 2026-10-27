@@ -18,7 +18,8 @@ Ordered by priority. Everything here is planned; nothing in this list has been e
   - Onde: `renderSalesPlans` / `goToCheckout` em `public/js/paywall.js`.
 
 - [x] **Tradução do funil** (quiz, resultado, venda, checkout) em EN, FR, DE, PT-BR, PT-PT — feito em 2026-10-27 (`i18n/*.json`).
-- [ ] **Tradução do app** (telas internas, lições `server/content/journey.js`, termos/privacidade): adicionar os arquivos em `I18N_FILES` (`scripts/i18n-extract.js`) e escrever as tabelas.
+- [x] **Tradução do app** (telas, lições, termos/privacidade) — feito em 2026-10-27.
+- [ ] Revisão jurídica dos termos/privacidade traduzidos; textos do Stripe (`custom_text`) e notificações push por idioma.
 - [ ] **Textos do checkout Stripe por idioma** (`custom_text` em `server/billing.js` ainda em espanhol).
 - [ ] **E-mail para quem não comprou** (lead sem compra; Resend já integrado em `server/services/mailer.js`).
 

@@ -65,6 +65,8 @@ const T = {
     receipt: 'O Stripe envia-te o recibo em separado.', help: 'Dúvidas? Responde a este e-mail ou fala connosco em', bye: 'Com carinho,\nEquipa Alento' },
 };
 
+const ICONS = ['app', 'jornada', 'diario', 'volta']; // public/assets/email/passo-*.png (scripts/email-icons.mjs)
+
 // Boas-vindas: faixa do topo, acolhimento e "e agora?" em 4 passos.
 const W = {
   es: { sig: 'Respira de nuevo.', welcome: 'Qué bien tenerte aquí.',
@@ -113,10 +115,10 @@ export function purchaseEmail({ locale, name, plan, amountCents, currency, link,
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;500&display=swap" rel="stylesheet">
 <style>@font-face{font-family:Varela;font-weight:400;src:url('${esc(appUrl)}/fonts/varela.woff') format('woff')}</style></head>
 <body style="margin:0;background:#FFFFFF;color:#0A0F3C">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 16px 40px">
 <table role="presentation" width="100%" style="max-width:600px" cellpadding="0" cellspacing="0">
-<tr><td style="padding:0 8px 40px"><img src="${esc(appUrl)}/assets/brand/alento-logo-cor.png" width="120" height="23" alt="Alento" style="display:block;border:0"></td></tr>
-<tr><td style="padding:0 8px">
+<tr><td align="center" bgcolor="#1E3FFF" style="background:#1E3FFF;border-radius:22px;padding:44px 24px"><img src="${esc(appUrl)}/assets/brand/alento-logo-branco.png" width="150" height="29" alt="Alento" style="display:block;border:0;margin:0 auto"></td></tr>
+<tr><td style="padding:40px 8px 0">
 <p style="${V};font-size:36px;line-height:1.1;letter-spacing:-0.02em;color:#0A0F3C;margin:0 0 28px">${esc(w.welcome)}</p>
 <p style="${P}">${esc(t.hi(first))}</p>
 <p style="${P}">${esc(t.thanks)}</p>
@@ -128,8 +130,8 @@ ${w.intro.map((p) => `<p style="${P}">${esc(p)}</p>`).join('\n')}
 <tr><td style="background:#EEF3FF;border-radius:22px;padding:36px 28px 16px">
 <p style="${V};font-size:28px;line-height:1.15;letter-spacing:-0.01em;color:#0A0F3C;margin:0 0 28px">${esc(w.next)}</p>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${w.steps.map(([h, d], i) => `<tr>
-<td width="56" valign="top" style="padding:0 16px 24px 0"><div style="width:40px;height:40px;line-height:40px;border-radius:20px;background:#3EE0B5;color:#0A0F3C;${V};font-size:19px;text-align:center">${i + 1}</div></td>
-<td valign="top" style="padding:0 0 24px"><p style="${V};font-size:19px;line-height:1.2;color:#0A0F3C;margin:8px 0 6px">${esc(h)}</p><p style="${F};font-size:15px;font-weight:300;line-height:1.55;color:#4A5185;margin:0">${esc(d)}</p></td></tr>`).join('')}</table>
+<td width="68" valign="top" style="padding:0 16px 24px 0"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="52" height="52" align="center" bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:16px"><img src="${esc(appUrl)}/assets/email/passo-${ICONS[i]}.png" width="38" height="38" alt="" style="display:block;border:0"></td></tr></table></td>
+<td valign="top" style="padding:0 0 24px"><p style="${V};font-size:19px;line-height:1.2;color:#0A0F3C;margin:4px 0 6px"><span style="display:inline-block;width:20px;height:20px;line-height:20px;border-radius:10px;background:#3EE0B5;color:#0A0F3C;${F};font-weight:500;font-size:11px;text-align:center;vertical-align:3px;margin-right:8px">${i + 1}</span>${esc(h)}</p><p style="${F};font-size:15px;font-weight:300;line-height:1.55;color:#4A5185;margin:0">${esc(d)}</p></td></tr>`).join('')}</table>
 </td></tr>
 <tr><td style="padding:40px 8px 0">
 <p style="${P};white-space:pre-line;margin-bottom:24px">${esc(t.bye)}</p>

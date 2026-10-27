@@ -1,5 +1,5 @@
 // Preferencias de recordatorios: consentimiento explícito, horario y categorías.
-import { $, api, h, icon, setBusy, toast } from '../ui.js';
+import { $, api, h, icon, setBusy, toast, locale } from '../ui.js';
 import { errorState, initApp, loading, page, userTimezone } from '../shell.js';
 import { applyProgramNav, programError, programQuery, programRibbon, programSlug } from '../program/nav.js';
 
@@ -118,7 +118,7 @@ function render(prefs) {
   },
   master.el,
   h('p', { class: 'help' }, 'Al activarlo das tu consentimiento para recibir recordatorios de Alento. Solo te avisaremos de las categorías que elijas y puedes desactivarlo cuando quieras.'),
-  prefs.enabled && prefs.consentAt ? h('p', { class: 'help u-mt-8' }, `Consentimiento registrado el ${new Intl.DateTimeFormat('es-US', { dateStyle: 'long' }).format(new Date(prefs.consentAt))}.`) : null,
+  prefs.enabled && prefs.consentAt ? h('p', { class: 'help u-mt-8' }, `Consentimiento registrado el ${new Intl.DateTimeFormat(locale, { dateStyle: 'long' }).format(new Date(prefs.consentAt))}.`) : null,
   details,
   h('div', { class: 'u-mt-16' }, btn));
 

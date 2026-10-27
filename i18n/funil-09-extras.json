@@ -1,7 +1,34 @@
 [
-["1 mes","1 month","1 mois","1 Monat","1 mês","1 mês"],
-["6 meses","6 months","6 mois","6 Monate","6 meses","6 meses"],
-["Ver datos en tabla","View data as a table","Voir les données sous forme de tableau","Daten als Tabelle anzeigen","Ver dados em tabela","Ver dados em tabela"],
-["Perfil","Profile","Profil","Profil","Perfil","Perfil"],
-["{a} de {b}","{a} of {b}","{a} sur {b}","{a} von {b}","{a} de {b}","{a} de {b}"]
+[
+"1 mes",
+"1 month",
+"1 mois",
+"1 Monat",
+"1 mês",
+"1 mês"
+],
+[
+"6 meses",
+"6 months",
+"6 mois",
+"6 Monate",
+"6 meses",
+"6 meses"
+],
+[
+"Ver datos en tabla",
+"View data as a table",
+"Voir les données sous forme de tableau",
+"Daten als Tabelle anzeigen",
+"Ver dados em tabela",
+"Ver dados em tabela"
+],
+[
+"Perfil",
+"Profile",
+"Profil",
+"Profil",
+"Perfil",
+"Perfil"
+]
 ]
