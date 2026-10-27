@@ -66,5 +66,4 @@ Esta versão continua a de 23/10 (veja `LEIA-ME_23-Out.md`). Foi feita e testada
 ## Pendências
 - **Revisão jurídica** dos termos e da privacidade traduzidos (EN, FR, DE, PT-BR, PT-PT).
 - **Textos do checkout no Stripe** (`custom_text` em `server/billing.js`) e **notificações push** ainda saem em espanhol.
-- **Textos do checkout:** o aviso de renovação e os textos do checkout no Stripe continuam em espanhol.
 - **Lista completa:** em `docs/NEXT_TASKS.md`.
