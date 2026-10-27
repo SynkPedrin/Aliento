@@ -13,7 +13,6 @@ export const NAV = [
 ];
 
 export const MORE = [
-  { href: '/programas', label: 'Mis programas' },
   { href: '/respirar', label: 'Respirar' },
   { href: '/objetivos', label: 'Mis objetivos' },
   { href: '/diario', label: 'Mi diario' },

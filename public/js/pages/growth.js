@@ -2,21 +2,40 @@
 import { $, ApiError, api, brandLink, h, localDay, setBusy, toast } from '../ui.js';
 import { act, errorEl, loadingEl, state, field } from '../growth/lib.js';
 import { ai, emails } from '../growth/screens2.js';
-import { config as configScreen, funnel, funnels, home, sales, tracking } from '../growth/v2.js';
+import { config as configScreen, funnel, funnels, home, leads, roadmap, sales, tracking } from '../growth/v2.js';
 
 const root = $('[data-root]');
 
-// [rota, rótulo no menu (null = fora do menu), tela, item do menu que fica marcado]
+// [rota, rótulo no menu (null = fora do menu), tela, item do menu que fica marcado, ícone]
 const ROUTES = [
-  ['overview', 'Visão geral', home],
-  ['funnels', 'Funis', funnels],
+  ['overview', 'Visão geral', home, null, 'home'],
+  ['funnels', 'Analytics', funnels, null, 'chart'],
   ['funnel', null, funnel, 'funnels'],
-  ['sales', 'Vendas', sales],
-  ['emails', 'Funis de e-mail', emails],
-  ['ai', 'Modo IA', ai],
-  ['tracking', 'Traqueamento', tracking],
-  ['settings', 'Configurações', configScreen],
+  ['sales', 'Vendas', sales, null, 'cash'],
+  ['leads', 'Leads', leads, null, 'mail'],
+  ['emails', 'Funis de e-mail', emails, null, 'send'],
+  ['ai', 'Modo IA', ai, null, 'spark'],
+  ['tracking', 'Traqueamento', tracking, null, 'target'],
+  ['roadmap', 'Melhorias futuras', roadmap, null, 'flag'],
+  ['settings', 'Configurações', configScreen, null, 'gear'],
 ];
+// Ícones de traço (24×24), herdam a cor do texto.
+const ICONS = {
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  chart: '<path d="M4 20V4M4 20h16"/><path d="M7 15l4-5 3 3 5-6"/>',
+  cash: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M7 9v.01M17 15v.01"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+  send: '<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>',
+  spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/>',
+  target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6"/>',
+  flag: '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+};
+const navIcon = (name) => {
+  const s = h('span', { class: 'v2-nav__ic', 'aria-hidden': 'true' });
+  s.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] ?? ''}</svg>`;
+  return s;
+};
 const FILTER_KEYS = ['from', 'to', 'language', 'country', 'device', 'source', 'variant'];
 
 // ---- Hash: ruta + parámetros (los filtros globales viven en la URL).
@@ -42,7 +61,7 @@ function fullPage(...children) {
 }
 
 // Login exclusivo do painel: só e-mail e senha. Contas novas são criadas lá dentro (Configurações → Equipe).
-function loginScreen() {
+function loginScreen(asCustomer = false) {
   const email = h('input', { class: 'input', id: 'gr-email', type: 'email', autocomplete: 'username', required: '' });
   const pass = h('input', { class: 'input', id: 'gr-pass', type: 'password', autocomplete: 'current-password', required: '' });
   const msg = h('p', { class: 'help is-high', role: 'alert' });
@@ -60,6 +79,8 @@ function loginScreen() {
     }
   };
   fullPage(h('h1', { class: 'gr-title' }, 'Painel de gestão'),
+    // Este navegador está logado com uma conta de cliente (ex.: compra de teste): entrar aqui troca a sessão.
+    asCustomer ? h('p', { class: 'help' }, 'Você está conectado com uma conta de cliente. Entre com o seu e-mail da equipe.') : null,
     h('form', { class: 'stack', onsubmit: submit }, field('gr-email', 'E-mail', email), field('gr-pass', 'Senha', pass), msg,
       h('button', { class: 'btn', type: 'submit' }, 'Entrar')));
   email.focus();
@@ -101,7 +122,7 @@ function twofaScreen(me) {
 // ---- Estructura
 let me = null;
 function shell() {
-  const nav = h('nav', { class: 'v2-nav', 'aria-label': 'Seções do painel' }, ROUTES.filter((r) => r[1]).map(([key, label]) => h('a', { href: `#/${key}`, 'data-route': key }, label)));
+  const nav = h('nav', { class: 'v2-nav', 'aria-label': 'Seções do painel' }, ROUTES.filter((r) => r[1]).map(([key, label, , , ic]) => h('a', { href: `#/${key}`, 'data-route': key }, navIcon(ic), label)));
   root.replaceChildren(h('div', { class: 'v2-shell' },
     h('aside', { class: 'v2-side' }, h('div', { class: 'v2-logo' }, brandLink('/growth'), h('span', { class: 'v2-pill' }, 'Gestão')), nav,
       h('div', { class: 'v2-who' }, me.user?.email, h('br'), ({ admin: 'Administrador', marketing: 'Marketing', readonly: 'Somente leitura' })[me.role] ?? me.role,
@@ -148,6 +169,7 @@ async function start() {
     me = await api('/api/growth/me');
   } catch (err) {
     if (err.status === 401) { loginScreen(); return; }
+    if (err.status === 403) { loginScreen(true); return; }
     if (err.status === 428) { twofaScreen({ twofa: { enabled: true } }); me = null; return; }
     root.replaceChildren(h('div', { class: 'gr-wrap' }, errorEl(err, start)));
     return;

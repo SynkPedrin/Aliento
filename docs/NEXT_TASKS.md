@@ -17,6 +17,12 @@ Ordered by priority. Everything here is planned; nothing in this list has been e
   - Mostrar uma única vez por sessão; registrar `results_step` (ou evento próprio) para medir quantos trocam.
   - Onde: `renderSalesPlans` / `goToCheckout` em `public/js/paywall.js`.
 
+- [x] **Tradução do funil** (quiz, resultado, venda, checkout) em EN, FR, DE, PT-BR, PT-PT — feito em 2026-10-27 (`i18n/*.json`).
+- [x] **Tradução do app** (telas, lições, termos/privacidade) — feito em 2026-10-27.
+- [ ] Revisão jurídica dos termos/privacidade traduzidos; textos do Stripe (`custom_text`) e notificações push por idioma.
+- [ ] **Textos do checkout Stripe por idioma** (`custom_text` em `server/billing.js` ainda em espanhol).
+- [ ] **E-mail para quem não comprou** (lead sem compra; Resend já integrado em `server/services/mailer.js`).
+
 ## P1 — complete the five programs
 
 - [ ] Clinical review of the four draft journeys (Alcohol, Azúcar, Ansiedad, Sueño). Only after review may they be published/commercialized.

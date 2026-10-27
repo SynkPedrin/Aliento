@@ -1,5 +1,5 @@
 // Páginas legales: rellena la identidad del responsable desde la configuración del servidor.
-import { $, api, renderFooter, renderHeader } from '../ui.js';
+import { $, api, renderFooter, renderHeader, locale } from '../ui.js';
 
 renderHeader($('[data-header]'), { links: [{ href: '/test', label: 'Hacer el test', cls: 'btn btn--sm' }] });
 renderFooter($('[data-footer]'));
@@ -9,7 +9,7 @@ api('/api/legal').then((legal) => {
   document.querySelectorAll('[data-legal]').forEach((el) => {
     const key = el.dataset.legal;
     if (key === 'updatedAt') {
-      el.textContent = new Intl.DateTimeFormat('es', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${legal.updatedAt}T12:00:00`));
+      el.textContent = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(`${legal.updatedAt}T12:00:00`));
       return;
     }
     const value = legal[key] || FALLBACK[key] || '';

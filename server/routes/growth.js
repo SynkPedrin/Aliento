@@ -1,6 +1,6 @@
 // API del panel de operación y growth (/api/growth). Solo equipo con 2FA. Contrato: docs/GROWTH_CONTRACT.md
 import { Router } from 'express';
-import { timingSafeEqual } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError, wrap } from './util.js';
 import { PROGRAM_STEPS, QUESTION_TYPES } from '../quiz.js';
 
@@ -416,16 +416,19 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
     const days = [1, 7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 7;
     return { from: dayStr(new Date(new Date(`${to}T00:00:00Z`).getTime() - (days - 1) * 86400_000)), to, days };
   };
-  const revenueBetween = async (from, to, program = null) => {
+  // since: momento em que as métricas do funil foram zeradas no painel (nada é apagado; só passa a contar daí).
+  const revenueBetween = async (from, to, program = null, since = null) => {
     const o = await q.one(`select coalesce(sum(amount_cents), 0) as gross, count(*) filter (where kind = 'first') as orders, count(*) as payments from growth.orders
-      where paid_at::date between $1 and $2 and upper(currency) = $3 and ($4::text is null or program_slug = $4)`, [from, to, currency, program]);
+      where paid_at::date between $1 and $2 and upper(currency) = $3 and ($4::text is null or program_slug = $4) and ($5::timestamptz is null or paid_at >= $5)`, [from, to, currency, program, since]);
     const rf = await q.one(`select coalesce(sum(r.amount_cents), 0) as refunded from growth.refunds r left join growth.orders o on o.order_id = r.order_id
-      where r.refunded_at::date between $1 and $2 and upper(r.currency) = $3 and ($4::text is null or o.program_slug = $4)`, [from, to, currency, program]);
+      where r.refunded_at::date between $1 and $2 and upper(r.currency) = $3 and ($4::text is null or o.program_slug = $4) and ($5::timestamptz is null or r.refunded_at >= $5)`, [from, to, currency, program, since]);
     return { revenue_cents: num(o.gross) - num(rf.refunded), orders: num(o.orders), payments: num(o.payments) };
   };
   const shift = (d, n) => dayStr(new Date(new Date(`${d}T00:00:00Z`).getTime() + n * 86400_000));
-  const started = (from, to, program) => q.one(`select count(distinct visitor_id) as n from growth.events
-    where name = 'quiz_step' and props->>'step' = $4 and occurred_at::date between $1 and $2 and program_slug = $3`, [from, to, program, PROGRAM_STEPS[program]?.[0]?.id ?? '']);
+  const started = (from, to, program, since = null) => q.one(`select count(distinct visitor_id) as n from growth.events
+    where name = 'quiz_step' and props->>'step' = $4 and occurred_at::date between $1 and $2 and program_slug = $3 and ($5::timestamptz is null or occurred_at >= $5)`,
+  [from, to, program, PROGRAM_STEPS[program]?.[0]?.id ?? '', since]);
+  const resetOf = async (program) => (await settings.get('funnels.reset', {}))[program] ?? null;
 
   r.get('/home', wrap(async (req, res) => {
     const today = dayStr(new Date());
@@ -449,18 +452,23 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
 
   const STAGES = [['lead_created', 'Lead'], ['results_step', 'Resultado'], ['plan_viewed', 'Oferta'], ['checkout_started', 'Checkout'], ['purchase', 'Compra']];
   const INSERT_LABELS = { info_notalone: 'Não está só', info_duracion: 'Texto anos', info_cerebro: 'Cérebro', info_amigo: 'Amigo + prazer', info_ahorro: 'Economia', info_metas: 'Metas', info_ciencia: 'Ciência', analisis: 'Análise', email: 'E-mail', nombre: 'Nome' };
-  const DIMS = { country: 'country', device: 'device', source: "coalesce(utm_source, '(direto)')", language: 'language' };
+  // utm_term = conjunto (TikTok: __AID_NAME__), utm_content = anúncio (__CID_NAME__).
+  const DIMS = { campaign: "coalesce(utm_campaign, '(sem campanha)')", adset: "coalesce(utm_term, '(sem conjunto)')", ad: "coalesce(utm_content, '(sem anúncio)')",
+    country: 'country', device: 'device', source: "coalesce(utm_source, '(direto)')", language: 'language' };
+  const SERIES_MAX = 6;
 
   r.get('/funnels', wrap(async (req, res) => {
     const p = periodOf(req);
     const programs = await q.rows('select slug, commercial_status from public.programs').catch(() => []);
     const rows = [];
     for (const program of Object.keys(PROGRAM_STEPS)) {
+      const since = await resetOf(program);
       const [st, rev, leads, daily] = await Promise.all([
-        started(p.from, p.to, program), revenueBetween(p.from, p.to, program),
-        q.one(`select count(distinct visitor_id) as n from growth.events where name = 'lead_created' and program_slug = $3 and occurred_at::date between $1 and $2`, [p.from, p.to, program]),
+        started(p.from, p.to, program, since), revenueBetween(p.from, p.to, program, since),
+        q.one(`select count(distinct visitor_id) as n from growth.events where name = 'lead_created' and program_slug = $3 and occurred_at::date between $1 and $2
+          and ($4::timestamptz is null or occurred_at >= $4)`, [p.from, p.to, program, since]),
         q.rows(`select occurred_at::date::text as day, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and props->>'step' = $4
-          and program_slug = $3 and occurred_at::date between $1 and $2 group by 1 order by 1`, [p.from, p.to, program, PROGRAM_STEPS[program][0].id]),
+          and program_slug = $3 and occurred_at::date between $1 and $2 and ($5::timestamptz is null or occurred_at >= $5) group by 1 order by 1`, [p.from, p.to, program, PROGRAM_STEPS[program][0].id, since]),
       ]);
       const status = programs.find((x) => x.slug === program)?.commercial_status ?? 'coming_soon';
       rows.push({ program, status, started: num(st.n), leads: num(leads.n), orders: rev.orders, revenue_cents: rev.revenue_cents,
@@ -474,36 +482,102 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
     const list = PROGRAM_STEPS[program];
     if (!list) throw new HttpError(404, 'Funil não encontrado.', 'NOT_FOUND');
     const p = periodOf(req);
+    const since = await resetOf(program);
     const dim = DIMS[String(req.query.dim)] ? String(req.query.dim) : null;
-    const val = dim && req.query.val ? String(req.query.val).slice(0, 80) : null;
-    const where = `occurred_at::date between $1 and $2 and program_slug = $3 ${dim && val ? `and ${DIMS[dim]} = $4` : ''}`;
-    const args = [p.from, p.to, program, ...(dim && val ? [val] : [])];
-    const counts = Object.fromEntries((await q.rows(`select props->>'step' as step, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and ${where} group by 1`, args)).map((x) => [x.step, num(x.n)]));
-    // Etapas finais: só de quem começou o quiz no período (coorte), para a curva nunca subir.
-    const stageCounts = Object.fromEntries((await q.rows(`select name, count(distinct visitor_id) as n from growth.events
-      where name = any($${args.length + 1}) and occurred_at::date >= $1 and visitor_id in (
-        select visitor_id from growth.events where name = 'quiz_step' and props->>'step' = $${args.length + 2} and ${where})
-      group by 1`, [...args, STAGES.map((s) => s[0]), list[0].id])).map((x) => [x.name, num(x.n)]));
-    let qn = 0;
-    const screens = list.map((s) => {
-      const isQ = QUESTION_TYPES.has(s.type);
-      if (isQ) qn += 1;
-      return { id: s.id, n: isQ ? qn : null, label: isQ ? `P${qn}` : (INSERT_LABELS[s.id] ?? s.id), title: s.title ?? s.question ?? INSERT_LABELS[s.id] ?? s.id, people: counts[s.id] ?? 0, kind: 'quiz' };
-    });
-    screens.push({ id: 'email', n: null, label: 'E-mail', title: 'E-mail', people: counts.email ?? 0, kind: 'lead' }, { id: 'nombre', n: null, label: 'Nome', title: 'Nome', people: counts.nombre ?? 0, kind: 'lead' });
-    for (const [name, label] of STAGES.slice(1)) screens.push({ id: name, n: null, label, title: label, people: stageCounts[name] ?? 0, kind: 'stage' });
-    const base = screens[0].people || 0;
-    screens.forEach((s, i) => { s.retention_pct = pct(s.people, base); s.drop_pp = i ? Math.max(0, Math.round((screens[i - 1].retention_pct - s.retention_pct) * 10) / 10) : 0; });
-    const rev = await revenueBetween(p.from, p.to, program);
+    const val = dim && req.query.val ? String(req.query.val).slice(0, 120) : null;
+
+    // Curva de retenção de um recorte (val = null: todos).
+    const curve = async (v) => {
+      const where = `occurred_at::date between $1 and $2 and program_slug = $3 and ($4::timestamptz is null or occurred_at >= $4) ${v != null ? `and ${DIMS[dim]} = $5` : ''}`;
+      const args = [p.from, p.to, program, since, ...(v != null ? [v] : [])];
+      const counts = Object.fromEntries((await q.rows(`select props->>'step' as step, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and ${where} group by 1`, args)).map((x) => [x.step, num(x.n)]));
+      // Etapas finais: só de quem começou o quiz no período (coorte), para a curva nunca subir.
+      const stageCounts = Object.fromEntries((await q.rows(`select name, count(distinct visitor_id) as n from growth.events
+        where name = any($${args.length + 1}) and occurred_at::date >= $1 and visitor_id in (
+          select visitor_id from growth.events where name = 'quiz_step' and props->>'step' = $${args.length + 2} and ${where})
+        group by 1`, [...args, STAGES.map((s) => s[0]), list[0].id])).map((x) => [x.name, num(x.n)]));
+      let qn = 0;
+      const screens = list.map((s) => {
+        const isQ = QUESTION_TYPES.has(s.type);
+        if (isQ) qn += 1;
+        return { id: s.id, n: isQ ? qn : null, label: isQ ? `P${qn}` : (INSERT_LABELS[s.id] ?? s.id), title: s.title ?? s.question ?? INSERT_LABELS[s.id] ?? s.id, people: counts[s.id] ?? 0, kind: 'quiz' };
+      });
+      screens.push({ id: 'email', n: null, label: 'E-mail', title: 'E-mail', people: counts.email ?? 0, kind: 'lead' }, { id: 'nombre', n: null, label: 'Nome', title: 'Nome', people: counts.nombre ?? 0, kind: 'lead' });
+      for (const [name, label] of STAGES.slice(1)) screens.push({ id: name, n: null, label, title: label, people: stageCounts[name] ?? 0, kind: 'stage' });
+      const base = screens[0].people || 0;
+      screens.forEach((s, i) => { s.retention_pct = pct(s.people, base); s.drop_pp = i ? Math.max(0, Math.round((screens[i - 1].retention_pct - s.retention_pct) * 10) / 10) : 0; });
+      return { screens, counts, stageCounts, base };
+    };
+
     const segments = dim ? (await q.rows(`select ${DIMS[dim]} as value, count(distinct visitor_id) as n from growth.events
-      where name = 'quiz_step' and props->>'step' = $4 and occurred_at::date between $1 and $2 and program_slug = $3 group by 1 order by 2 desc limit 12`, [p.from, p.to, program, list[0].id]))
-      .map((x) => ({ value: x.value ?? '—', people: num(x.n) })) : [];
+      where name = 'quiz_step' and props->>'step' = $4 and occurred_at::date between $1 and $2 and program_slug = $3 and ($5::timestamptz is null or occurred_at >= $5)
+      group by 1 order by 2 desc limit 30`, [p.from, p.to, program, list[0].id, since])).map((x) => ({ value: x.value ?? '—', people: num(x.n) })) : [];
+    const main = await curve(val);
+    // Sem recorte escolhido numa dimensão: uma linha por valor (os mais acessados), para comparar anúncios.
+    const series = dim && !val ? await Promise.all(segments.filter((s) => s.value !== '—').slice(0, SERIES_MAX).map(async (s) => {
+      const c = await curve(s.value);
+      return { value: s.value, people: c.base, leads: c.stageCounts.lead_created ?? 0, offer: c.stageCounts.plan_viewed ?? 0, checkouts: c.stageCounts.checkout_started ?? 0,
+        purchases: c.stageCounts.purchase ?? 0, finished_pct: pct(c.counts.analisis ?? 0, c.base), purchase_pct: pct(c.stageCounts.purchase ?? 0, c.base),
+        retention: c.screens.map((x) => x.retention_pct) };
+    })) : [];
+    const rev = await revenueBetween(p.from, p.to, program, since);
+    const { screens, counts, stageCounts, base } = main;
     const leads = stageCounts.lead_created ?? 0;
     res.json({
-      currency, period: p, program, dim, val, screens, segments,
+      currency, period: p, program, dim, val, since, screens, segments, series,
       metrics: { started: base, finished: counts.analisis ?? 0, leads, lead_pct: pct(leads, base), offer: stageCounts.plan_viewed ?? 0, checkouts: stageCounts.checkout_started ?? 0,
-        purchases: rev.orders, conversion_pct: pct(rev.orders, base), revenue_cents: rev.revenue_cents, ticket_cents: rev.orders ? Math.round(rev.revenue_cents / rev.orders) : 0 },
+        purchases: val ? (stageCounts.purchase ?? 0) : rev.orders, conversion_pct: pct(val ? (stageCounts.purchase ?? 0) : rev.orders, base),
+        revenue_cents: val ? null : rev.revenue_cents, ticket_cents: !val && rev.orders ? Math.round(rev.revenue_cents / rev.orders) : (val ? null : 0) },
     });
+  }));
+
+  // Zerar as métricas de um funil: não apaga eventos (são só de inserção); o painel passa a contar a partir de agora.
+  r.post('/funnels/:program/reset', wrap(async (req, res) => {
+    adminOnly(req);
+    const program = String(req.params.program);
+    if (!PROGRAM_STEPS[program]) throw new HttpError(404, 'Funil não encontrado.', 'NOT_FOUND');
+    if (req.body?.confirm !== 'RESETAR') throw new HttpError(422, 'Digite RESETAR para confirmar.', 'INVALID');
+    const cur = await settings.get('funnels.reset', {});
+    const at = new Date().toISOString();
+    await settings.set('funnels.reset', { ...cur, [program]: at }, { by: req.staff.userId });
+    await audit(req, 'funnel.reset', 'funnel', program);
+    res.json({ ok: true, since: at });
+  }));
+
+  // E-mails captados no quiz (mais recentes primeiro).
+  r.get('/leads', wrap(async (req, res) => {
+    const p = periodOf(req);
+    const term = String(req.query.q ?? '').trim().slice(0, 80);
+    const rows = await q.rows(`select l.lead_id, l.created_at, lp.email, lp.first_name, l.topic, l.language, v.country,
+        coalesce(l.attribution->'last'->>'utm_source', v.last_touch->>'utm_source') as utm_source, coalesce(l.attribution->'last'->>'utm_campaign', v.last_touch->>'utm_campaign') as utm_campaign,
+        coalesce(l.attribution->'last'->>'utm_content', v.last_touch->>'utm_content') as utm_content,
+        exists (select 1 from growth.orders o where o.lead_id = l.lead_id or (l.user_id is not null and o.user_id = l.user_id)
+          or o.user_id = (select u.id from auth.users u where lower(u.email) = lower(lp.email))) as bought
+      from growth.leads l join growth_pii.lead_pii lp on lp.lead_id = l.lead_id left join growth.visitors v on v.visitor_id = l.visitor_id
+      where l.created_at::date between $1 and $2 and ($3 = '' or lp.email ilike '%' || $3 || '%' or coalesce(lp.first_name, '') ilike '%' || $3 || '%')
+      order by l.created_at desc limit 1000`, [p.from, p.to, term]);
+    await audit(req, 'leads.list', 'lead', null, { days: p.days, csv: req.query.format === 'csv' });
+    send(req, res, { period: p, rows, total: rows.length }, rows.map((x) => ({ data: x.created_at, email: x.email, nome: x.first_name, funil: x.topic, idioma: x.language, pais: x.country,
+      origem: x.utm_source, campanha: x.utm_campaign, anuncio: x.utm_content, comprou: x.bought ? 'sim' : 'não' })));
+  }));
+
+  // Melhorias futuras: lista de notas do time (ordem manual; feito/não feito).
+  const ROADMAP_MAX = 300;
+  const ROADMAP_START = ['Adicionar order bumps', 'Adicionar upsell', 'Adicionar chat no aplicativo', 'Subir na Play Store e App Store', 'Configurar disparo de e-mail para quem não converteu']
+    .map((title, i) => ({ id: `inicio-${i + 1}`, title, note: '', tag: i === 4 ? 'email' : i < 2 ? 'funil' : 'app', done: false, created_at: '2026-10-27T12:00:00.000Z', done_at: null }));
+  r.get('/roadmap', wrap(async (req, res) => { res.json({ items: (await settings.get('roadmap', { items: ROADMAP_START })).items ?? [] }); }));
+  r.put('/roadmap', wrap(async (req, res) => {
+    canEdit(req);
+    const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, ROADMAP_MAX) : null;
+    if (!items) throw new HttpError(422, 'Lista inválida.', 'INVALID');
+    const clean = items.map((x) => ({
+      id: /^[a-z0-9-]{6,40}$/i.test(String(x?.id)) ? String(x.id) : randomUUID(),
+      title: String(x?.title ?? '').trim().slice(0, 160), note: String(x?.note ?? '').trim().slice(0, 2000),
+      tag: ['funil', 'app', 'email', 'trafego', 'outro'].includes(x?.tag) ? x.tag : 'outro',
+      done: x?.done === true, created_at: String(x?.created_at ?? new Date().toISOString()).slice(0, 30), done_at: x?.done ? String(x?.done_at ?? new Date().toISOString()).slice(0, 30) : null,
+    })).filter((x) => x.title);
+    await settings.set('roadmap', { items: clean }, { by: req.staff.userId });
+    res.json({ items: clean });
   }));
 
   r.get('/orders', wrap(async (req, res) => {

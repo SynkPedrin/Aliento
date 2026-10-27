@@ -1,0 +1,1066 @@
+[
+[
+"Este resumen te ayuda a entender lo esencial, pero no sustituye el texto completo de la política.",
+"This summary helps you understand the essentials, but it does not replace the full text of the policy.",
+"Ce résumé t’aide à comprendre l’essentiel, mais il ne remplace pas le texte complet de la politique.",
+"Diese Zusammenfassung hilft dir, das Wesentliche zu verstehen, ersetzt aber nicht den vollständigen Text der Richtlinie.",
+"Este resumo ajuda você a entender o essencial, mas não substitui o texto completo da política.",
+"Este resumo ajuda-te a perceber o essencial, mas não substitui o texto completo da política."
+],
+[
+"Usamos tus datos solo para prestarte el servicio de Alento, protegerlo y cumplir la ley.",
+"We use your data only to provide you with the Alento service, to protect it and to comply with the law.",
+"Nous utilisons tes données uniquement pour te fournir le service Alento, le protéger et respecter la loi.",
+"Wir verwenden deine Daten nur, um dir den Alento-Dienst bereitzustellen, ihn zu schützen und das Gesetz einzuhalten.",
+"Usamos seus dados apenas para prestar o serviço do Alento a você, protegê-lo e cumprir a lei.",
+"Usamos os teus dados apenas para te prestar o serviço do Alento, protegê-lo e cumprir a lei."
+],
+[
+"Tus respuestas sobre consumo de tabaco y tus registros pueden ser <strong>datos relacionados con la salud</strong>. Los tratamos con tu <strong>consentimiento explícito</strong>, que puedes retirar.",
+"Your answers about tobacco use and your logs may be <strong>data concerning health</strong>. We process them with your <strong>explicit consent</strong>, which you can withdraw.",
+"Tes réponses sur ta consommation de tabac et tes enregistrements peuvent constituer des <strong>données concernant la santé</strong>. Nous les traitons avec ton <strong>consentement explicite</strong>, que tu peux retirer.",
+"Deine Antworten zum Tabakkonsum und deine Aufzeichnungen können <strong>Gesundheitsdaten</strong> sein. Wir verarbeiten sie mit deiner <strong>ausdrücklichen Einwilligung</strong>, die du widerrufen kannst.",
+"Suas respostas sobre o consumo de tabaco e seus registros podem ser <strong>dados relacionados à saúde</strong>. Nós os tratamos com seu <strong>consentimento explícito</strong>, que você pode retirar.",
+"As tuas respostas sobre o consumo de tabaco e os teus registos podem ser <strong>dados relativos à saúde</strong>. Tratamo-los com o teu <strong>consentimento explícito</strong>, que podes retirar."
+],
+[
+"<strong>No vendemos tus datos</strong>, no hacemos publicidad personalizada y no enviamos datos sensibles a herramientas de analítica.",
+"<strong>We do not sell your data</strong>, we do not carry out personalised advertising and we do not send sensitive data to analytics tools.",
+"<strong>Nous ne vendons pas tes données</strong>, nous ne faisons pas de publicité personnalisée et nous n’envoyons pas de données sensibles à des outils d’analyse.",
+"<strong>Wir verkaufen deine Daten nicht</strong>, betreiben keine personalisierte Werbung und übermitteln keine sensiblen Daten an Analysetools.",
+"<strong>Não vendemos seus dados</strong>, não fazemos publicidade personalizada e não enviamos dados sensíveis a ferramentas de análise.",
+"<strong>Não vendemos os teus dados</strong>, não fazemos publicidade personalizada e não enviamos dados sensíveis para ferramentas de análise."
+],
+[
+"Solo usamos <strong>cookies estrictamente necesarias</strong>. No hay cookies publicitarias ni de analítica.",
+"We only use <strong>strictly necessary cookies</strong>. There are no advertising or analytics cookies.",
+"Nous n’utilisons que des <strong>cookies strictement nécessaires</strong>. Il n’y a aucun cookie publicitaire ni d’analyse.",
+"Wir verwenden nur <strong>unbedingt erforderliche Cookies</strong>. Es gibt keine Werbe- oder Analyse-Cookies.",
+"Usamos apenas <strong>cookies estritamente necessários</strong>. Não há cookies publicitários nem de análise.",
+"Usamos apenas <strong>cookies estritamente necessários</strong>. Não existem cookies publicitários nem de análise."
+],
+[
+"Los datos de tu tarjeta los trata Stripe; nosotros no los almacenamos.",
+"Stripe processes your card details; we do not store them.",
+"Les données de ta carte sont traitées par Stripe ; nous ne les conservons pas.",
+"Deine Kartendaten werden von Stripe verarbeitet; wir speichern sie nicht.",
+"Os dados do seu cartão são tratados pela Stripe; nós não os armazenamos.",
+"Os dados do teu cartão são tratados pela Stripe; nós não os armazenamos."
+],
+[
+"Puedes <strong>descargar tus datos</strong> y <strong>eliminar tu cuenta</strong> desde «Mi perfil», y ejercer el resto de tus derechos escribiéndonos.",
+"You can <strong>download your data</strong> and <strong>delete your account</strong> from “My profile”, and exercise the rest of your rights by writing to us.",
+"Tu peux <strong>télécharger tes données</strong> et <strong>supprimer ton compte</strong> depuis « Mon profil », et exercer tes autres droits en nous écrivant.",
+"Du kannst deine Daten <strong>herunterladen</strong> und dein <strong>Konto löschen</strong> unter „Mein Profil“ und deine übrigen Rechte ausüben, indem du uns schreibst.",
+"Você pode <strong>baixar seus dados</strong> e <strong>excluir sua conta</strong> em “Meu perfil”, e exercer os demais direitos escrevendo para nós.",
+"Podes <strong>descarregar os teus dados</strong> e <strong>eliminar a tua conta</strong> em «O meu perfil», e exercer os restantes direitos escrevendo-nos."
+],
+[
+"Alento es solo para mayores de 18 años.",
+"Alento is only for people aged 18 or over.",
+"Alento est réservé aux personnes de plus de 18 ans.",
+"Alento ist nur für Personen ab 18 Jahren.",
+"O Alento é apenas para maiores de 18 anos.",
+"O Alento é apenas para maiores de 18 anos."
+],
+[
+"1. Quién es el responsable de tus datos",
+"1. Who is the controller of your data",
+"1. Qui est le responsable de tes données",
+"1. Wer für deine Daten verantwortlich ist",
+"1. Quem é o responsável pelos seus dados",
+"1. Quem é o responsável pelos teus dados"
+],
+[
+"El responsable del tratamiento de tus datos personales es <span data-legal=\"name\"></span>, sociedad constituida en <span data-legal=\"country\"></span>, con CNPJ <span data-legal=\"taxId\"></span> y domicilio en <span data-legal=\"address\"></span> (en adelante, «Alento» o «nosotros»).",
+"The controller of your personal data is <span data-legal=\"name\"></span>, a company incorporated in <span data-legal=\"country\"></span>, with CNPJ <span data-legal=\"taxId\"></span> and registered address at <span data-legal=\"address\"></span> (hereinafter, “Alento” or “we”).",
+"Le responsable du traitement de tes données personnelles est <span data-legal=\"name\"></span>, société constituée en <span data-legal=\"country\"></span>, immatriculée sous le CNPJ <span data-legal=\"taxId\"></span> et domiciliée à <span data-legal=\"address\"></span> (ci-après, « Alento » ou « nous »).",
+"Verantwortlicher für die Verarbeitung deiner personenbezogenen Daten ist <span data-legal=\"name\"></span>, eine in <span data-legal=\"country\"></span> gegründete Gesellschaft mit CNPJ <span data-legal=\"taxId\"></span> und Sitz in <span data-legal=\"address\"></span> (im Folgenden „Alento“ oder „wir“).",
+"O controlador dos seus dados pessoais é <span data-legal=\"name\"></span>, sociedade constituída em <span data-legal=\"country\"></span>, com CNPJ <span data-legal=\"taxId\"></span> e sede em <span data-legal=\"address\"></span> (doravante, “Alento” ou “nós”).",
+"O responsável pelo tratamento dos teus dados pessoais é <span data-legal=\"name\"></span>, sociedade constituída em <span data-legal=\"country\"></span>, com CNPJ <span data-legal=\"taxId\"></span> e sede em <span data-legal=\"address\"></span> (a seguir, «Alento» ou «nós»)."
+],
+[
+"Para cualquier asunto relacionado con tus datos, incluido el contacto con nuestro encargado de protección de datos, escríbenos a <span data-legal=\"email\"></span>.",
+"For any matter relating to your data, including contacting our data protection officer, write to us at <span data-legal=\"email\"></span>.",
+"Pour toute question relative à tes données, y compris pour contacter notre délégué à la protection des données, écris-nous à <span data-legal=\"email\"></span>.",
+"Bei allen Fragen zu deinen Daten, einschließlich der Kontaktaufnahme mit unserem Datenschutzbeauftragten, schreib uns an <span data-legal=\"email\"></span>.",
+"Para qualquer assunto relacionado aos seus dados, inclusive o contato com nosso encarregado de proteção de dados, escreva para <span data-legal=\"email\"></span>.",
+"Para qualquer assunto relacionado com os teus dados, incluindo o contacto com o nosso encarregado da proteção de dados, escreve-nos para <span data-legal=\"email\"></span>."
+],
+[
+"Esta política se aplica al sitio web y a la aplicación web de Alento. Complementa los <a href=\"/terminos\">Términos de servicio</a>.",
+"This policy applies to the Alento website and web app. It supplements the <a href=\"/terminos\">Terms of service</a>.",
+"Cette politique s’applique au site web et à l’application web d’Alento. Elle complète les <a href=\"/terminos\">Conditions d’utilisation</a>.",
+"Diese Richtlinie gilt für die Website und die Web-App von Alento. Sie ergänzt die <a href=\"/terminos\">Nutzungsbedingungen</a>.",
+"Esta política se aplica ao site e ao aplicativo web do Alento. Ela complementa os <a href=\"/terminos\">Termos de serviço</a>.",
+"Esta política aplica-se ao site e à aplicação web do Alento. Complementa os <a href=\"/terminos\">Termos de serviço</a>."
+],
+[
+"2. Qué datos tratamos",
+"2. What data we process",
+"2. Quelles données nous traitons",
+"2. Welche Daten wir verarbeiten",
+"2. Quais dados tratamos",
+"2. Que dados tratamos"
+],
+[
+"2.1. Datos de tu cuenta",
+"2.1. Your account data",
+"2.1. Les données de ton compte",
+"2.1. Daten deines Kontos",
+"2.1. Dados da sua conta",
+"2.1. Dados da tua conta"
+],
+[
+"Nombre y correo electrónico.",
+"Name and email address.",
+"Nom et adresse e-mail.",
+"Name und E-Mail-Adresse.",
+"Nome e e-mail.",
+"Nome e endereço de e-mail."
+],
+[
+"Contraseña: la gestiona nuestro proveedor de autenticación (Supabase Auth) y se guarda de forma cifrada mediante una función hash; nadie en Alento puede verla.",
+"Password: it is managed by our authentication provider (Supabase Auth) and stored in encrypted form using a hash function; no one at Alento can see it.",
+"Mot de passe : il est géré par notre fournisseur d’authentification (Supabase Auth) et stocké sous forme chiffrée au moyen d’une fonction de hachage ; personne chez Alento ne peut le voir.",
+"Passwort: Es wird von unserem Authentifizierungsanbieter (Supabase Auth) verwaltet und mithilfe einer Hash-Funktion verschlüsselt gespeichert; niemand bei Alento kann es einsehen.",
+"Senha: ela é gerenciada pelo nosso provedor de autenticação (Supabase Auth) e armazenada de forma criptografada por meio de uma função de hash; ninguém no Alento consegue vê-la.",
+"Palavra-passe: é gerida pelo nosso fornecedor de autenticação (Supabase Auth) e guardada de forma cifrada através de uma função de hash; ninguém no Alento a pode ver."
+],
+[
+"2.2. Respuestas del cuestionario",
+"2.2. Questionnaire answers",
+"2.2. Réponses au questionnaire",
+"2.2. Antworten im Fragebogen",
+"2.2. Respostas do questionário",
+"2.2. Respostas ao questionário"
+],
+[
+"Consumo de tabaco, cigarrillos electrónicos o vapeadores, hábitos, situaciones que te provocan ganas de fumar (gatillos), motivaciones y rango de edad. Puedes responder al cuestionario antes de crear una cuenta; en ese caso, tus respuestas se vinculan a un identificador anónimo guardado en una cookie de tu navegador.",
+"Use of tobacco, e-cigarettes or vapes, habits, situations that make you want to smoke (triggers), motivations and age range. You can answer the questionnaire before creating an account; in that case, your answers are linked to an anonymous identifier stored in a cookie in your browser.",
+"Consommation de tabac, de cigarettes électroniques ou de vapoteuses, habitudes, situations qui te donnent envie de fumer (déclencheurs), motivations et tranche d’âge. Tu peux répondre au questionnaire avant de créer un compte ; dans ce cas, tes réponses sont liées à un identifiant anonyme enregistré dans un cookie de ton navigateur.",
+"Konsum von Tabak, E-Zigaretten oder Vapes, Gewohnheiten, Situationen, die dir Lust aufs Rauchen machen (Auslöser), Motivationen und Altersgruppe. Du kannst den Fragebogen beantworten, bevor du ein Konto erstellst; in diesem Fall werden deine Antworten mit einer anonymen Kennung verknüpft, die in einem Cookie in deinem Browser gespeichert wird.",
+"Consumo de tabaco, cigarros eletrônicos ou vapes, hábitos, situações que despertam em você vontade de fumar (gatilhos), motivações e faixa etária. Você pode responder ao questionário antes de criar uma conta; nesse caso, suas respostas são vinculadas a um identificador anônimo armazenado em um cookie do seu navegador.",
+"Consumo de tabaco, cigarros eletrónicos ou vapes, hábitos, situações que te despertam vontade de fumar (gatilhos), motivações e faixa etária. Podes responder ao questionário antes de criares uma conta; nesse caso, as tuas respostas ficam associadas a um identificador anónimo guardado num cookie do teu navegador."
+],
+[
+"2.3. Datos de uso del programa",
+"2.3. Programme usage data",
+"2.3. Données d’utilisation du programme",
+"2.3. Nutzungsdaten des Programms",
+"2.3. Dados de uso do programa",
+"2.3. Dados de utilização do programa"
+],
+[
+"Registros de cigarrillos y de antojos.",
+"Logs of cigarettes and cravings.",
+"Enregistrements de cigarettes et d’envies.",
+"Aufzeichnungen zu Zigaretten und Verlangen.",
+"Registros de cigarros e de desejos intensos.",
+"Registos de cigarros e de desejos intensos."
+],
+[
+"Entradas del diario de estado de ánimo y las notas que escribas.",
+"Mood journal entries and any notes you write.",
+"Entrées du journal d’humeur et notes que tu rédiges.",
+"Einträge im Stimmungstagebuch und die Notizen, die du schreibst.",
+"Entradas do diário de humor e as notas que você escrever.",
+"Entradas do diário de humor e as notas que escreveres."
+],
+[
+"Sesiones de ejercicios de respiración.",
+"Breathing exercise sessions.",
+"Séances d’exercices de respiration.",
+"Sitzungen mit Atemübungen.",
+"Sessões de exercícios de respiração.",
+"Sessões de exercícios de respiração."
+],
+[
+"Respuestas a las lecciones, incluidas las reflexiones en texto libre.",
+"Answers to the lessons, including free-text reflections.",
+"Réponses aux leçons, y compris les réflexions en texte libre.",
+"Antworten auf die Lektionen, einschließlich der Reflexionen in Freitext.",
+"Respostas às lições, incluindo as reflexões em texto livre.",
+"Respostas às lições, incluindo as reflexões em texto livre."
+],
+[
+"Logros y progreso en la jornada educativa.",
+"Achievements and progress in the educational journey.",
+"Réussites et progression dans le parcours éducatif.",
+"Erfolge und Fortschritt auf der Lernreise.",
+"Conquistas e progresso na jornada educativa.",
+"Conquistas e progresso na jornada educativa."
+],
+[
+"Te recomendamos no incluir en los campos de texto libre información sensible que no sea necesaria ni datos de otras personas.",
+"We recommend that you do not include in free-text fields any sensitive information that is not necessary, or any data about other people.",
+"Nous te recommandons de ne pas inclure dans les champs de texte libre d’informations sensibles qui ne sont pas nécessaires, ni de données d’autres personnes.",
+"Wir empfehlen dir, in Freitextfeldern keine sensiblen Informationen anzugeben, die nicht erforderlich sind, und keine Daten anderer Personen.",
+"Recomendamos que você não inclua nos campos de texto livre informações sensíveis desnecessárias nem dados de outras pessoas.",
+"Recomendamos que não incluas nos campos de texto livre informações sensíveis que não sejam necessárias nem dados de outras pessoas."
+],
+[
+"2.4. Notificaciones",
+"2.4. Notifications",
+"2.4. Notifications",
+"2.4. Benachrichtigungen",
+"2.4. Notificações",
+"2.4. Notificações"
+],
+[
+"Tus preferencias de recordatorio y, si activas las notificaciones, la suscripción push de tu navegador (una dirección técnica del servicio de notificaciones y claves de cifrado) junto con el agente de usuario (tipo de navegador y dispositivo) para identificar tus dispositivos.",
+"Your reminder preferences and, if you turn on notifications, your browser’s push subscription (a technical address of the notification service and encryption keys) together with the user agent (type of browser and device) to identify your devices.",
+"Tes préférences de rappel et, si tu actives les notifications, l’abonnement push de ton navigateur (une adresse technique du service de notifications et des clés de chiffrement) ainsi que l’agent utilisateur (type de navigateur et d’appareil) afin d’identifier tes appareils.",
+"Deine Erinnerungseinstellungen und, wenn du Benachrichtigungen aktivierst, das Push-Abonnement deines Browsers (eine technische Adresse des Benachrichtigungsdienstes und Verschlüsselungsschlüssel) zusammen mit dem User-Agent (Browser- und Gerätetyp), um deine Geräte zu identifizieren.",
+"Suas preferências de lembrete e, se você ativar as notificações, a assinatura push do seu navegador (um endereço técnico do serviço de notificações e chaves de criptografia) junto com o agente de usuário (tipo de navegador e dispositivo) para identificar seus dispositivos.",
+"As tuas preferências de lembrete e, se ativares as notificações, a subscrição push do teu navegador (um endereço técnico do serviço de notificações e chaves de cifragem) juntamente com o agente de utilizador (tipo de navegador e dispositivo) para identificar os teus dispositivos."
+],
+[
+"2.5. Datos de suscripción y facturación",
+"2.5. Subscription and billing data",
+"2.5. Données d’abonnement et de facturation",
+"2.5. Abonnement- und Rechnungsdaten",
+"2.5. Dados de assinatura e faturamento",
+"2.5. Dados de subscrição e faturação"
+],
+[
+"Plan contratado, estado de la suscripción, fechas de cobro y renovación, e identificador de cliente en Stripe. Los datos de tu tarjeta los introduces directamente en Stripe: Alento no los recibe ni los almacena.",
+"Plan purchased, subscription status, billing and renewal dates, and Stripe customer identifier. You enter your card details directly into Stripe: Alento does not receive or store them.",
+"Formule souscrite, état de l’abonnement, dates de paiement et de renouvellement, et identifiant client Stripe. Tu saisis les données de ta carte directement dans Stripe : Alento ne les reçoit ni ne les conserve.",
+"Gebuchter Tarif, Abonnementstatus, Abrechnungs- und Verlängerungsdaten sowie Kundenkennung bei Stripe. Deine Kartendaten gibst du direkt bei Stripe ein: Alento erhält und speichert sie nicht.",
+"Plano contratado, status da assinatura, datas de cobrança e renovação, e identificador de cliente na Stripe. Você insere os dados do seu cartão diretamente na Stripe: o Alento não os recebe nem os armazena.",
+"Plano contratado, estado da subscrição, datas de cobrança e renovação, e identificador de cliente na Stripe. Introduzes os dados do teu cartão diretamente na Stripe: o Alento não os recebe nem os guarda."
+],
+[
+"2.6. Datos técnicos",
+"2.6. Technical data",
+"2.6. Données techniques",
+"2.6. Technische Daten",
+"2.6. Dados técnicos",
+"2.6. Dados técnicos"
+],
+[
+"Cookies estrictamente necesarias (ver apartado 8).",
+"Strictly necessary cookies (see section 8).",
+"Cookies strictement nécessaires (voir section 8).",
+"Unbedingt erforderliche Cookies (siehe Abschnitt 8).",
+"Cookies estritamente necessários (veja a seção 8).",
+"Cookies estritamente necessários (ver secção 8)."
+],
+[
+"Dirección IP, usada para la seguridad del servicio y para limitar intentos abusivos (por ejemplo, intentos repetidos de inicio de sesión).",
+"IP address, used for the security of the service and to limit abusive attempts (for example, repeated login attempts).",
+"Adresse IP, utilisée pour la sécurité du service et pour limiter les tentatives abusives (par exemple, les tentatives de connexion répétées).",
+"IP-Adresse, die für die Sicherheit des Dienstes und zur Begrenzung missbräuchlicher Versuche (zum Beispiel wiederholter Anmeldeversuche) verwendet wird.",
+"Endereço IP, usado para a segurança do serviço e para limitar tentativas abusivas (por exemplo, tentativas repetidas de login).",
+"Endereço IP, usado para a segurança do serviço e para limitar tentativas abusivas (por exemplo, tentativas repetidas de início de sessão)."
+],
+[
+"Registros técnicos y de seguridad, y registros de auditoría de las acciones administrativas.",
+"Technical and security logs, and audit logs of administrative actions.",
+"Journaux techniques et de sécurité, et journaux d’audit des actions administratives.",
+"Technische und Sicherheitsprotokolle sowie Audit-Protokolle administrativer Aktionen.",
+"Registros técnicos e de segurança, e registros de auditoria das ações administrativas.",
+"Registos técnicos e de segurança, e registos de auditoria das ações administrativas."
+],
+[
+"3. Datos relacionados con la salud",
+"3. Data concerning health",
+"3. Données concernant la santé",
+"3. Gesundheitsdaten",
+"3. Dados relacionados à saúde",
+"3. Dados relativos à saúde"
+],
+[
+"Tu consumo de tabaco o nicotina, tus antojos y tu estado de ánimo pueden considerarse <strong>datos personales sensibles relativos a la salud</strong> según la Ley General de Protección de Datos de Brasil (LGPD) y el Reglamento General de Protección de Datos de la Unión Europea (RGPD), entre otras normas.",
+"Your tobacco or nicotine use, your cravings and your mood may be considered <strong>sensitive personal data concerning health</strong> under Brazil’s General Data Protection Law (LGPD) and the European Union’s General Data Protection Regulation (GDPR), among other rules.",
+"Ta consommation de tabac ou de nicotine, tes envies et ton humeur peuvent être considérées comme des <strong>données personnelles sensibles concernant la santé</strong> au sens de la loi générale brésilienne sur la protection des données (LGPD) et du Règlement général sur la protection des données de l’Union européenne (RGPD), entre autres normes.",
+"Dein Tabak- oder Nikotinkonsum, dein Verlangen und deine Stimmung können nach dem brasilianischen Allgemeinen Datenschutzgesetz (LGPD) und der Datenschutz-Grundverordnung der Europäischen Union (DSGVO) sowie weiteren Vorschriften als <strong>sensible personenbezogene Gesundheitsdaten</strong> gelten.",
+"Seu consumo de tabaco ou nicotina, seus desejos intensos e seu humor podem ser considerados <strong>dados pessoais sensíveis relativos à saúde</strong> de acordo com a Lei Geral de Proteção de Dados do Brasil (LGPD) e o Regulamento Geral de Proteção de Dados da União Europeia (RGPD), entre outras normas.",
+"O teu consumo de tabaco ou nicotina, os teus desejos intensos e o teu estado de espírito podem ser considerados <strong>dados pessoais sensíveis relativos à saúde</strong>, nos termos da Lei Geral de Proteção de Dados do Brasil (LGPD) e do Regulamento Geral sobre a Proteção de Dados da União Europeia (RGPD), entre outras normas."
+],
+[
+"Tratamos estos datos únicamente con tu <strong>consentimiento explícito</strong> (art. 11, I de la LGPD y art. 9.2.a del RGPD), que nos das de forma específica y destacada al completar el cuestionario y al crear tu cuenta, y solo para las finalidades indicadas en esta política: calcular tus resultados y prestarte el programa.",
+"We process this data only with your <strong>explicit consent</strong> (art. 11, I of the LGPD and art. 9(2)(a) of the GDPR), which you give us in a specific and prominent way when you complete the questionnaire and when you create your account, and only for the purposes set out in this policy: calculating your results and providing you with the programme.",
+"Nous ne traitons ces données qu’avec ton <strong>consentement explicite</strong> (art. 11, I de la LGPD et art. 9.2.a du RGPD), que tu nous donnes de manière spécifique et bien visible lorsque tu remplis le questionnaire et lorsque tu crées ton compte, et uniquement pour les finalités indiquées dans cette politique : calculer tes résultats et te fournir le programme.",
+"Wir verarbeiten diese Daten ausschließlich mit deiner <strong>ausdrücklichen Einwilligung</strong> (Art. 11, I LGPD und Art. 9 Abs. 2 Buchst. a DSGVO), die du uns beim Ausfüllen des Fragebogens und beim Erstellen deines Kontos gesondert und deutlich hervorgehoben erteilst, und nur für die in dieser Richtlinie genannten Zwecke: die Berechnung deiner Ergebnisse und die Bereitstellung des Programms.",
+"Tratamos esses dados somente com seu <strong>consentimento explícito</strong> (art. 11, I da LGPD e art. 9.2.a do RGPD), que você nos dá de forma específica e destacada ao concluir o questionário e ao criar sua conta, e apenas para as finalidades indicadas nesta política: calcular seus resultados e prestar o programa a você.",
+"Tratamos estes dados apenas com o teu <strong>consentimento explícito</strong> (art. 11, I da LGPD e art. 9.º, n.º 2, alínea a), do RGPD), que nos dás de forma específica e destacada ao concluíres o questionário e ao criares a tua conta, e apenas para as finalidades indicadas nesta política: calcular os teus resultados e prestar-te o programa."
+],
+[
+"Puedes retirar tu consentimiento en cualquier momento eliminando tu cuenta desde «Mi perfil» o escribiéndonos. La retirada no afecta a la licitud del tratamiento anterior, pero sin estos datos no podemos prestarte el servicio.",
+"You can withdraw your consent at any time by deleting your account from “My profile” or by writing to us. Withdrawal does not affect the lawfulness of the earlier processing, but without this data we cannot provide you with the service.",
+"Tu peux retirer ton consentement à tout moment en supprimant ton compte depuis « Mon profil » ou en nous écrivant. Le retrait n’affecte pas la licéité du traitement antérieur, mais sans ces données, nous ne pouvons pas te fournir le service.",
+"Du kannst deine Einwilligung jederzeit widerrufen, indem du dein Konto unter „Mein Profil“ löschst oder uns schreibst. Der Widerruf berührt nicht die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung, aber ohne diese Daten können wir dir den Dienst nicht bereitstellen.",
+"Você pode retirar seu consentimento a qualquer momento excluindo sua conta em “Meu perfil” ou escrevendo para nós. A retirada não afeta a licitude do tratamento anterior, mas sem esses dados não podemos prestar o serviço a você.",
+"Podes retirar o teu consentimento a qualquer momento, eliminando a tua conta em «O meu perfil» ou escrevendo-nos. A retirada não afeta a licitude do tratamento anterior, mas sem estes dados não te podemos prestar o serviço."
+],
+[
+"4. Para qué usamos tus datos y con qué base legal",
+"4. What we use your data for and on what legal basis",
+"4. À quelles fins nous utilisons tes données et sur quelle base légale",
+"4. Wofür wir deine Daten verwenden und auf welcher Rechtsgrundlage",
+"4. Para que usamos seus dados e com qual base legal",
+"4. Para que usamos os teus dados e com que base legal"
+],
+[
+"Finalidad",
+"Purpose",
+"Finalité",
+"Zweck",
+"Finalidade",
+"Finalidade"
+],
+[
+"Datos",
+"Data",
+"Données",
+"Daten",
+"Dados",
+"Dados"
+],
+[
+"Base legal",
+"Legal basis",
+"Base légale",
+"Rechtsgrundlage",
+"Base legal",
+"Base legal"
+],
+[
+"Crear y gestionar tu cuenta y prestarte el servicio contratado (plan, jornada, registros, gráficos, logros, apoyo guiado)",
+"Create and manage your account and provide you with the service you have contracted (plan, journey, logs, charts, achievements, guided support)",
+"Créer et gérer ton compte et te fournir le service souscrit (formule, parcours, enregistrements, graphiques, réussites, accompagnement guidé)",
+"Dein Konto erstellen und verwalten und dir den vereinbarten Dienst bereitstellen (Tarif, Lernreise, Aufzeichnungen, Diagramme, Erfolge, geführte Unterstützung)",
+"Criar e gerenciar sua conta e prestar a você o serviço contratado (plano, jornada, registros, gráficos, conquistas, apoio guiado)",
+"Criar e gerir a tua conta e prestar-te o serviço contratado (plano, jornada, registos, gráficos, conquistas, apoio guiado)"
+],
+[
+"Cuenta, uso del programa",
+"Account, programme usage",
+"Compte, utilisation du programme",
+"Konto, Nutzung des Programms",
+"Conta, uso do programa",
+"Conta, utilização do programa"
+],
+[
+"Ejecución del contrato (art. 7, V LGPD; art. 6.1.b RGPD)",
+"Performance of the contract (art. 7, V LGPD; art. 6(1)(b) GDPR)",
+"Exécution du contrat (art. 7, V LGPD ; art. 6.1.b RGPD)",
+"Vertragserfüllung (Art. 7, V LGPD; Art. 6 Abs. 1 Buchst. b DSGVO)",
+"Execução do contrato (art. 7, V LGPD; art. 6.1.b RGPD)",
+"Execução do contrato (art. 7, V LGPD; art. 6.º, n.º 1, alínea b), RGPD)"
+],
+[
+"Calcular tus resultados y personalizar tu plan usando datos relacionados con la salud",
+"Calculate your results and personalise your plan using data concerning health",
+"Calculer tes résultats et personnaliser ta formule à partir de données concernant la santé",
+"Deine Ergebnisse berechnen und deinen Plan anhand von Gesundheitsdaten personalisieren",
+"Calcular seus resultados e personalizar seu plano usando dados relacionados à saúde",
+"Calcular os teus resultados e personalizar o teu plano usando dados relativos à saúde"
+],
+[
+"Cuestionario, uso del programa",
+"Questionnaire, programme usage",
+"Questionnaire, utilisation du programme",
+"Fragebogen, Nutzung des Programms",
+"Questionário, uso do programa",
+"Questionário, utilização do programa"
+],
+[
+"Consentimiento explícito (art. 11, I LGPD; art. 9.2.a RGPD)",
+"Explicit consent (art. 11, I LGPD; art. 9(2)(a) GDPR)",
+"Consentement explicite (art. 11, I LGPD ; art. 9.2.a RGPD)",
+"Ausdrückliche Einwilligung (Art. 11, I LGPD; Art. 9 Abs. 2 Buchst. a DSGVO)",
+"Consentimento explícito (art. 11, I LGPD; art. 9.2.a RGPD)",
+"Consentimento explícito (art. 11, I LGPD; art. 9.º, n.º 2, alínea a), RGPD)"
+],
+[
+"Gestionar pagos, renovaciones, facturación y reembolsos",
+"Manage payments, renewals, billing and refunds",
+"Gérer les paiements, les renouvellements, la facturation et les remboursements",
+"Zahlungen, Verlängerungen, Abrechnung und Erstattungen abwickeln",
+"Gerenciar pagamentos, renovações, faturamento e reembolsos",
+"Gerir pagamentos, renovações, faturação e reembolsos"
+],
+[
+"Suscripción y facturación",
+"Subscription and billing",
+"Abonnement et facturation",
+"Abonnement und Abrechnung",
+"Assinatura e faturamento",
+"Subscrição e faturação"
+],
+[
+"Ejecución del contrato y cumplimiento de obligaciones legales, como las fiscales (art. 7, II y V LGPD; art. 6.1.b y c RGPD)",
+"Performance of the contract and compliance with legal obligations, such as tax obligations (art. 7, II and V LGPD; art. 6(1)(b) and (c) GDPR)",
+"Exécution du contrat et respect des obligations légales, notamment fiscales (art. 7, II et V LGPD ; art. 6.1.b et c RGPD)",
+"Vertragserfüllung und Erfüllung rechtlicher Pflichten, etwa steuerrechtlicher (Art. 7, II und V LGPD; Art. 6 Abs. 1 Buchst. b und c DSGVO)",
+"Execução do contrato e cumprimento de obrigações legais, como as fiscais (art. 7, II e V LGPD; art. 6.1.b e c RGPD)",
+"Execução do contrato e cumprimento de obrigações legais, como as fiscais (art. 7, II e V LGPD; art. 6.º, n.º 1, alíneas b) e c), RGPD)"
+],
+[
+"Enviarte recordatorios por notificación push",
+"Send you reminders by push notification",
+"T’envoyer des rappels par notification push",
+"Dir Erinnerungen per Push-Benachrichtigung senden",
+"Enviar lembretes a você por notificação push",
+"Enviar-te lembretes por notificação push"
+],
+[
+"Consentimiento, que das al activarlos y puedes retirar cuando quieras (art. 7, I LGPD; art. 6.1.a RGPD)",
+"Consent, which you give when you turn them on and can withdraw whenever you want (art. 7, I LGPD; art. 6(1)(a) GDPR)",
+"Consentement, que tu donnes en les activant et que tu peux retirer quand tu veux (art. 7, I LGPD ; art. 6.1.a RGPD)",
+"Einwilligung, die du beim Aktivieren erteilst und jederzeit widerrufen kannst (Art. 7, I LGPD; Art. 6 Abs. 1 Buchst. a DSGVO)",
+"Consentimento, que você dá ao ativá-los e pode retirar quando quiser (art. 7, I LGPD; art. 6.1.a RGPD)",
+"Consentimento, que dás ao ativá-los e podes retirar quando quiseres (art. 7, I LGPD; art. 6.º, n.º 1, alínea a), RGPD)"
+],
+[
+"Proteger el servicio, prevenir fraudes y abusos y mantener registros de seguridad",
+"Protect the service, prevent fraud and abuse, and keep security logs",
+"Protéger le service, prévenir les fraudes et les abus, et tenir des journaux de sécurité",
+"Den Dienst schützen, Betrug und Missbrauch verhindern und Sicherheitsprotokolle führen",
+"Proteger o serviço, prevenir fraudes e abusos e manter registros de segurança",
+"Proteger o serviço, prevenir fraudes e abusos e manter registos de segurança"
+],
+[
+"Datos técnicos",
+"Technical data",
+"Données techniques",
+"Technische Daten",
+"Dados técnicos",
+"Dados técnicos"
+],
+[
+"Interés legítimo (art. 7, IX LGPD; art. 6.1.f RGPD)",
+"Legitimate interest (art. 7, IX LGPD; art. 6(1)(f) GDPR)",
+"Intérêt légitime (art. 7, IX LGPD ; art. 6.1.f RGPD)",
+"Berechtigtes Interesse (Art. 7, IX LGPD; Art. 6 Abs. 1 Buchst. f DSGVO)",
+"Interesse legítimo (art. 7, IX LGPD; art. 6.1.f RGPD)",
+"Interesse legítimo (art. 7, IX LGPD; art. 6.º, n.º 1, alínea f), RGPD)"
+],
+[
+"Enviarte comunicaciones necesarias sobre el servicio (por ejemplo, cambios de precio o de estas políticas, recuperación de contraseña)",
+"Send you necessary communications about the service (for example, changes to prices or to these policies, password recovery)",
+"T’envoyer les communications nécessaires concernant le service (par exemple, modifications de prix ou de ces politiques, récupération du mot de passe)",
+"Dir notwendige Mitteilungen zum Dienst senden (zum Beispiel Preisänderungen oder Änderungen dieser Richtlinien, Passwortwiederherstellung)",
+"Enviar a você comunicações necessárias sobre o serviço (por exemplo, mudanças de preço ou destas políticas, recuperação de senha)",
+"Enviar-te comunicações necessárias sobre o serviço (por exemplo, alterações de preço ou destas políticas, recuperação da palavra-passe)"
+],
+[
+"Ejecución del contrato y obligaciones legales",
+"Performance of the contract and legal obligations",
+"Exécution du contrat et obligations légales",
+"Vertragserfüllung und rechtliche Pflichten",
+"Execução do contrato e obrigações legais",
+"Execução do contrato e obrigações legais"
+],
+[
+"Atender tus solicitudes, reclamaciones y el ejercicio de tus derechos, y defendernos ante reclamaciones",
+"Handle your requests, complaints and the exercise of your rights, and defend ourselves against claims",
+"Traiter tes demandes, tes réclamations et l’exercice de tes droits, et nous défendre face aux réclamations",
+"Deine Anfragen, Beschwerden und die Ausübung deiner Rechte bearbeiten und uns gegen Ansprüche verteidigen",
+"Atender suas solicitações, reclamações e o exercício dos seus direitos, e nos defender diante de reclamações",
+"Atender os teus pedidos, reclamações e o exercício dos teus direitos, e defendermo-nos perante reclamações"
+],
+[
+"Los necesarios en cada caso",
+"Whichever are necessary in each case",
+"Celles nécessaires dans chaque cas",
+"Jeweils die erforderlichen",
+"Os necessários em cada caso",
+"Os necessários em cada caso"
+],
+[
+"Obligación legal y ejercicio regular de derechos (art. 7, II y VI LGPD; art. 6.1.c y f RGPD)",
+"Legal obligation and regular exercise of rights (art. 7, II and VI LGPD; art. 6(1)(c) and (f) GDPR)",
+"Obligation légale et exercice régulier de droits (art. 7, II et VI LGPD ; art. 6.1.c et f RGPD)",
+"Rechtliche Verpflichtung und ordnungsgemäße Ausübung von Rechten (Art. 7, II und VI LGPD; Art. 6 Abs. 1 Buchst. c und f DSGVO)",
+"Obrigação legal e exercício regular de direitos (art. 7, II e VI LGPD; art. 6.1.c e f RGPD)",
+"Obrigação legal e exercício regular de direitos (art. 7, II e VI LGPD; art. 6.º, n.º 1, alíneas c) e f), RGPD)"
+],
+[
+"Cuando la base legal es el interés legítimo, hemos valorado que no prevalecen sobre él tus derechos y libertades. Puedes oponerte a ese tratamiento (ver apartado 10).",
+"Where the legal basis is legitimate interest, we have assessed that your rights and freedoms do not override it. You can object to that processing (see section 10).",
+"Lorsque la base légale est l’intérêt légitime, nous avons évalué que tes droits et libertés ne prévalent pas sur celui-ci. Tu peux t’opposer à ce traitement (voir section 10).",
+"Wenn die Rechtsgrundlage das berechtigte Interesse ist, haben wir geprüft, dass deine Rechte und Freiheiten dieses nicht überwiegen. Du kannst dieser Verarbeitung widersprechen (siehe Abschnitt 10).",
+"Quando a base legal é o interesse legítimo, avaliamos que seus direitos e liberdades não prevalecem sobre ele. Você pode se opor a esse tratamento (veja a seção 10).",
+"Quando a base legal é o interesse legítimo, avaliámos que os teus direitos e liberdades não prevalecem sobre ele. Podes opor-te a esse tratamento (ver secção 10)."
+],
+[
+"5. Lo que no hacemos",
+"5. What we do not do",
+"5. Ce que nous ne faisons pas",
+"5. Was wir nicht tun",
+"5. O que não fazemos",
+"5. O que não fazemos"
+],
+[
+"No vendemos ni alquilamos tus datos personales.",
+"We do not sell or rent your personal data.",
+"Nous ne vendons ni ne louons tes données personnelles.",
+"Wir verkaufen oder vermieten deine personenbezogenen Daten nicht.",
+"Não vendemos nem alugamos seus dados pessoais.",
+"Não vendemos nem alugamos os teus dados pessoais."
+],
+[
+"No usamos tus datos para publicidad ni creamos perfiles con fines publicitarios.",
+"We do not use your data for advertising or create profiles for advertising purposes.",
+"Nous n’utilisons pas tes données à des fins publicitaires et ne créons pas de profils à des fins publicitaires.",
+"Wir verwenden deine Daten nicht für Werbung und erstellen keine Profile zu Werbezwecken.",
+"Não usamos seus dados para publicidade nem criamos perfis com fins publicitários.",
+"Não usamos os teus dados para publicidade nem criamos perfis para fins publicitários."
+],
+[
+"No enviamos tus datos de salud ni tus registros a herramientas de analítica o a redes publicitarias.",
+"We do not send your health data or your logs to analytics tools or advertising networks.",
+"Nous n’envoyons ni tes données de santé ni tes enregistrements à des outils d’analyse ou à des réseaux publicitaires.",
+"Wir übermitteln weder deine Gesundheitsdaten noch deine Aufzeichnungen an Analysetools oder Werbenetzwerke.",
+"Não enviamos seus dados de saúde nem seus registros a ferramentas de análise ou a redes de publicidade.",
+"Não enviamos os teus dados de saúde nem os teus registos para ferramentas de análise ou redes publicitárias."
+],
+[
+"No tomamos decisiones con efectos jurídicos o significativos sobre ti basadas únicamente en tratamientos automatizados. La personalización del plan se basa en reglas predefinidas a partir de tus respuestas y no tiene efectos de ese tipo.",
+"We do not make decisions with legal or similarly significant effects on you based solely on automated processing. The personalisation of the plan is based on predefined rules applied to your answers and has no effects of that kind.",
+"Nous ne prenons aucune décision produisant des effets juridiques ou te touchant de manière significative qui soit fondée uniquement sur un traitement automatisé. La personnalisation de la formule repose sur des règles prédéfinies appliquées à tes réponses et n’a pas d’effets de ce type.",
+"Wir treffen keine Entscheidungen mit rechtlicher oder erheblicher Wirkung für dich, die ausschließlich auf automatisierter Verarbeitung beruhen. Die Personalisierung des Plans beruht auf vordefinierten Regeln, die auf deine Antworten angewendet werden, und hat keine derartigen Wirkungen.",
+"Não tomamos decisões com efeitos jurídicos ou significativos sobre você baseadas exclusivamente em tratamento automatizado. A personalização do plano se baseia em regras predefinidas a partir das suas respostas e não tem efeitos desse tipo.",
+"Não tomamos decisões com efeitos jurídicos ou significativos sobre ti baseadas exclusivamente em tratamento automatizado. A personalização do plano baseia-se em regras predefinidas a partir das tuas respostas e não tem efeitos desse tipo."
+],
+[
+"El apoyo guiado usa respuestas predefinidas; no enviamos tus mensajes a servicios de inteligencia artificial.",
+"The guided support uses predefined answers; we do not send your messages to artificial intelligence services.",
+"L’accompagnement guidé utilise des réponses prédéfinies ; nous n’envoyons pas tes messages à des services d’intelligence artificielle.",
+"Die geführte Unterstützung verwendet vordefinierte Antworten; wir senden deine Nachrichten nicht an Dienste für künstliche Intelligenz.",
+"O apoio guiado usa respostas predefinidas; não enviamos suas mensagens a serviços de inteligência artificial.",
+"O apoio guiado usa respostas predefinidas; não enviamos as tuas mensagens a serviços de inteligência artificial."
+],
+[
+"6. Con quién compartimos tus datos",
+"6. Who we share your data with",
+"6. Avec qui nous partageons tes données",
+"6. Mit wem wir deine Daten teilen",
+"6. Com quem compartilhamos seus dados",
+"6. Com quem partilhamos os teus dados"
+],
+[
+"Solo compartimos tus datos con proveedores que nos ayudan a prestar el servicio (encargados u operadores del tratamiento), que actúan siguiendo nuestras instrucciones y con obligaciones contractuales de confidencialidad y seguridad:",
+"We only share your data with providers who help us deliver the service (processors), who act on our instructions and are bound by contractual confidentiality and security obligations:",
+"Nous ne partageons tes données qu’avec des prestataires qui nous aident à fournir le service (sous-traitants), qui agissent selon nos instructions et sont tenus par des obligations contractuelles de confidentialité et de sécurité :",
+"Wir teilen deine Daten nur mit Dienstleistern, die uns bei der Bereitstellung des Dienstes unterstützen (Auftragsverarbeiter), die nach unseren Weisungen handeln und vertraglich zu Vertraulichkeit und Sicherheit verpflichtet sind:",
+"Compartilhamos seus dados apenas com provedores que nos ajudam a prestar o serviço (operadores do tratamento), que atuam seguindo nossas instruções e com obrigações contratuais de confidencialidade e segurança:",
+"Partilhamos os teus dados apenas com fornecedores que nos ajudam a prestar o serviço (subcontratantes), que atuam segundo as nossas instruções e com obrigações contratuais de confidencialidade e segurança:"
+],
+[
+"<strong>Supabase</strong>: alojamiento de la base de datos y autenticación de usuarios.",
+"<strong>Supabase</strong>: database hosting and user authentication.",
+"<strong>Supabase</strong> : hébergement de la base de données et authentification des utilisateurs.",
+"<strong>Supabase</strong>: Hosting der Datenbank und Authentifizierung der Nutzer.",
+"<strong>Supabase</strong>: hospedagem do banco de dados e autenticação de usuários.",
+"<strong>Supabase</strong>: alojamento da base de dados e autenticação de utilizadores."
+],
+[
+"<strong>Vercel</strong>: alojamiento y ejecución de la aplicación.",
+"<strong>Vercel</strong>: hosting and running of the application.",
+"<strong>Vercel</strong> : hébergement et exécution de l’application.",
+"<strong>Vercel</strong>: Hosting und Betrieb der Anwendung.",
+"<strong>Vercel</strong>: hospedagem e execução do aplicativo.",
+"<strong>Vercel</strong>: alojamento e execução da aplicação."
+],
+[
+"<strong>Stripe</strong>: procesamiento de pagos y gestión de suscripciones. Para algunos fines (por ejemplo, prevención de fraude y obligaciones financieras), Stripe puede actuar como responsable independiente según su propia política de privacidad.",
+"<strong>Stripe</strong>: payment processing and subscription management. For some purposes (for example, fraud prevention and financial obligations), Stripe may act as an independent controller under its own privacy policy.",
+"<strong>Stripe</strong> : traitement des paiements et gestion des abonnements. Pour certaines finalités (par exemple, la prévention de la fraude et les obligations financières), Stripe peut agir en tant que responsable du traitement indépendant selon sa propre politique de confidentialité.",
+"<strong>Stripe</strong>: Zahlungsabwicklung und Verwaltung von Abonnements. Für einige Zwecke (zum Beispiel Betrugsprävention und finanzielle Pflichten) kann Stripe gemäß seiner eigenen Datenschutzerklärung als eigenständiger Verantwortlicher handeln.",
+"<strong>Stripe</strong>: processamento de pagamentos e gestão de assinaturas. Para algumas finalidades (por exemplo, prevenção de fraude e obrigações financeiras), a Stripe pode atuar como controladora independente conforme sua própria política de privacidade.",
+"<strong>Stripe</strong>: processamento de pagamentos e gestão de subscrições. Para algumas finalidades (por exemplo, prevenção da fraude e obrigações financeiras), a Stripe pode atuar como responsável pelo tratamento independente, segundo a sua própria política de privacidade."
+],
+[
+"<strong>Servicios de notificaciones push de los navegadores</strong> (Google, Apple, Mozilla, Microsoft): solo si activas los recordatorios, para entregar las notificaciones a tu dispositivo. El contenido de las notificaciones se envía cifrado.",
+"<strong>Browser push notification services</strong> (Google, Apple, Mozilla, Microsoft): only if you turn on reminders, to deliver the notifications to your device. The content of the notifications is sent encrypted.",
+"<strong>Services de notifications push des navigateurs</strong> (Google, Apple, Mozilla, Microsoft) : uniquement si tu actives les rappels, pour remettre les notifications sur ton appareil. Le contenu des notifications est envoyé chiffré.",
+"<strong>Push-Benachrichtigungsdienste der Browser</strong> (Google, Apple, Mozilla, Microsoft): nur wenn du die Erinnerungen aktivierst, um die Benachrichtigungen an dein Gerät zuzustellen. Der Inhalt der Benachrichtigungen wird verschlüsselt gesendet.",
+"<strong>Serviços de notificações push dos navegadores</strong> (Google, Apple, Mozilla, Microsoft): somente se você ativar os lembretes, para entregar as notificações ao seu dispositivo. O conteúdo das notificações é enviado criptografado.",
+"<strong>Serviços de notificações push dos navegadores</strong> (Google, Apple, Mozilla, Microsoft): apenas se ativares os lembretes, para entregar as notificações ao teu dispositivo. O conteúdo das notificações é enviado cifrado."
+],
+[
+"También podremos comunicar datos a autoridades públicas o tribunales cuando la ley nos obligue, y a un eventual comprador o sucesor del negocio en caso de reorganización o venta, que deberá respetar esta política. Te avisaremos antes en este último caso.",
+"We may also disclose data to public authorities or courts when the law requires us to, and to a potential buyer or successor of the business in the event of a reorganisation or sale, who will have to respect this policy. We will notify you beforehand in the latter case.",
+"Nous pourrons également communiquer des données à des autorités publiques ou à des tribunaux lorsque la loi nous y oblige, ainsi qu’à un éventuel acquéreur ou successeur de l’activité en cas de réorganisation ou de vente, qui devra respecter cette politique. Nous t’en informerons au préalable dans ce dernier cas.",
+"Wir können Daten außerdem an Behörden oder Gerichte weitergeben, wenn das Gesetz uns dazu verpflichtet, sowie an einen möglichen Käufer oder Rechtsnachfolger des Unternehmens im Fall einer Umstrukturierung oder eines Verkaufs, der diese Richtlinie einhalten muss. Im letztgenannten Fall informieren wir dich vorher.",
+"Também poderemos comunicar dados a autoridades públicas ou tribunais quando a lei nos obrigar, e a um eventual comprador ou sucessor do negócio em caso de reorganização ou venda, que deverá respeitar esta política. Avisaremos você antes neste último caso.",
+"Também poderemos comunicar dados a autoridades públicas ou tribunais quando a lei nos obrigar, e a um eventual comprador ou sucessor do negócio em caso de reorganização ou venda, que deverá respeitar esta política. Avisar-te-emos antes neste último caso."
+],
+[
+"Si lo solicitas, te informaremos de las entidades concretas con las que hemos compartido tus datos.",
+"If you ask, we will tell you which specific entities we have shared your data with.",
+"Si tu le demandes, nous t’indiquerons les entités précises avec lesquelles nous avons partagé tes données.",
+"Auf Anfrage teilen wir dir mit, mit welchen konkreten Stellen wir deine Daten geteilt haben.",
+"Se você solicitar, informaremos as entidades específicas com as quais compartilhamos seus dados.",
+"Se o solicitares, informar-te-emos das entidades concretas com as quais partilhámos os teus dados."
+],
+[
+"7. Transferencias internacionales",
+"7. International transfers",
+"7. Transferts internationaux",
+"7. Internationale Übermittlungen",
+"7. Transferências internacionais",
+"7. Transferências internacionais"
+],
+[
+"Nuestros proveedores pueden alojar o tratar tus datos en servidores ubicados fuera de tu país, por ejemplo en los Estados Unidos o en la Unión Europea. Cuando esto ocurre, lo hacemos con garantías adecuadas según la ley aplicable, como las cláusulas contractuales tipo aprobadas por la Comisión Europea o por la Autoridad Nacional de Protección de Datos de Brasil (ANPD), los acuerdos de tratamiento de datos de cada proveedor y, cuando corresponda, decisiones de adecuación o marcos de certificación reconocidos.",
+"Our providers may host or process your data on servers located outside your country, for example in the United States or the European Union. When this happens, we do so with appropriate safeguards under the applicable law, such as the standard contractual clauses approved by the European Commission or by Brazil’s National Data Protection Authority (ANPD), each provider’s data processing agreements and, where applicable, adequacy decisions or recognised certification frameworks.",
+"Nos prestataires peuvent héberger ou traiter tes données sur des serveurs situés en dehors de ton pays, par exemple aux États-Unis ou dans l’Union européenne. Lorsque c’est le cas, nous le faisons avec des garanties appropriées conformément à la loi applicable, telles que les clauses contractuelles types approuvées par la Commission européenne ou par l’Autorité nationale brésilienne de protection des données (ANPD), les accords de traitement de données de chaque prestataire et, le cas échéant, des décisions d’adéquation ou des cadres de certification reconnus.",
+"Unsere Dienstleister können deine Daten auf Servern außerhalb deines Landes hosten oder verarbeiten, zum Beispiel in den Vereinigten Staaten oder in der Europäischen Union. Wenn dies geschieht, erfolgt es mit geeigneten Garantien nach dem geltenden Recht, wie den von der Europäischen Kommission oder von der brasilianischen Nationalen Datenschutzbehörde (ANPD) genehmigten Standardvertragsklauseln, den Auftragsverarbeitungsverträgen des jeweiligen Dienstleisters und gegebenenfalls Angemessenheitsbeschlüssen oder anerkannten Zertifizierungsrahmen.",
+"Nossos provedores podem hospedar ou tratar seus dados em servidores localizados fora do seu país, por exemplo nos Estados Unidos ou na União Europeia. Quando isso ocorre, fazemos com garantias adequadas conforme a lei aplicável, como as cláusulas contratuais padrão aprovadas pela Comissão Europeia ou pela Autoridade Nacional de Proteção de Dados do Brasil (ANPD), os acordos de tratamento de dados de cada provedor e, quando cabível, decisões de adequação ou marcos de certificação reconhecidos.",
+"Os nossos fornecedores podem alojar ou tratar os teus dados em servidores localizados fora do teu país, por exemplo nos Estados Unidos ou na União Europeia. Quando isso acontece, fazêmo-lo com garantias adequadas nos termos da lei aplicável, como as cláusulas contratuais-tipo aprovadas pela Comissão Europeia ou pela Autoridade Nacional de Proteção de Dados do Brasil (ANPD), os acordos de tratamento de dados de cada fornecedor e, quando aplicável, decisões de adequação ou quadros de certificação reconhecidos."
+],
+[
+"Puedes pedirnos información sobre estas garantías escribiéndonos.",
+"You can ask us for information about these safeguards by writing to us.",
+"Tu peux nous demander des informations sur ces garanties en nous écrivant.",
+"Du kannst Informationen zu diesen Garantien bei uns anfragen, indem du uns schreibst.",
+"Você pode pedir informações sobre essas garantias escrevendo para nós.",
+"Podes pedir-nos informações sobre estas garantias escrevendo-nos."
+],
+[
+"8. Cookies y almacenamiento local",
+"8. Cookies and local storage",
+"8. Cookies et stockage local",
+"8. Cookies und lokaler Speicher",
+"8. Cookies e armazenamento local",
+"8. Cookies e armazenamento local"
+],
+[
+"Usamos únicamente cookies y almacenamiento <strong>estrictamente necesarios</strong> para que el servicio funcione. Por eso no te pedimos consentimiento para ellas. No usamos cookies publicitarias, de analítica ni de terceros con fines de seguimiento.",
+"We only use cookies and storage that are <strong>strictly necessary</strong> for the service to work. That is why we do not ask for your consent for them. We do not use advertising or analytics cookies, or third-party cookies for tracking purposes.",
+"Nous n’utilisons que des cookies et un stockage <strong>strictement nécessaires</strong> au fonctionnement du service. C’est pourquoi nous ne te demandons pas ton consentement pour ceux-ci. Nous n’utilisons pas de cookies publicitaires, d’analyse ou tiers à des fins de suivi.",
+"Wir verwenden ausschließlich Cookies und Speicher, die für das Funktionieren des Dienstes <strong>unbedingt erforderlich</strong> sind. Deshalb bitten wir dich dafür nicht um Einwilligung. Wir verwenden keine Werbe- oder Analyse-Cookies und keine Cookies von Dritten zu Tracking-Zwecken.",
+"Usamos apenas cookies e armazenamento <strong>estritamente necessários</strong> para o serviço funcionar. Por isso, não pedimos seu consentimento para eles. Não usamos cookies publicitários, de análise nem de terceiros com fins de rastreamento.",
+"Usamos apenas cookies e armazenamento <strong>estritamente necessários</strong> para que o serviço funcione. Por isso, não te pedimos consentimento para eles. Não usamos cookies publicitários, de análise nem de terceiros com fins de monitorização."
+],
+[
+"al_at",
+"al_at",
+"al_at",
+"al_at",
+"al_at",
+"al_at"
+],
+[
+"Mantener tu sesión iniciada (token de acceso)",
+"Keep you signed in (access token)",
+"Maintenir ta session ouverte (jeton d’accès)",
+"Deine Sitzung angemeldet halten (Zugriffstoken)",
+"Manter sua sessão iniciada (token de acesso)",
+"Manter a tua sessão iniciada (token de acesso)"
+],
+[
+"Aproximadamente 1 hora",
+"Approximately 1 hour",
+"Environ 1 heure",
+"Etwa 1 Stunde",
+"Aproximadamente 1 hora",
+"Aproximadamente 1 hora"
+],
+[
+"al_rt",
+"al_rt",
+"al_rt",
+"al_rt",
+"al_rt",
+"al_rt"
+],
+[
+"Renovar tu sesión sin volver a pedir tu contraseña (token de renovación)",
+"Renew your session without asking for your password again (refresh token)",
+"Renouveler ta session sans te redemander ton mot de passe (jeton de renouvellement)",
+"Deine Sitzung erneuern, ohne erneut nach deinem Passwort zu fragen (Aktualisierungstoken)",
+"Renovar sua sessão sem pedir sua senha novamente (token de renovação)",
+"Renovar a tua sessão sem voltar a pedir a tua palavra-passe (token de renovação)"
+],
+[
+"fg_aid",
+"fg_aid",
+"fg_aid",
+"fg_aid",
+"fg_aid",
+"fg_aid"
+],
+[
+"Guardar tu progreso en el cuestionario y vincularlo a tus resultados",
+"Save your progress in the questionnaire and link it to your results",
+"Enregistrer ta progression dans le questionnaire et la relier à tes résultats",
+"Deinen Fortschritt im Fragebogen speichern und mit deinen Ergebnissen verknüpfen",
+"Salvar seu progresso no questionário e vinculá-lo aos seus resultados",
+"Guardar o teu progresso no questionário e associá-lo aos teus resultados"
+],
+[
+"180 días",
+"180 days",
+"180 jours",
+"180 Tage",
+"180 dias",
+"180 dias"
+],
+[
+"Plan seleccionado (sessionStorage)",
+"Selected plan (sessionStorage)",
+"Formule sélectionnée (sessionStorage)",
+"Ausgewählter Tarif (sessionStorage)",
+"Plano selecionado (sessionStorage)",
+"Plano selecionado (sessionStorage)"
+],
+[
+"Recordar el plan que elegiste durante el proceso de pago",
+"Remember the plan you chose during the payment process",
+"Mémoriser la formule que tu as choisie pendant le processus de paiement",
+"Den Tarif merken, den du während des Bezahlvorgangs gewählt hast",
+"Lembrar o plano que você escolheu durante o processo de pagamento",
+"Memorizar o plano que escolheste durante o processo de pagamento"
+],
+[
+"Hasta que cierras la pestaña",
+"Until you close the tab",
+"Jusqu’à la fermeture de l’onglet",
+"Bis du den Tab schließt",
+"Até você fechar a aba",
+"Até fechares o separador"
+],
+[
+"Puedes borrar o bloquear las cookies desde la configuración de tu navegador, pero entonces el inicio de sesión y el cuestionario podrían no funcionar.",
+"You can delete or block cookies in your browser settings, but then signing in and the questionnaire may not work.",
+"Tu peux supprimer ou bloquer les cookies dans les paramètres de ton navigateur, mais la connexion et le questionnaire risquent alors de ne plus fonctionner.",
+"Du kannst Cookies in den Einstellungen deines Browsers löschen oder blockieren, aber dann funktionieren die Anmeldung und der Fragebogen möglicherweise nicht.",
+"Você pode apagar ou bloquear os cookies nas configurações do seu navegador, mas então o login e o questionário podem não funcionar.",
+"Podes apagar ou bloquear os cookies nas definições do teu navegador, mas então o início de sessão e o questionário poderão não funcionar."
+],
+[
+"9. Cuánto tiempo conservamos tus datos",
+"9. How long we keep your data",
+"9. Combien de temps nous conservons tes données",
+"9. Wie lange wir deine Daten aufbewahren",
+"9. Por quanto tempo conservamos seus dados",
+"9. Durante quanto tempo conservamos os teus dados"
+],
+[
+"<strong>Datos de cuenta, cuestionario y uso del programa:</strong> mientras tu cuenta exista. Cuando eliminas tu cuenta, se borran de nuestra base de datos, junto con todos los datos asociados.",
+"<strong>Account, questionnaire and programme usage data:</strong> for as long as your account exists. When you delete your account, they are erased from our database, together with all associated data.",
+"<strong>Données du compte, du questionnaire et d’utilisation du programme :</strong> tant que ton compte existe. Lorsque tu supprimes ton compte, elles sont effacées de notre base de données, avec toutes les données associées.",
+"<strong>Konto-, Fragebogen- und Programmnutzungsdaten:</strong> solange dein Konto besteht. Wenn du dein Konto löschst, werden sie zusammen mit allen zugehörigen Daten aus unserer Datenbank gelöscht.",
+"<strong>Dados da conta, do questionário e de uso do programa:</strong> enquanto sua conta existir. Quando você exclui sua conta, eles são apagados do nosso banco de dados, junto com todos os dados associados.",
+"<strong>Dados da conta, do questionário e de utilização do programa:</strong> enquanto a tua conta existir. Quando eliminas a tua conta, são apagados da nossa base de dados, juntamente com todos os dados associados."
+],
+[
+"<strong>Cuestionarios anónimos no vinculados a una cuenta:</strong> se eliminan o anonimizan en un plazo máximo de 12 meses.",
+"<strong>Anonymous questionnaires not linked to an account:</strong> they are deleted or anonymised within a maximum of 12 months.",
+"<strong>Questionnaires anonymes non liés à un compte :</strong> ils sont supprimés ou anonymisés dans un délai maximal de 12 mois.",
+"<strong>Anonyme Fragebögen, die keinem Konto zugeordnet sind:</strong> Sie werden innerhalb von höchstens 12 Monaten gelöscht oder anonymisiert.",
+"<strong>Questionários anônimos não vinculados a uma conta:</strong> são excluídos ou anonimizados em um prazo máximo de 12 meses.",
+"<strong>Questionários anónimos não associados a uma conta:</strong> são eliminados ou anonimizados num prazo máximo de 12 meses."
+],
+[
+"<strong>Suscripciones push:</strong> hasta que desactives los recordatorios, el navegador invalide la suscripción o elimines tu cuenta.",
+"<strong>Push subscriptions:</strong> until you turn off the reminders, the browser invalidates the subscription or you delete your account.",
+"<strong>Abonnements push :</strong> jusqu’à ce que tu désactives les rappels, que le navigateur invalide l’abonnement ou que tu supprimes ton compte.",
+"<strong>Push-Abonnements:</strong> bis du die Erinnerungen deaktivierst, der Browser das Abonnement für ungültig erklärt oder du dein Konto löschst.",
+"<strong>Assinaturas push:</strong> até você desativar os lembretes, o navegador invalidar a assinatura ou você excluir sua conta.",
+"<strong>Subscrições push:</strong> até desativares os lembretes, o navegador invalidar a subscrição ou eliminares a tua conta."
+],
+[
+"<strong>Datos de facturación:</strong> los registros de pagos y facturas los conservamos nosotros y Stripe durante el plazo que exijan las leyes fiscales, contables y de consumo (en Brasil, normalmente 5 años), aunque elimines tu cuenta.",
+"<strong>Billing data:</strong> we and Stripe keep payment and invoice records for the period required by tax, accounting and consumer laws (in Brazil, normally 5 years), even if you delete your account.",
+"<strong>Données de facturation :</strong> nous et Stripe conservons les enregistrements de paiements et les factures pendant la durée exigée par les lois fiscales, comptables et de consommation (au Brésil, normalement 5 ans), même si tu supprimes ton compte.",
+"<strong>Abrechnungsdaten:</strong> Zahlungs- und Rechnungsunterlagen bewahren wir und Stripe so lange auf, wie es die Steuer-, Buchhaltungs- und Verbraucherschutzgesetze verlangen (in Brasilien normalerweise 5 Jahre), auch wenn du dein Konto löschst.",
+"<strong>Dados de faturamento:</strong> os registros de pagamentos e as faturas são conservados por nós e pela Stripe durante o prazo exigido pelas leis fiscais, contábeis e de consumo (no Brasil, normalmente 5 anos), mesmo que você exclua sua conta.",
+"<strong>Dados de faturação:</strong> os registos de pagamentos e as faturas são conservados por nós e pela Stripe durante o prazo exigido pelas leis fiscais, contabilísticas e de consumo (no Brasil, normalmente 5 anos), mesmo que elimines a tua conta."
+],
+[
+"<strong>Registros de seguridad y auditoría:</strong> durante un período limitado, el necesario para proteger el servicio y cumplir la ley (por ejemplo, el plazo mínimo de 6 meses que exige el Marco Civil de Internet de Brasil para los registros de acceso a aplicaciones).",
+"<strong>Security and audit logs:</strong> for a limited period, the time necessary to protect the service and comply with the law (for example, the minimum period of 6 months required by Brazil’s Marco Civil da Internet for application access logs).",
+"<strong>Journaux de sécurité et d’audit :</strong> pendant une durée limitée, celle nécessaire pour protéger le service et respecter la loi (par exemple, la durée minimale de 6 mois exigée par le Marco Civil da Internet brésilien pour les journaux d’accès aux applications).",
+"<strong>Sicherheits- und Audit-Protokolle:</strong> für einen begrenzten Zeitraum, der zum Schutz des Dienstes und zur Einhaltung des Gesetzes erforderlich ist (zum Beispiel die Mindestfrist von 6 Monaten, die der brasilianische Marco Civil da Internet für Zugriffsprotokolle auf Anwendungen vorschreibt).",
+"<strong>Registros de segurança e auditoria:</strong> por um período limitado, o necessário para proteger o serviço e cumprir a lei (por exemplo, o prazo mínimo de 6 meses exigido pelo Marco Civil da Internet do Brasil para os registros de acesso a aplicações).",
+"<strong>Registos de segurança e auditoria:</strong> durante um período limitado, o necessário para proteger o serviço e cumprir a lei (por exemplo, o prazo mínimo de 6 meses exigido pelo Marco Civil da Internet do Brasil para os registos de acesso a aplicações)."
+],
+[
+"Las copias de seguridad de nuestros proveedores pueden conservar datos borrados durante un período corto adicional, hasta que se sobrescriben.",
+"Our providers’ backups may keep deleted data for a short additional period, until they are overwritten.",
+"Les sauvegardes de nos prestataires peuvent conserver des données supprimées pendant une courte période supplémentaire, jusqu’à ce qu’elles soient écrasées.",
+"Die Backups unserer Dienstleister können gelöschte Daten noch für einen kurzen zusätzlichen Zeitraum speichern, bis sie überschrieben werden.",
+"Os backups dos nossos provedores podem conservar dados apagados por um curto período adicional, até serem sobrescritos.",
+"As cópias de segurança dos nossos fornecedores podem conservar dados apagados durante um curto período adicional, até serem substituídas."
+],
+[
+"También podemos conservar datos bloqueados durante el tiempo necesario para atender posibles responsabilidades legales.",
+"We may also keep blocked data for the time necessary to address possible legal liabilities.",
+"Nous pouvons également conserver des données bloquées pendant le temps nécessaire pour faire face à d’éventuelles responsabilités légales.",
+"Wir können außerdem gesperrte Daten so lange aufbewahren, wie es zur Erfüllung möglicher rechtlicher Verantwortlichkeiten erforderlich ist.",
+"Também podemos conservar dados bloqueados pelo tempo necessário para atender a possíveis responsabilidades legais.",
+"Também podemos conservar dados bloqueados durante o tempo necessário para fazer face a possíveis responsabilidades legais."
+],
+[
+"10. Tus derechos",
+"10. Your rights",
+"10. Tes droits",
+"10. Deine Rechte",
+"10. Seus direitos",
+"10. Os teus direitos"
+],
+[
+"Según la ley aplicable (incluidas la LGPD y el RGPD), tienes derecho a:",
+"Under the applicable law (including the LGPD and the GDPR), you have the right to:",
+"Selon la loi applicable (y compris la LGPD et le RGPD), tu as le droit de :",
+"Nach dem geltenden Recht (einschließlich LGPD und DSGVO) hast du das Recht,",
+"De acordo com a lei aplicável (incluindo a LGPD e o RGPD), você tem direito a:",
+"Nos termos da lei aplicável (incluindo a LGPD e o RGPD), tens direito a:"
+],
+[
+"<strong>Confirmar y acceder</strong> a los datos que tratamos sobre ti.",
+"<strong>Confirm and access</strong> the data we process about you.",
+"<strong>Confirmer et accéder</strong> aux données que nous traitons à ton sujet.",
+"<strong>Bestätigung und Auskunft</strong> über die Daten zu erhalten, die wir über dich verarbeiten.",
+"<strong>Confirmar e acessar</strong> os dados que tratamos sobre você.",
+"<strong>Confirmar e aceder</strong> aos dados que tratamos sobre ti."
+],
+[
+"<strong>Rectificar</strong> datos incompletos, inexactos o desactualizados. Puedes cambiar tu nombre y otros datos desde la app.",
+"<strong>Rectify</strong> incomplete, inaccurate or outdated data. You can change your name and other data from the app.",
+"<strong>Rectifier</strong> les données incomplètes, inexactes ou périmées. Tu peux modifier ton nom et d’autres données depuis l’appli.",
+"Unvollständige, unrichtige oder veraltete Daten zu <strong>berichtigen</strong>. Du kannst deinen Namen und andere Daten in der App ändern.",
+"<strong>Corrigir</strong> dados incompletos, inexatos ou desatualizados. Você pode alterar seu nome e outros dados no aplicativo.",
+"<strong>Retificar</strong> dados incompletos, inexatos ou desatualizados. Podes alterar o teu nome e outros dados na aplicação."
+],
+[
+"<strong>Eliminar</strong> tus datos. Puedes eliminar tu cuenta desde «Mi perfil»: necesitarás tu contraseña y no tener una renovación pendiente (cancela antes tu suscripción).",
+"<strong>Delete</strong> your data. You can delete your account from “My profile”: you will need your password and must not have a pending renewal (cancel your subscription first).",
+"<strong>Supprimer</strong> tes données. Tu peux supprimer ton compte depuis « Mon profil » : tu auras besoin de ton mot de passe et il ne doit pas y avoir de renouvellement en attente (résilie d’abord ton abonnement).",
+"Deine Daten zu <strong>löschen</strong>. Du kannst dein Konto unter „Mein Profil“ löschen: Du benötigst dein Passwort und darfst keine ausstehende Verlängerung haben (kündige vorher dein Abonnement).",
+"<strong>Excluir</strong> seus dados. Você pode excluir sua conta em “Meu perfil”: precisará da sua senha e não pode ter uma renovação pendente (cancele antes sua assinatura).",
+"<strong>Eliminar</strong> os teus dados. Podes eliminar a tua conta em «O meu perfil»: vais precisar da tua palavra-passe e de não ter uma renovação pendente (cancela antes a tua subscrição)."
+],
+[
+"<strong>Portabilidad</strong>: descargar tus datos en formato JSON desde «Mi perfil».",
+"<strong>Portability</strong>: download your data in JSON format from “My profile”.",
+"<strong>Portabilité</strong> : télécharger tes données au format JSON depuis « Mon profil ».",
+"<strong>Datenübertragbarkeit</strong>: deine Daten im JSON-Format unter „Mein Profil“ herunterzuladen.",
+"<strong>Portabilidade</strong>: baixar seus dados em formato JSON em “Meu perfil”.",
+"<strong>Portabilidade</strong>: descarregar os teus dados em formato JSON em «O meu perfil»."
+],
+[
+"<strong>Oponerte</strong> a tratamientos basados en interés legítimo y pedir la <strong>limitación</strong> del tratamiento, o la anonimización o el bloqueo de datos innecesarios o excesivos.",
+"<strong>Object</strong> to processing based on legitimate interest and request the <strong>restriction</strong> of processing, or the anonymisation or blocking of unnecessary or excessive data.",
+"<strong>T’opposer</strong> aux traitements fondés sur l’intérêt légitime et demander la <strong>limitation</strong> du traitement, ou l’anonymisation ou le blocage des données inutiles ou excessives.",
+"Der auf berechtigtem Interesse beruhenden Verarbeitung zu <strong>widersprechen</strong> und die <strong>Einschränkung</strong> der Verarbeitung oder die Anonymisierung oder Sperrung nicht erforderlicher oder übermäßiger Daten zu verlangen.",
+"<strong>Opor-se</strong> a tratamentos baseados em interesse legítimo e pedir a <strong>limitação</strong> do tratamento, ou a anonimização ou o bloqueio de dados desnecessários ou excessivos.",
+"<strong>Opor-te</strong> a tratamentos baseados no interesse legítimo e pedir a <strong>limitação</strong> do tratamento, ou a anonimização ou o bloqueio de dados desnecessários ou excessivos."
+],
+[
+"<strong>Retirar tu consentimiento</strong> en cualquier momento, por ejemplo desactivando los recordatorios o eliminando tu cuenta, y ser informado de las consecuencias de no darlo.",
+"<strong>Withdraw your consent</strong> at any time, for example by turning off reminders or deleting your account, and be informed of the consequences of not giving it.",
+"<strong>Retirer ton consentement</strong> à tout moment, par exemple en désactivant les rappels ou en supprimant ton compte, et être informé(e) des conséquences d’un refus.",
+"<strong>Deine Einwilligung jederzeit zu widerrufen</strong>, zum Beispiel durch Deaktivieren der Erinnerungen oder Löschen deines Kontos, und über die Folgen der Nichterteilung informiert zu werden.",
+"<strong>Retirar seu consentimento</strong> a qualquer momento, por exemplo desativando os lembretes ou excluindo sua conta, e ser informado das consequências de não o dar.",
+"<strong>Retirar o teu consentimento</strong> a qualquer momento, por exemplo desativando os lembretes ou eliminando a tua conta, e ser informado das consequências de não o dar."
+],
+[
+"<strong>Saber con quién</strong> hemos compartido tus datos.",
+"<strong>Know with whom</strong> we have shared your data.",
+"<strong>Savoir avec qui</strong> nous avons partagé tes données.",
+"<strong>Zu erfahren, mit wem</strong> wir deine Daten geteilt haben.",
+"<strong>Saber com quem</strong> compartilhamos seus dados.",
+"<strong>Saber com quem</strong> partilhámos os teus dados."
+],
+[
+"<strong>Reclamar</strong> ante la autoridad de protección de datos competente.",
+"<strong>Lodge a complaint</strong> with the competent data protection authority.",
+"<strong>Introduire une réclamation</strong> auprès de l’autorité de protection des données compétente.",
+"<strong>Beschwerde</strong> bei der zuständigen Datenschutzbehörde einzulegen.",
+"<strong>Reclamar</strong> perante a autoridade de proteção de dados competente.",
+"<strong>Reclamar</strong> junto da autoridade de proteção de dados competente."
+],
+[
+"Para ejercer cualquier derecho que no puedas gestionar directamente en la app, escríbenos a <span data-legal=\"email\"></span> desde el correo de tu cuenta. Podremos pedirte información adicional para verificar tu identidad. Responderemos en los plazos que fije la ley aplicable (por ejemplo, 15 días para el acceso completo según la LGPD, o un mes ampliable según el RGPD).",
+"To exercise any right that you cannot manage directly in the app, write to us at <span data-legal=\"email\"></span> from your account email. We may ask you for additional information to verify your identity. We will respond within the deadlines set by the applicable law (for example, 15 days for full access under the LGPD, or one month, extendable, under the GDPR).",
+"Pour exercer tout droit que tu ne peux pas gérer directement dans l’appli, écris-nous à <span data-legal=\"email\"></span> depuis l’adresse e-mail de ton compte. Nous pourrons te demander des informations complémentaires pour vérifier ton identité. Nous répondrons dans les délais fixés par la loi applicable (par exemple, 15 jours pour l’accès complet selon la LGPD, ou un mois prorogeable selon le RGPD).",
+"Um ein Recht auszuüben, das du nicht direkt in der App verwalten kannst, schreib uns von der E-Mail-Adresse deines Kontos aus an <span data-legal=\"email\"></span>. Wir können dich um zusätzliche Informationen zur Überprüfung deiner Identität bitten. Wir antworten innerhalb der Fristen des geltenden Rechts (zum Beispiel 15 Tage für den vollständigen Zugang nach der LGPD oder einen Monat, verlängerbar, nach der DSGVO).",
+"Para exercer qualquer direito que você não consiga gerenciar diretamente no aplicativo, escreva para <span data-legal=\"email\"></span> a partir do e-mail da sua conta. Poderemos pedir informações adicionais para verificar sua identidade. Responderemos nos prazos fixados pela lei aplicável (por exemplo, 15 dias para o acesso completo segundo a LGPD, ou um mês prorrogável segundo o RGPD).",
+"Para exercer qualquer direito que não consigas gerir diretamente na aplicação, escreve-nos para <span data-legal=\"email\"></span> a partir do e-mail da tua conta. Poderemos pedir-te informações adicionais para verificar a tua identidade. Responderemos nos prazos fixados pela lei aplicável (por exemplo, 15 dias para o acesso completo segundo a LGPD, ou um mês prorrogável segundo o RGPD)."
+],
+[
+"10.1. Autoridades de control",
+"10.1. Supervisory authorities",
+"10.1. Autorités de contrôle",
+"10.1. Aufsichtsbehörden",
+"10.1. Autoridades de controle",
+"10.1. Autoridades de controlo"
+],
+[
+"<strong>Brasil:</strong> Autoridad Nacional de Protección de Datos (ANPD).",
+"<strong>Brazil:</strong> National Data Protection Authority (ANPD).",
+"<strong>Brésil :</strong> Autorité nationale de protection des données (ANPD).",
+"<strong>Brasilien:</strong> Nationale Datenschutzbehörde (ANPD).",
+"<strong>Brasil:</strong> Autoridade Nacional de Proteção de Dados (ANPD).",
+"<strong>Brasil:</strong> Autoridade Nacional de Proteção de Dados (ANPD)."
+],
+[
+"<strong>España:</strong> Agencia Española de Protección de Datos (AEPD).",
+"<strong>Spain:</strong> Spanish Data Protection Agency (AEPD).",
+"<strong>Espagne :</strong> Agence espagnole de protection des données (AEPD).",
+"<strong>Spanien:</strong> Spanische Datenschutzagentur (AEPD).",
+"<strong>Espanha:</strong> Agência Espanhola de Proteção de Dados (AEPD).",
+"<strong>Espanha:</strong> Agência Espanhola de Proteção de Dados (AEPD)."
+],
+[
+"<strong>Otros países:</strong> la autoridad de protección de datos o de defensa del consumidor de tu país de residencia (por ejemplo, la Agencia de Acceso a la Información Pública en Argentina, la Superintendencia de Industria y Comercio en Colombia o la autoridad de protección de datos personales competente en México).",
+"<strong>Other countries:</strong> the data protection or consumer protection authority of your country of residence (for example, the Agency for Access to Public Information in Argentina, the Superintendency of Industry and Commerce in Colombia or the competent personal data protection authority in Mexico).",
+"<strong>Autres pays :</strong> l’autorité de protection des données ou de défense des consommateurs de ton pays de résidence (par exemple, l’Agence d’accès à l’information publique en Argentine, la Surintendance de l’industrie et du commerce en Colombie ou l’autorité compétente en matière de protection des données personnelles au Mexique).",
+"<strong>Andere Länder:</strong> die Datenschutz- oder Verbraucherschutzbehörde deines Wohnsitzlandes (zum Beispiel die Agentur für den Zugang zu öffentlichen Informationen in Argentinien, die Aufsichtsbehörde für Industrie und Handel in Kolumbien oder die zuständige Behörde für den Schutz personenbezogener Daten in Mexiko).",
+"<strong>Outros países:</strong> a autoridade de proteção de dados ou de defesa do consumidor do seu país de residência (por exemplo, a Agência de Acesso à Informação Pública na Argentina, a Superintendência de Indústria e Comércio na Colômbia ou a autoridade competente de proteção de dados pessoais no México).",
+"<strong>Outros países:</strong> a autoridade de proteção de dados ou de defesa do consumidor do teu país de residência (por exemplo, a Agência de Acesso à Informação Pública na Argentina, a Superintendência de Indústria e Comércio na Colômbia ou a autoridade competente em matéria de proteção de dados pessoais no México)."
+],
+[
+"Te agradeceremos que nos escribas primero para intentar resolver tu inquietud.",
+"We would appreciate it if you write to us first so that we can try to resolve your concern.",
+"Nous te serions reconnaissants de nous écrire d’abord afin d’essayer de résoudre ta préoccupation.",
+"Wir wären dir dankbar, wenn du uns zuerst schreibst, damit wir versuchen können, dein Anliegen zu klären.",
+"Agradecemos se você escrever para nós primeiro, para tentarmos resolver sua questão.",
+"Agradecemos que nos escrevas primeiro, para tentarmos resolver a tua questão."
+],
+[
+"10.2. Residentes en los Estados Unidos",
+"10.2. Residents of the United States",
+"10.2. Résidents des États-Unis",
+"10.2. Einwohner der Vereinigten Staaten",
+"10.2. Residentes nos Estados Unidos",
+"10.2. Residentes nos Estados Unidos"
+],
+[
+"Si resides en un estado de los Estados Unidos con leyes de privacidad del consumidor o de datos de salud (por ejemplo, California o Washington), tienes los derechos que esas leyes reconocen, como acceder a tus datos, eliminarlos y no ser discriminado por ejercerlos. No vendemos ni compartimos tus datos con fines de publicidad comportamental entre contextos.",
+"If you live in a US state with consumer privacy or health data laws (for example, California or Washington), you have the rights those laws recognise, such as accessing your data, deleting it and not being discriminated against for exercising them. We do not sell or share your data for cross-context behavioural advertising.",
+"Si tu résides dans un État des États-Unis disposant de lois sur la confidentialité des données des consommateurs ou sur les données de santé (par exemple, la Californie ou Washington), tu disposes des droits que ces lois reconnaissent, comme accéder à tes données, les supprimer et ne pas être discriminé(e) pour les avoir exercés. Nous ne vendons ni ne partageons tes données à des fins de publicité comportementale intercontextuelle.",
+"Wenn du in einem US-Bundesstaat mit Verbraucherdatenschutz- oder Gesundheitsdatengesetzen (zum Beispiel Kalifornien oder Washington) wohnst, hast du die Rechte, die diese Gesetze anerkennen, etwa auf Zugang zu deinen Daten, auf deren Löschung und darauf, wegen der Ausübung dieser Rechte nicht diskriminiert zu werden. Wir verkaufen oder teilen deine Daten nicht für kontextübergreifende verhaltensbasierte Werbung.",
+"Se você mora em um estado dos Estados Unidos com leis de privacidade do consumidor ou de dados de saúde (por exemplo, Califórnia ou Washington), você tem os direitos que essas leis reconhecem, como acessar seus dados, excluí-los e não ser discriminado por exercê-los. Não vendemos nem compartilhamos seus dados para fins de publicidade comportamental entre contextos.",
+"Se resides num estado dos Estados Unidos com leis de privacidade do consumidor ou de dados de saúde (por exemplo, Califórnia ou Washington), tens os direitos que essas leis reconhecem, como aceder aos teus dados, eliminá-los e não ser discriminado por os exercer. Não vendemos nem partilhamos os teus dados para fins de publicidade comportamental entre contextos."
+],
+[
+"11. Menores de edad",
+"11. Minors",
+"11. Mineurs",
+"11. Minderjährige",
+"11. Menores de idade",
+"11. Menores de idade"
+],
+[
+"Alento está dirigido solo a personas mayores de 18 años. No recogemos de forma consciente datos de menores. Si crees que un menor nos ha facilitado datos, escríbenos y los eliminaremos.",
+"Alento is intended only for people over 18 years of age. We do not knowingly collect data from minors. If you believe a minor has provided us with data, write to us and we will delete it.",
+"Alento s’adresse uniquement aux personnes de plus de 18 ans. Nous ne collectons pas sciemment de données de mineurs. Si tu penses qu’un mineur nous a fourni des données, écris-nous et nous les supprimerons.",
+"Alento richtet sich nur an Personen über 18 Jahren. Wir erheben wissentlich keine Daten von Minderjährigen. Wenn du glaubst, dass ein Minderjähriger uns Daten übermittelt hat, schreib uns und wir löschen sie.",
+"O Alento é destinado apenas a pessoas maiores de 18 anos. Não coletamos conscientemente dados de menores. Se você acredita que um menor nos forneceu dados, escreva para nós e os excluiremos.",
+"O Alento destina-se apenas a pessoas maiores de 18 anos. Não recolhemos conscientemente dados de menores. Se achas que um menor nos facultou dados, escreve-nos e eliminá-los-emos."
+],
+[
+"12. Cómo protegemos tus datos",
+"12. How we protect your data",
+"12. Comment nous protégeons tes données",
+"12. Wie wir deine Daten schützen",
+"12. Como protegemos seus dados",
+"12. Como protegemos os teus dados"
+],
+[
+"Cifrado de las comunicaciones mediante HTTPS.",
+"Encryption of communications using HTTPS.",
+"Chiffrement des communications via HTTPS.",
+"Verschlüsselung der Kommunikation über HTTPS.",
+"Criptografia das comunicações por meio de HTTPS.",
+"Cifragem das comunicações através de HTTPS."
+],
+[
+"Contraseñas guardadas mediante funciones hash, nunca en texto plano.",
+"Passwords stored using hash functions, never in plain text.",
+"Mots de passe stockés au moyen de fonctions de hachage, jamais en clair.",
+"Passwörter werden mithilfe von Hash-Funktionen gespeichert, niemals im Klartext.",
+"Senhas armazenadas por meio de funções de hash, nunca em texto simples.",
+"Palavras-passe guardadas através de funções de hash, nunca em texto simples."
+],
+[
+"Controles de acceso a nivel de fila en la base de datos, para que cada usuario solo pueda acceder a sus propios datos.",
+"Row-level access controls in the database, so that each user can only access their own data.",
+"Contrôles d’accès au niveau des lignes dans la base de données, afin que chaque utilisateur ne puisse accéder qu’à ses propres données.",
+"Zugriffskontrollen auf Zeilenebene in der Datenbank, damit jeder Nutzer nur auf seine eigenen Daten zugreifen kann.",
+"Controles de acesso em nível de linha no banco de dados, para que cada usuário só possa acessar seus próprios dados.",
+"Controlos de acesso ao nível da linha na base de dados, para que cada utilizador só possa aceder aos seus próprios dados."
+],
+[
+"Acceso interno según el principio de mínimo privilegio: solo las personas que lo necesitan para su función pueden acceder a datos personales.",
+"Internal access based on the principle of least privilege: only the people who need it for their role can access personal data.",
+"Accès interne selon le principe du moindre privilège : seules les personnes qui en ont besoin pour leur fonction peuvent accéder aux données personnelles.",
+"Interner Zugriff nach dem Prinzip der minimalen Rechtevergabe: Nur Personen, die es für ihre Aufgabe benötigen, können auf personenbezogene Daten zugreifen.",
+"Acesso interno segundo o princípio do menor privilégio: somente as pessoas que precisam para sua função podem acessar dados pessoais.",
+"Acesso interno segundo o princípio do menor privilégio: apenas as pessoas que precisam dele para a sua função podem aceder a dados pessoais."
+],
+[
+"Registros de auditoría de las acciones administrativas.",
+"Audit logs of administrative actions.",
+"Journaux d’audit des actions administratives.",
+"Audit-Protokolle administrativer Aktionen.",
+"Registros de auditoria das ações administrativas.",
+"Registos de auditoria das ações administrativas."
+],
+[
+"Limitación de intentos para prevenir accesos abusivos.",
+"Limiting of attempts to prevent abusive access.",
+"Limitation du nombre de tentatives pour prévenir les accès abusifs.",
+"Begrenzung von Versuchen, um missbräuchliche Zugriffe zu verhindern.",
+"Limitação de tentativas para prevenir acessos abusivos.",
+"Limitação de tentativas para prevenir acessos abusivos."
+],
+[
+"Ningún sistema es totalmente infalible. Si se produce un incidente de seguridad que pueda suponer un riesgo para ti, te lo comunicaremos a ti y a las autoridades competentes cuando la ley lo exija.",
+"No system is completely infallible. If a security incident occurs that may pose a risk to you, we will notify you and the competent authorities where the law requires it.",
+"Aucun système n’est totalement infaillible. En cas d’incident de sécurité susceptible de présenter un risque pour toi, nous te le communiquerons, ainsi qu’aux autorités compétentes lorsque la loi l’exige.",
+"Kein System ist völlig unfehlbar. Wenn es zu einem Sicherheitsvorfall kommt, der ein Risiko für dich darstellen kann, informieren wir dich und die zuständigen Behörden, sofern das Gesetz dies verlangt.",
+"Nenhum sistema é totalmente infalível. Se ocorrer um incidente de segurança que possa representar um risco para você, comunicaremos a você e às autoridades competentes quando a lei exigir.",
+"Nenhum sistema é totalmente infalível. Se ocorrer um incidente de segurança que possa representar um risco para ti, comunicá-lo-emos a ti e às autoridades competentes quando a lei o exigir."
+],
+[
+"13. Cambios en esta política",
+"13. Changes to this policy",
+"13. Modifications de cette politique",
+"13. Änderungen dieser Richtlinie",
+"13. Alterações nesta política",
+"13. Alterações a esta política"
+],
+[
+"Podemos actualizar esta política para reflejar cambios en el servicio o en la ley. Publicaremos la nueva versión en esta página con su fecha de actualización. Si el cambio es importante, te avisaremos por correo electrónico o dentro de la app antes de que entre en vigor y, si la ley lo exige, te pediremos de nuevo tu consentimiento.",
+"We may update this policy to reflect changes to the service or the law. We will publish the new version on this page with its update date. If the change is significant, we will notify you by email or within the app before it takes effect and, if the law requires it, we will ask for your consent again.",
+"Nous pouvons mettre à jour cette politique pour refléter des changements du service ou de la loi. Nous publierons la nouvelle version sur cette page avec sa date de mise à jour. Si le changement est important, nous t’en informerons par e-mail ou dans l’appli avant son entrée en vigueur et, si la loi l’exige, nous te redemanderons ton consentement.",
+"Wir können diese Richtlinie aktualisieren, um Änderungen am Dienst oder an der Rechtslage widerzuspiegeln. Wir veröffentlichen die neue Fassung auf dieser Seite mit dem Datum der Aktualisierung. Wenn die Änderung wesentlich ist, informieren wir dich per E-Mail oder in der App, bevor sie in Kraft tritt, und bitten dich, falls das Gesetz es verlangt, erneut um deine Einwilligung.",
+"Podemos atualizar esta política para refletir mudanças no serviço ou na lei. Publicaremos a nova versão nesta página com a data de atualização. Se a mudança for importante, avisaremos você por e-mail ou dentro do aplicativo antes de ela entrar em vigor e, se a lei exigir, pediremos novamente o seu consentimento.",
+"Podemos atualizar esta política para refletir alterações no serviço ou na lei. Publicaremos a nova versão nesta página com a respetiva data de atualização. Se a alteração for importante, avisar-te-emos por e-mail ou dentro da aplicação antes de entrar em vigor e, se a lei o exigir, pediremos novamente o teu consentimento."
+],
+[
+"14. Contacto",
+"14. Contact",
+"14. Contact",
+"14. Kontakt",
+"14. Contato",
+"14. Contacto"
+],
+[
+"Correo electrónico para asuntos de privacidad: <span data-legal=\"email\"></span>",
+"Email for privacy matters: <span data-legal=\"email\"></span>",
+"Adresse e-mail pour les questions de confidentialité : <span data-legal=\"email\"></span>",
+"E-Mail-Adresse für Datenschutzangelegenheiten: <span data-legal=\"email\"></span>",
+"E-mail para assuntos de privacidade: <span data-legal=\"email\"></span>",
+"E-mail para assuntos de privacidade: <span data-legal=\"email\"></span>"
+],
+[
+"Política de privacidad · Alento",
+"Privacy policy · Alento",
+"Politique de confidentialité · Alento",
+"Datenschutzerklärung · Alento",
+"Política de privacidade · Alento",
+"Política de privacidade · Alento"
+]
+]

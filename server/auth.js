@@ -46,7 +46,7 @@ export function createAuth({ config, db }) {
 
   async function profile(userId) {
     return db.service.one(`
-      select p.user_id as id, u.email, p.name, p.stripe_customer_id, p.timezone, p.created_at,
+      select p.user_id as id, u.email, p.name, p.stripe_customer_id, p.timezone, p.locale, p.created_at,
              exists (select 1 from public.admin_users a where a.user_id = p.user_id) as is_admin
       from public.profiles p join auth.users u on u.id = p.user_id where p.user_id = $1`, [userId]);
   }
@@ -138,6 +138,12 @@ export function createAuth({ config, db }) {
     await pub.auth.resetPasswordForEmail(email, { redirectTo: `${config.appUrl}/restablecer` }).catch(() => {});
   }
 
+  /** Link de criar/redefinir senha para mandar no nosso e-mail (não dispara e-mail do Supabase). */
+  async function recoveryLink(email) {
+    const { data, error } = await admin.auth.admin.generateLink({ type: 'recovery', email, options: { redirectTo: `${config.appUrl}/restablecer` } });
+    return error ? null : data?.properties?.action_link ?? null;
+  }
+
   async function setPassword(userId, password) {
     const { error } = await admin.auth.admin.updateUserById(userId, { password });
     if (error) {
@@ -163,7 +169,7 @@ export function createAuth({ config, db }) {
     cache.clear();
   }
 
-  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, setPassword, verifyPassword, deleteUser, profile, isRecoveryToken };
+  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, recoveryLink, setPassword, verifyPassword, deleteUser, profile, isRecoveryToken };
 }
 
 export function cookieOptions(config, maxAgeSeconds) {

@@ -2,6 +2,8 @@
 import { $, api, h, longDate, setBusy, toast } from '../ui.js';
 import { MORE, errorState, initApp, loading, modal, page, userTimezone } from '../shell.js';
 import { installAction, installState } from '../install.js';
+import { LOCALES, LOCALE_NAMES } from '../lang/core.js';
+import { setLocale } from '../lang/index.js';
 
 const me = await initApp({ active: '/perfil', access: 'account' });
 const root = $('[data-root]');
@@ -19,12 +21,20 @@ async function load() {
   const zones = [...new Set([p.timezone, userTimezone(), ...ZONES])];
   const name = h('input', { class: 'input', id: 'name', value: p.name, maxlength: 80, autocomplete: 'given-name', required: true });
   const tz = h('select', { class: 'select', id: 'tz' }, zones.map((z) => h('option', { value: z, selected: z === p.timezone }, z.replace(/_/g, ' '))));
-  const lang = h('select', { class: 'select', id: 'lang', disabled: true }, h('option', { value: 'es' }, 'Español'));
+  // Idioma da conta: vale em qualquer aparelho (e nos e-mails).
+  const lang = h('select', { class: 'select', id: 'lang' }, LOCALES.map((v) => h('option', { value: v, lang: v, selected: v === p.locale }, LOCALE_NAMES[v])));
   const saveBtn = h('button', { class: 'btn btn--sm', type: 'submit' }, 'Guardar');
   const personal = h('form', { class: 'card stack', onsubmit: async (e) => {
     e.preventDefault();
     setBusy(saveBtn, true);
-    try { await api('/api/profile', { method: 'PATCH', body: { name: name.value, timezone: tz.value } }); toast('Datos guardados.'); } catch (err) { toast(err.message); } finally { setBusy(saveBtn, false); }
+    try {
+      await api('/api/profile', { method: 'PATCH', body: { name: name.value, timezone: tz.value, locale: lang.value } });
+      if (lang.value !== p.locale) {
+        setLocale(lang.value); // ao recarregar, a tela já abre no idioma novo
+        return location.reload();
+      }
+      toast('Datos guardados.');
+    } catch (err) { toast(err.message); } finally { setBusy(saveBtn, false); }
   } },
   h('h2', { class: 'title-md' }, 'Datos personales'),
   h('div', { class: 'form-grid' },

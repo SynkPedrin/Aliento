@@ -202,6 +202,8 @@ function mountBanner() {
 let started = false;
 export function initTracking({ pageView = true, banner = true } = {}) {
   if (started) return; started = true;
+  // Quiz e resultado (tráfego pago): sem banner; quem ainda não escolheu conta como aceite (decisão do negócio; risco RGPD na UE).
+  if (/^\/(quiz|test|resultados)(\/|$)/.test(location.pathname) && !store.get(CONSENT_KEY)) store.set(CONSENT_KEY, 'all');
   readAttribution();
   if (banner) { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBanner); else mountBanner(); }
   window.addEventListener('alento-consent', () => {

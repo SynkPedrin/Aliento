@@ -33,9 +33,8 @@ async function afterAuth() {
       if (target.origin === location.origin) return window.location.assign(target.pathname + target.search + target.hash);
     } catch { /* destino no válido: se ignora */ }
   }
-  const me = await api('/api/me');
-  // Tras entrar, la persona ve sus productos (activos, por empezar o por renovar) y desde ahí compra o continúa cada uno.
-  window.location.assign('/programas?catalogo');
+  // Só Sem Fumo está à venda: quem entra vai direto ao app (sem assinatura, o app manda para o plano ou para o test).
+  window.location.assign('/dashboard');
 }
 
 form.addEventListener('submit', async (e) => {

@@ -1,0 +1,602 @@
+[
+[
+"Ahora puedes reconocer el pensamiento del \"ya lo arruiné\" y responderle con una mirada más justa.",
+"Now you can recognise the “I’ve already ruined it” thought and answer it with a fairer perspective.",
+"Tu peux maintenant reconnaître la pensée « j’ai déjà tout gâché » et lui répondre avec un regard plus juste.",
+"Jetzt kannst du den Gedanken „Ich hab’s schon vermasselt“ erkennen und ihm mit einem faireren Blick begegnen.",
+"Agora você pode reconhecer o pensamento “já estraguei tudo” e responder a ele com um olhar mais justo.",
+"Agora podes reconhecer o pensamento «já estraguei tudo» e responder-lhe com um olhar mais justo."
+],
+[
+"Analizar y reiniciar el mismo día",
+"Analyse it and restart the same day",
+"Analyser et repartir le jour même",
+"Analysieren und am selben Tag neu starten",
+"Analisar e recomeçar no mesmo dia",
+"Analisar e recomeçar no mesmo dia"
+],
+[
+"Mira un tropiezo con curiosidad, extrae aprendizajes y vuelve a empezar hoy.",
+"Look at a slip with curiosity, draw out what you can learn and start again today.",
+"Regarde un faux pas avec curiosité, tires-en des enseignements et repars dès aujourd’hui.",
+"Betrachte einen Ausrutscher mit Neugier, ziehe Lehren daraus und fang noch heute neu an.",
+"Olhe para um tropeço com curiosidade, tire aprendizados e recomece hoje.",
+"Olha para um tropeção com curiosidade, tira aprendizagens e recomeça hoje."
+],
+[
+"Mirar con curiosidad",
+"Look with curiosity",
+"Regarder avec curiosité",
+"Mit Neugier hinschauen",
+"Olhar com curiosidade",
+"Olhar com curiosidade"
+],
+[
+"Un tropiezo trae información valiosa. En lugar de castigarte, obsérvalo como un detective que busca pistas.\n\nPregúntate: ¿**dónde** estaba?, ¿**con quién**?, ¿**qué sentía** justo antes?, ¿había **alcohol**, **cansancio** o **estrés**?, ¿**tenía un plan** para esa situación?, ¿qué me dije en ese momento?\n\nLas respuestas te muestran el punto débil de tu plan. Y un punto débil identificado es un punto que puedes reforzar.",
+"A slip brings valuable information. Instead of punishing yourself, look at it like a detective searching for clues.\n\nAsk yourself: **where** was I? **Who** was I with? **What was I feeling** just before? Was there **alcohol**, **tiredness** or **stress**? **Did I have a plan** for that situation? What did I tell myself at that moment?\n\nThe answers show you the weak spot in your plan. And a weak spot you’ve identified is one you can strengthen.",
+"Un faux pas apporte des informations précieuses. Plutôt que de te punir, observe-le comme un détective à la recherche d’indices.\n\nDemande-toi : **où** étais-je ? **Avec qui** ? **Que ressentais-je** juste avant ? Y avait-il de l’**alcool**, de la **fatigue** ou du **stress** ? **Avais-je un plan** pour cette situation ? Que me suis-je dit à ce moment-là ?\n\nLes réponses te montrent le point faible de ton plan. Et un point faible identifié est un point que tu peux renforcer.",
+"Ein Ausrutscher liefert wertvolle Informationen. Statt dich zu bestrafen, betrachte ihn wie ein Detektiv, der nach Hinweisen sucht.\n\nFrag dich: **Wo** war ich? **Mit wem**? **Was habe ich gefühlt**, kurz bevor es passiert ist? War **Alkohol**, **Müdigkeit** oder **Stress** im Spiel? **Hatte ich einen Plan** für diese Situation? Was habe ich in dem Moment zu mir selbst gesagt?\n\nDie Antworten zeigen dir die Schwachstelle in deinem Plan. Und eine erkannte Schwachstelle kannst du verstärken.",
+"Um tropeço traz informações valiosas. Em vez de se punir, observe-o como um detetive em busca de pistas.\n\nPergunte a si mesmo: **onde** eu estava? **Com quem**? **O que eu sentia** logo antes? Havia **álcool**, **cansaço** ou **estresse**? **Eu tinha um plano** para essa situação? O que eu disse a mim mesmo naquele momento?\n\nAs respostas mostram o ponto fraco do seu plano. E um ponto fraco identificado é um ponto que você pode reforçar.",
+"Um tropeção traz informação valiosa. Em vez de te castigares, observa-o como um detetive à procura de pistas.\n\nPergunta-te: **onde** estava? **Com quem**? **O que sentia** mesmo antes? Havia **álcool**, **cansaço** ou **stress**? **Tinha um plano** para aquela situação? O que disse a mim próprio naquele momento?\n\nAs respostas mostram-te o ponto fraco do teu plano. E um ponto fraco identificado é um ponto que podes reforçar."
+],
+[
+"Piensa en tu último tropiezo, o en uno que temas que pueda pasar. ¿Qué factores estuvieron o podrían estar presentes?",
+"Think about your last slip, or one you fear might happen. Which factors were, or could be, present?",
+"Pense à ton dernier faux pas, ou à un que tu crains de voir arriver. Quels facteurs étaient ou pourraient être présents ?",
+"Denk an deinen letzten Ausrutscher oder an einen, den du befürchtest. Welche Faktoren waren oder könnten im Spiel sein?",
+"Pense no seu último tropeço, ou em um que você teme que possa acontecer. Quais fatores estiveram ou poderiam estar presentes?",
+"Pensa no teu último tropeção, ou num que temas que possa acontecer. Que fatores estiveram ou poderiam estar presentes?"
+],
+[
+"Había alcohol",
+"There was alcohol",
+"Il y avait de l’alcool",
+"Es gab Alkohol",
+"Havia álcool",
+"Havia álcool"
+],
+[
+"Estaba con personas que fumaban",
+"I was with people who smoked",
+"J’étais avec des gens qui fumaient",
+"Ich war mit Leuten zusammen, die geraucht haben",
+"Eu estava com pessoas que fumavam",
+"Estava com pessoas que fumavam"
+],
+[
+"Sentía estrés, tristeza o enojo",
+"I was feeling stress, sadness or anger",
+"Je ressentais du stress, de la tristesse ou de la colère",
+"Ich fühlte Stress, Traurigkeit oder Wut",
+"Eu sentia estresse, tristeza ou raiva",
+"Sentia stress, tristeza ou raiva"
+],
+[
+"Estaba muy cansado",
+"I was very tired",
+"J’étais très fatigué(e)",
+"Ich war sehr müde",
+"Eu estava muito cansado(a)",
+"Estava muito cansado(a)"
+],
+[
+"No tenía un plan para esa situación",
+"I had no plan for that situation",
+"Je n’avais pas de plan pour cette situation",
+"Ich hatte keinen Plan für diese Situation",
+"Eu não tinha um plano para essa situação",
+"Não tinha um plano para aquela situação"
+],
+[
+"Tenía cigarrillos o un vapeador al alcance",
+"I had cigarettes or a vape within reach",
+"J’avais des cigarettes ou une cigarette électronique à portée de main",
+"Zigaretten oder ein Vape waren in Reichweite",
+"Eu tinha cigarros ou um vape ao alcance",
+"Tinha cigarros ou um vape ao meu alcance"
+],
+[
+"Pensé que por \"solo uno\" no pasaría nada",
+"I thought that “just one” wouldn’t matter",
+"Je pensais qu’« une seule » ne changerait rien",
+"Ich dachte, „nur eine“ würde nichts ausmachen",
+"Pensei que “só um” não faria mal",
+"Pensei que «só um» não faria mal"
+],
+[
+"Con lo que observaste, ¿qué harías distinto la próxima vez en esa situación?",
+"Based on what you noticed, what would you do differently next time in that situation?",
+"D’après ce que tu as observé, que ferais-tu différemment la prochaine fois dans cette situation ?",
+"Was würdest du nach dem, was du beobachtet hast, beim nächsten Mal in dieser Situation anders machen?",
+"Com base no que você observou, o que faria diferente da próxima vez nessa situação?",
+"Com base no que observaste, o que farias de diferente da próxima vez nessa situação?"
+],
+[
+"La próxima vez voy a…",
+"Next time I’m going to…",
+"La prochaine fois, je vais…",
+"Beim nächsten Mal werde ich …",
+"Da próxima vez, eu vou…",
+"Da próxima vez, vou…"
+],
+[
+"Reiniciar hoy, no mañana",
+"Restart today, not tomorrow",
+"Repartir aujourd’hui, pas demain",
+"Heute neu starten, nicht morgen",
+"Recomeçar hoje, não amanhã",
+"Recomeçar hoje, não amanhã"
+],
+[
+"Después de un tropiezo, la mejor decisión es **volver a tu plan ese mismo día**. No hace falta esperar al lunes ni a principios de mes.\n\nAlgunas acciones concretas: deshazte de los cigarrillos que te hayan quedado, vuelve a leer tus motivos, escribe a alguien de tu red de apoyo y repasa tus planes \"si… entonces…\".\n\nSi los tropiezos se repiten, puede ser buen momento para hablar con un profesional de salud sobre apoyos adicionales.",
+"After a slip, the best decision is to **get back to your plan that same day**. There’s no need to wait until Monday or the start of the month.\n\nSome concrete actions: get rid of any cigarettes you have left, reread your reasons, message someone in your support network and go over your “if… then…” plans.\n\nIf slips keep happening, it may be a good time to talk to a health professional about additional support.",
+"Après un faux pas, la meilleure décision est de **reprendre ton plan le jour même**. Inutile d’attendre lundi ou le début du mois.\n\nQuelques actions concrètes : débarrasse-toi des cigarettes qu’il te reste, relis tes raisons, écris à quelqu’un de ton réseau de soutien et revois tes plans « si… alors… ».\n\nSi les faux pas se répètent, c’est peut-être le bon moment d’en parler à un professionnel de santé pour obtenir un soutien supplémentaire.",
+"Nach einem Ausrutscher ist es am besten, **noch am selben Tag zu deinem Plan zurückzukehren**. Du musst nicht bis Montag oder bis Monatsanfang warten.\n\nKonkrete Schritte: Wirf übrig gebliebene Zigaretten weg, lies dir deine Gründe noch einmal durch, schreib jemandem aus deinem Unterstützungsnetzwerk und geh deine „Wenn … dann …“-Pläne durch.\n\nWenn Ausrutscher sich wiederholen, kann es ein guter Zeitpunkt sein, mit einer Fachperson aus dem Gesundheitswesen über zusätzliche Unterstützung zu sprechen.",
+"Depois de um tropeço, a melhor decisão é **voltar ao seu plano no mesmo dia**. Não precisa esperar a segunda-feira nem o começo do mês.\n\nAlgumas ações concretas: livre-se dos cigarros que sobraram, releia seus motivos, escreva para alguém da sua rede de apoio e revise seus planos “se… então…”.\n\nSe os tropeços se repetirem, pode ser um bom momento para conversar com um profissional de saúde sobre apoios adicionais.",
+"Depois de um tropeção, a melhor decisão é **voltar ao teu plano no mesmo dia**. Não é preciso esperar pela segunda-feira nem pelo início do mês.\n\nAlgumas ações concretas: desfaz-te dos cigarros que te sobraram, volta a ler os teus motivos, escreve a alguém da tua rede de apoio e revê os teus planos «se… então…».\n\nSe os tropeções se repetirem, pode ser um bom momento para falar com um profissional de saúde sobre apoios adicionais."
+],
+[
+"Si tropiezo, voy a retomar mi plan el mismo día y a usar lo que aprendí para fortalecerlo.",
+"If I slip, I will pick my plan back up the same day and use what I’ve learned to strengthen it.",
+"Si je fais un faux pas, je reprendrai mon plan le jour même et j’utiliserai ce que j’ai appris pour le renforcer.",
+"Wenn ich ausrutsche, nehme ich meinen Plan noch am selben Tag wieder auf und nutze, was ich gelernt habe, um ihn zu stärken.",
+"Se eu tropeçar, vou retomar meu plano no mesmo dia e usar o que aprendi para fortalecê-lo.",
+"Se tropeçar, vou retomar o meu plano no mesmo dia e usar o que aprendi para o fortalecer."
+],
+[
+"Terminaste \"Aprender de los tropiezos\". Sabes analizar un desliz y volver a empezar sin perder lo ganado.",
+"You’ve finished “Learning from slips”. You know how to analyse a slip and start again without losing what you’ve gained.",
+"Tu as terminé « Apprendre de ses faux pas ». Tu sais analyser un faux pas et repartir sans perdre ce que tu as gagné.",
+"Du hast „Aus Ausrutschern lernen“ abgeschlossen. Du weißt, wie du einen Ausrutscher analysierst und neu beginnst, ohne zu verlieren, was du erreicht hast.",
+"Você concluiu “Aprender com os tropeços”. Você sabe analisar um deslize e recomeçar sem perder o que conquistou.",
+"Terminaste «Aprender com os tropeções». Sabes analisar um deslize e recomeçar sem perder o que conquistaste."
+],
+[
+"Construir tu futuro",
+"Build your future",
+"Construire ton avenir",
+"Deine Zukunft aufbauen",
+"Construir seu futuro",
+"Construir o teu futuro"
+],
+[
+"Consolida tu nueva identidad, prepárate para los desafíos a largo plazo y celebra tu camino.",
+"Consolidate your new identity, prepare for long-term challenges and celebrate your journey.",
+"Consolide ta nouvelle identité, prépare-toi aux défis à long terme et célèbre ton parcours.",
+"Festige deine neue Identität, bereite dich auf langfristige Herausforderungen vor und feiere deinen Weg.",
+"Consolide sua nova identidade, prepare-se para os desafios de longo prazo e celebre sua jornada.",
+"Consolida a tua nova identidade, prepara-te para os desafios a longo prazo e celebra a tua jornada."
+],
+[
+"Tu nueva identidad",
+"Your new identity",
+"Ta nouvelle identité",
+"Deine neue Identität",
+"Sua nova identidade",
+"A tua nova identidade"
+],
+[
+"Empieza a verte como una persona que no fuma.",
+"Start seeing yourself as a person who doesn’t smoke.",
+"Commence à te voir comme une personne qui ne fume pas.",
+"Fang an, dich als jemanden zu sehen, der nicht raucht.",
+"Comece a se ver como uma pessoa que não fuma.",
+"Começa a ver-te como uma pessoa que não fuma."
+],
+[
+"Quién eres ahora",
+"Who you are now",
+"Qui tu es maintenant",
+"Wer du jetzt bist",
+"Quem você é agora",
+"Quem tu és agora"
+],
+[
+"Hay una diferencia sutil, pero poderosa, entre decir \"estoy intentando no fumar\" y decir \"**no fumo**\". La primera frase te mantiene en la lucha; la segunda describe quién eres.\n\nCuando empiezas a verte como una persona que no fuma, tus decisiones cambian de forma natural. Ya no se trata de resistir cada vez, sino de actuar de acuerdo con quien eres.\n\nEsta nueva identidad se construye poco a poco, con cada día, cada ola de ganas superada y cada nuevo ritual.",
+"There is a subtle but powerful difference between saying “I’m trying not to smoke” and saying “**I don’t smoke**”. The first keeps you in the struggle; the second describes who you are.\n\nWhen you start to see yourself as a person who doesn’t smoke, your decisions change naturally. It’s no longer about resisting every time, but about acting in line with who you are.\n\nThis new identity is built little by little, with each day, each wave of urges you get through and each new ritual.",
+"Il existe une différence subtile mais puissante entre dire « j’essaie de ne pas fumer » et dire « **je ne fume pas** ». La première phrase te maintient dans la lutte ; la seconde décrit qui tu es.\n\nQuand tu commences à te voir comme une personne qui ne fume pas, tes décisions changent naturellement. Il ne s’agit plus de résister à chaque fois, mais d’agir en accord avec qui tu es.\n\nCette nouvelle identité se construit petit à petit, jour après jour, avec chaque vague d’envie surmontée et chaque nouveau rituel.",
+"Es gibt einen feinen, aber starken Unterschied zwischen „Ich versuche, nicht zu rauchen“ und „**Ich rauche nicht**“. Der erste Satz hält dich im Kampf; der zweite beschreibt, wer du bist.\n\nWenn du anfängst, dich als jemanden zu sehen, der nicht raucht, verändern sich deine Entscheidungen ganz natürlich. Es geht nicht mehr darum, jedes Mal zu widerstehen, sondern so zu handeln, wie es zu dir passt.\n\nDiese neue Identität entsteht Stück für Stück, mit jedem Tag, jeder überstandenen Welle von Verlangen und jedem neuen Ritual.",
+"Existe uma diferença sutil, mas poderosa, entre dizer “estou tentando não fumar” e dizer “**eu não fumo**”. A primeira frase mantém você na luta; a segunda descreve quem você é.\n\nQuando você começa a se ver como uma pessoa que não fuma, suas decisões mudam naturalmente. Não se trata mais de resistir toda vez, e sim de agir de acordo com quem você é.\n\nEssa nova identidade é construída aos poucos, a cada dia, a cada onda de vontade superada e a cada novo ritual.",
+"Há uma diferença subtil, mas poderosa, entre dizer «estou a tentar não fumar» e dizer «**não fumo**». A primeira frase mantém-te na luta; a segunda descreve quem és.\n\nQuando começas a ver-te como uma pessoa que não fuma, as tuas decisões mudam de forma natural. Já não se trata de resistir de cada vez, mas de agir de acordo com quem és.\n\nEsta nova identidade constrói-se aos poucos, a cada dia, a cada onda de vontade superada e a cada novo ritual."
+],
+[
+"¿Cómo te describirías hoy, en relación con el tabaco o el vapeo? ¿Qué ha cambiado desde que empezaste?",
+"How would you describe yourself today in relation to tobacco or vaping? What has changed since you started?",
+"Comment te décrirais-tu aujourd’hui par rapport au tabac ou au vapotage ? Qu’est-ce qui a changé depuis que tu as commencé ?",
+"Wie würdest du dich heute in Bezug auf Tabak oder Vapen beschreiben? Was hat sich verändert, seit du angefangen hast?",
+"Como você se descreveria hoje em relação ao tabaco ou ao vape? O que mudou desde que você começou?",
+"Como te descreverias hoje em relação ao tabaco ou ao vape? O que mudou desde que começaste?"
+],
+[
+"Hoy me veo como alguien que…",
+"Today I see myself as someone who…",
+"Aujourd’hui, je me vois comme quelqu’un qui…",
+"Heute sehe ich mich als jemanden, der …",
+"Hoje eu me vejo como alguém que…",
+"Hoje vejo-me como alguém que…"
+],
+[
+"¿Cuál de estas frases te representa mejor hoy?",
+"Which of these sentences represents you best today?",
+"Laquelle de ces phrases te représente le mieux aujourd’hui ?",
+"Welcher dieser Sätze beschreibt dich heute am besten?",
+"Qual destas frases representa melhor você hoje?",
+"Qual destas frases te representa melhor hoje?"
+],
+[
+"\"No fumo.\"",
+"“I don’t smoke.”",
+"« Je ne fume pas. »",
+"„Ich rauche nicht.“",
+"“Eu não fumo.”",
+"«Não fumo.»"
+],
+[
+"\"Estoy en camino de dejarlo.\"",
+"“I’m on my way to quitting.”",
+"« Je suis en train d’arrêter. »",
+"„Ich bin auf dem Weg, aufzuhören.“",
+"“Estou a caminho de parar.”",
+"«Estou a caminho de deixar de fumar.»"
+],
+[
+"\"Sigo aprendiendo y todavía me cuesta.\"",
+"“I’m still learning and it’s still hard.”",
+"« J’apprends encore et c’est encore difficile. »",
+"„Ich lerne noch und es fällt mir noch schwer.“",
+"“Sigo aprendendo e ainda está difícil.”",
+"«Continuo a aprender e ainda me custa.»"
+],
+[
+"Qué bien suena. Dilo en voz alta de vez en cuando: reforzar tu identidad te ayuda a sostenerla.",
+"That sounds great. Say it out loud from time to time: reinforcing your identity helps you hold on to it.",
+"Ça sonne bien. Dis-le à voix haute de temps en temps : renforcer ton identité t’aide à la maintenir.",
+"Das klingt richtig gut. Sag es ab und zu laut: Wenn du deine Identität stärkst, fällt es dir leichter, sie zu halten.",
+"Que bom que soa assim. Diga isso em voz alta de vez em quando: reforçar sua identidade ajuda a sustentá-la.",
+"Soa mesmo bem. Di-lo em voz alta de vez em quando: reforçar a tua identidade ajuda-te a mantê-la."
+],
+[
+"Estás avanzando. Prueba a decir \"no fumo\" en algún momento del día y nota cómo se siente.",
+"You’re making progress. Try saying “I don’t smoke” at some point during the day and notice how it feels.",
+"Tu avances. Essaie de dire « je ne fume pas » à un moment de la journée et remarque ce que tu ressens.",
+"Du kommst voran. Probier, im Laufe des Tages einmal „Ich rauche nicht“ zu sagen, und spür, wie sich das anfühlt.",
+"Você está avançando. Experimente dizer “eu não fumo” em algum momento do dia e perceba como é.",
+"Estás a avançar. Experimenta dizer «não fumo» em algum momento do dia e repara como te sentes."
+],
+[
+"Es completamente válido. Cada paso cuenta, y todo lo que aprendiste aquí sigue disponible para ti.",
+"That’s completely valid. Every step counts, and everything you’ve learned here is still available to you.",
+"C’est tout à fait légitime. Chaque pas compte, et tout ce que tu as appris ici reste à ta disposition.",
+"Das ist völlig in Ordnung. Jeder Schritt zählt, und alles, was du hier gelernt hast, steht dir weiterhin zur Verfügung.",
+"Isso é totalmente válido. Cada passo conta, e tudo o que você aprendeu aqui continua disponível para você.",
+"É totalmente válido. Cada passo conta, e tudo o que aprendeste aqui continua disponível para ti."
+],
+[
+"La identidad no cambia de golpe, pero cambia. Y la tuya ya está en movimiento.",
+"Identity doesn’t change all at once, but it does change. And yours is already in motion.",
+"L’identité ne change pas d’un coup, mais elle change. Et la tienne est déjà en mouvement.",
+"Identität ändert sich nicht von heute auf morgen, aber sie ändert sich. Und deine ist schon in Bewegung.",
+"A identidade não muda de uma vez, mas muda. E a sua já está em movimento.",
+"A identidade não muda de repente, mas muda. E a tua já está em movimento."
+],
+[
+"Has empezado a mirarte con otros ojos. Esa mirada es una gran protección para el futuro.",
+"You’ve started to see yourself with new eyes. That outlook is great protection for the future.",
+"Tu as commencé à te regarder autrement. Ce regard est une belle protection pour l’avenir.",
+"Du hast begonnen, dich mit anderen Augen zu sehen. Dieser Blick ist ein starker Schutz für die Zukunft.",
+"Você começou a se olhar com outros olhos. Esse olhar é uma grande proteção para o futuro.",
+"Começaste a olhar para ti com outros olhos. Esse olhar é uma grande proteção para o futuro."
+],
+[
+"Riesgos a largo plazo",
+"Long-term risks",
+"Risques à long terme",
+"Langfristige Risiken",
+"Riscos de longo prazo",
+"Riscos a longo prazo"
+],
+[
+"Anticipa las situaciones que pueden poner a prueba tu decisión meses después.",
+"Anticipate the situations that could test your decision months from now.",
+"Anticipe les situations qui pourraient mettre ta décision à l’épreuve des mois plus tard.",
+"Sieh die Situationen voraus, die deine Entscheidung noch Monate später auf die Probe stellen können.",
+"Antecipe as situações que podem pôr sua decisão à prova meses depois.",
+"Antecipa as situações que podem pôr a tua decisão à prova meses depois."
+],
+[
+"Cuando ya parece superado",
+"When it already seems behind you",
+"Quand tout semble déjà derrière toi",
+"Wenn es schon überwunden scheint",
+"Quando já parece superado",
+"Quando já parece superado"
+],
+[
+"Con el paso de los meses, las ganas suelen volverse raras y suaves. Pero pueden reaparecer de forma inesperada en ciertos momentos: una crisis personal, una pérdida, un conflicto fuerte, unas vacaciones, una celebración o el reencuentro con viejos amigos que fuman.\n\nEn esas situaciones, la confianza puede jugar en contra. Como ya no fumas desde hace tiempo, es fácil bajar la guardia.\n\nNo se trata de vivir con miedo, sino de **reconocer estos momentos** y tener a mano las herramientas que ya conoces.",
+"As the months go by, urges tend to become rare and mild. But they can reappear unexpectedly at certain moments: a personal crisis, a loss, a serious conflict, a holiday, a celebration or meeting up again with old friends who smoke.\n\nIn those situations, confidence can work against you. Since you haven’t smoked for a while, it’s easy to let your guard down.\n\nIt’s not about living in fear, but about **recognising these moments** and keeping the tools you already know close at hand.",
+"Au fil des mois, les envies deviennent généralement rares et légères. Mais elles peuvent réapparaître de façon inattendue à certains moments : une crise personnelle, un deuil, un conflit important, des vacances, une fête ou des retrouvailles avec de vieux amis qui fument.\n\nDans ces situations, la confiance peut se retourner contre toi. Comme tu ne fumes plus depuis un moment, il est facile de baisser la garde.\n\nIl ne s’agit pas de vivre dans la peur, mais de **reconnaître ces moments** et d’avoir sous la main les outils que tu connais déjà.",
+"Mit den Monaten werden die Gelüste meist seltener und milder. Aber sie können in bestimmten Momenten unerwartet wieder auftauchen: bei einer persönlichen Krise, einem Verlust, einem heftigen Streit, im Urlaub, bei einer Feier oder beim Wiedersehen mit alten Freunden, die rauchen.\n\nIn solchen Situationen kann Selbstvertrauen dir einen Streich spielen. Weil du schon lange nicht mehr rauchst, lässt du leicht die Zügel schleifen.\n\nEs geht nicht darum, in Angst zu leben, sondern **diese Momente zu erkennen** und die Werkzeuge griffbereit zu haben, die du schon kennst.",
+"Com o passar dos meses, a vontade costuma ficar rara e suave. Mas ela pode reaparecer de forma inesperada em certos momentos: uma crise pessoal, uma perda, um conflito forte, as férias, uma comemoração ou o reencontro com velhos amigos que fumam.\n\nNessas situações, a confiança pode jogar contra. Como você já não fuma há algum tempo, é fácil baixar a guarda.\n\nNão se trata de viver com medo, e sim de **reconhecer esses momentos** e ter à mão as ferramentas que você já conhece.",
+"Com o passar dos meses, a vontade costuma tornar-se rara e suave. Mas pode reaparecer de forma inesperada em certos momentos: uma crise pessoal, uma perda, um conflito forte, umas férias, uma celebração ou o reencontro com velhos amigos que fumam.\n\nNessas situações, a confiança pode jogar contra ti. Como já não fumas há algum tempo, é fácil baixar a guarda.\n\nNão se trata de viver com medo, mas de **reconhecer estes momentos** e ter à mão as ferramentas que já conheces."
+],
+[
+"La idea de \"solo uno\"",
+"The “just one” idea",
+"L’idée d’« une seule »",
+"Der Gedanke „nur eine“",
+"A ideia de “só um”",
+"A ideia de «só um»"
+],
+[
+"Uno de los pensamientos más arriesgados a largo plazo es: \"**Por uno no pasa nada**\". Suena inofensivo, pero para muchas personas ese único cigarrillo reactiva el deseo y abre la puerta a otros.\n\nCuando aparezca, trátalo como una señal de alerta: **reconoce el pensamiento** y **activa tu plan**. Respira, demora, recuerda tus motivos, escribe a alguien.\n\nLas ganas de un momento no definen lo que quieres para tu vida.",
+"One of the riskiest thoughts in the long run is: “**One won’t hurt**”. It sounds harmless, but for many people that single cigarette reawakens the desire and opens the door to more.\n\nWhen it shows up, treat it as a warning sign: **recognise the thought** and **activate your plan**. Breathe, delay, remember your reasons, message someone.\n\nAn urge in the moment doesn’t define what you want for your life.",
+"L’une des pensées les plus risquées à long terme est : « **Une seule, ce n’est pas grave** ». Cela paraît inoffensif, mais pour beaucoup de personnes, cette unique cigarette réveille l’envie et ouvre la porte à d’autres.\n\nQuand elle apparaît, considère-la comme un signal d’alerte : **reconnais la pensée** et **active ton plan**. Respire, patiente, rappelle-toi tes raisons, écris à quelqu’un.\n\nL’envie d’un instant ne définit pas ce que tu veux pour ta vie.",
+"Einer der riskantesten Gedanken auf lange Sicht lautet: „**Eine schadet doch nicht**“. Das klingt harmlos, aber für viele Menschen weckt diese eine Zigarette das Verlangen wieder und öffnet die Tür für weitere.\n\nWenn er auftaucht, nimm ihn als Warnsignal: **Erkenne den Gedanken** und **aktiviere deinen Plan**. Atme, zögere es hinaus, erinnere dich an deine Gründe, schreib jemandem.\n\nDas Verlangen eines Augenblicks bestimmt nicht, was du für dein Leben willst.",
+"Um dos pensamentos mais arriscados a longo prazo é: “**Um só não vai fazer mal**”. Parece inofensivo, mas para muitas pessoas esse único cigarro reativa a vontade e abre a porta para outros.\n\nQuando ele aparecer, trate-o como um sinal de alerta: **reconheça o pensamento** e **ative seu plano**. Respire, adie, lembre-se dos seus motivos, escreva para alguém.\n\nA vontade de um momento não define o que você quer para a sua vida.",
+"Um dos pensamentos mais arriscados a longo prazo é: «**Um só não faz mal**». Parece inofensivo, mas, para muitas pessoas, esse único cigarro reativa a vontade e abre a porta a outros.\n\nQuando surgir, trata-o como um sinal de alerta: **reconhece o pensamento** e **ativa o teu plano**. Respira, adia, lembra-te dos teus motivos, escreve a alguém.\n\nA vontade de um momento não define o que queres para a tua vida."
+],
+[
+"Después de varios meses sin fumar, piensas \"por uno no pasa nada\". ¿Qué recomienda esta lección?",
+"After several months without smoking, you think “one won’t hurt”. What does this lesson recommend?",
+"Après plusieurs mois sans fumer, tu te dis « une seule, ce n’est pas grave ». Que recommande cette leçon ?",
+"Nach mehreren Monaten ohne Rauchen denkst du: „Eine schadet doch nicht.“ Was empfiehlt diese Lektion?",
+"Depois de vários meses sem fumar, você pensa “um só não vai fazer mal”. O que esta lição recomenda?",
+"Depois de vários meses sem fumar, pensas «um só não faz mal». O que recomenda esta lição?"
+],
+[
+"Fumarlo, porque después de tanto tiempo ya no hay riesgo",
+"Smoke it, because after so long there’s no risk any more",
+"Le fumer, car après tout ce temps il n’y a plus de risque",
+"Eine rauchen, weil nach so langer Zeit kein Risiko mehr besteht",
+"Fumar, porque depois de tanto tempo já não há risco",
+"Fumá-lo, porque passado tanto tempo já não há risco"
+],
+[
+"Reconocerlo como un pensamiento de riesgo y activar tu plan",
+"Recognise it as a risky thought and activate your plan",
+"Le reconnaître comme une pensée à risque et activer ton plan",
+"Ihn als riskanten Gedanken erkennen und deinen Plan aktivieren",
+"Reconhecer isso como um pensamento de risco e ativar seu plano",
+"Reconhecê-lo como um pensamento de risco e ativar o teu plano"
+],
+[
+"Dejar el plan de lado, porque ya superaste la etapa difícil",
+"Set the plan aside, because you’ve already got through the hard stage",
+"Mettre le plan de côté, car tu as déjà passé l’étape difficile",
+"Den Plan beiseitelegen, weil du die schwierige Phase schon überstanden hast",
+"Deixar o plano de lado, porque você já superou a fase difícil",
+"Deixar o plano de lado, porque já superaste a fase difícil"
+],
+[
+"Ese único cigarrillo puede reactivar el deseo. La lección recomienda tratar este pensamiento como una señal de alerta.",
+"That single cigarette can reawaken the desire. The lesson recommends treating this thought as a warning sign.",
+"Cette unique cigarette peut réveiller l’envie. La leçon recommande de considérer cette pensée comme un signal d’alerte.",
+"Diese eine Zigarette kann das Verlangen wieder wecken. Die Lektion empfiehlt, diesen Gedanken als Warnsignal zu behandeln.",
+"Esse único cigarro pode reativar a vontade. A lição recomenda tratar esse pensamento como um sinal de alerta.",
+"Esse único cigarro pode reativar a vontade. A lição recomenda tratar este pensamento como um sinal de alerta."
+],
+[
+"¡Exacto! Reconocer el pensamiento y activar tu plan te protege incluso después de mucho tiempo.",
+"Exactly! Recognising the thought and activating your plan protects you even after a long time.",
+"Exact ! Reconnaître la pensée et activer ton plan te protège même après très longtemps.",
+"Genau! Den Gedanken zu erkennen und deinen Plan zu aktivieren schützt dich auch nach langer Zeit.",
+"Exato! Reconhecer o pensamento e ativar seu plano protege você mesmo depois de muito tempo.",
+"Exato! Reconhecer o pensamento e ativar o teu plano protege-te mesmo depois de muito tempo."
+],
+[
+"Bajar la guardia es justo lo que hace vulnerables estos momentos. Mantén tu plan cerca.",
+"Letting your guard down is exactly what makes these moments vulnerable. Keep your plan close.",
+"Baisser la garde, c’est précisément ce qui rend ces moments vulnérables. Garde ton plan près de toi.",
+"Gerade das Nachlassen der Wachsamkeit macht diese Momente anfällig. Halte deinen Plan griffbereit.",
+"Baixar a guarda é justamente o que torna esses momentos vulneráveis. Mantenha seu plano por perto.",
+"Baixar a guarda é precisamente o que torna estes momentos vulneráveis. Mantém o teu plano por perto."
+],
+[
+"¿Qué situaciones futuras podrían ser de riesgo para ti?",
+"Which future situations could be risky for you?",
+"Quelles situations futures pourraient être à risque pour toi ?",
+"Welche künftigen Situationen könnten für dich riskant sein?",
+"Quais situações futuras podem ser de risco para você?",
+"Que situações futuras poderiam ser de risco para ti?"
+],
+[
+"Una crisis personal o laboral",
+"A personal or work crisis",
+"Une crise personnelle ou professionnelle",
+"Eine persönliche oder berufliche Krise",
+"Uma crise pessoal ou profissional",
+"Uma crise pessoal ou profissional"
+],
+[
+"Una pérdida o un duelo",
+"A loss or bereavement",
+"Une perte ou un deuil",
+"Ein Verlust oder eine Trauerzeit",
+"Uma perda ou um luto",
+"Uma perda ou um luto"
+],
+[
+"Vacaciones o viajes",
+"Holidays or trips",
+"Vacances ou voyages",
+"Urlaub oder Reisen",
+"Férias ou viagens",
+"Férias ou viagens"
+],
+[
+"Celebraciones con alcohol",
+"Celebrations with alcohol",
+"Fêtes avec de l’alcool",
+"Feiern mit Alkohol",
+"Comemorações com álcool",
+"Celebrações com álcool"
+],
+[
+"Reencuentros con amigos que fuman",
+"Reunions with friends who smoke",
+"Retrouvailles avec des amis qui fument",
+"Wiedersehen mit Freunden, die rauchen",
+"Reencontros com amigos que fumam",
+"Reencontros com amigos que fumam"
+],
+[
+"Periodos de aburrimiento o soledad",
+"Periods of boredom or loneliness",
+"Périodes d’ennui ou de solitude",
+"Phasen von Langeweile oder Einsamkeit",
+"Períodos de tédio ou solidão",
+"Períodos de tédio ou solidão"
+],
+[
+"Ya anticipaste los riesgos del futuro. Lo que se ve venir, se puede preparar.",
+"You’ve anticipated the risks ahead. What you see coming, you can prepare for.",
+"Tu as anticipé les risques à venir. Ce que l’on voit venir, on peut s’y préparer.",
+"Du hast die Risiken der Zukunft vorausgesehen. Worauf man sich einstellen kann, das kann man vorbereiten.",
+"Você já antecipou os riscos do futuro. O que se vê chegando, dá para preparar.",
+"Já antecipaste os riscos do futuro. O que se vê a chegar, pode preparar-se."
+],
+[
+"Tu plan y tu celebración",
+"Your plan and your celebration",
+"Ton plan et ta célébration",
+"Dein Plan und deine Feier",
+"Seu plano e sua celebração",
+"O teu plano e a tua celebração"
+],
+[
+"Arma tu plan de mantenimiento y celebra todo lo que has construido.",
+"Put together your maintenance plan and celebrate everything you’ve built.",
+"Élabore ton plan de maintien et célèbre tout ce que tu as construit.",
+"Erstelle deinen Plan zum Dranbleiben und feiere alles, was du aufgebaut hast.",
+"Monte seu plano de manutenção e celebre tudo o que você construiu.",
+"Monta o teu plano de manutenção e celebra tudo o que construíste."
+],
+[
+"Tu plan de mantenimiento",
+"Your maintenance plan",
+"Ton plan de maintien",
+"Dein Plan zum Dranbleiben",
+"Seu plano de manutenção",
+"O teu plano de manutenção"
+],
+[
+"Mantener el cambio es más fácil con un plan sencillo que puedas consultar cuando lo necesites. Reúne en un solo lugar lo que te ha funcionado:\n\n**Tus motivos**, actualizados.\n\n**Tus planes \"si… entonces…\"** para las situaciones de riesgo.\n\n**Tus herramientas favoritas** para las ganas: las 4 D, la respiración, surfear la ola.\n\n**Tu red de apoyo**, con nombres concretos.\n\n**Qué harás si tropiezas.**\n\nRepasa este plan de vez en cuando, sobre todo antes de momentos que sabes que pueden costarte.",
+"Keeping the change going is easier with a simple plan you can consult whenever you need it. Bring together in one place what has worked for you:\n\n**Your reasons**, up to date.\n\n**Your “if… then…” plans** for risky situations.\n\n**Your favourite tools** for urges: the 4 Ds, breathing, surfing the wave.\n\n**Your support network**, with specific names.\n\n**What you’ll do if you slip.**\n\nReview this plan from time to time, especially before moments you know may be hard.",
+"Maintenir le changement est plus facile avec un plan simple que tu peux consulter quand tu en as besoin. Rassemble au même endroit ce qui a fonctionné pour toi :\n\n**Tes raisons**, mises à jour.\n\n**Tes plans « si… alors… »** pour les situations à risque.\n\n**Tes outils préférés** pour les envies : les 4 D, la respiration, surfer sur la vague.\n\n**Ton réseau de soutien**, avec des noms concrets.\n\n**Ce que tu feras si tu fais un faux pas.**\n\nRepasse sur ce plan de temps en temps, surtout avant les moments que tu sais difficiles.",
+"Die Veränderung beizubehalten fällt mit einem einfachen Plan leichter, den du nachschlagen kannst, wann immer du ihn brauchst. Fasse an einem Ort zusammen, was bei dir funktioniert hat:\n\n**Deine Gründe**, aktualisiert.\n\n**Deine „Wenn … dann …“-Pläne** für riskante Situationen.\n\n**Deine Lieblingswerkzeuge** gegen das Verlangen: die 4 A, das Atmen, die Welle surfen.\n\n**Dein Unterstützungsnetzwerk**, mit konkreten Namen.\n\n**Was du tust, wenn du ausrutschst.**\n\nGeh diesen Plan ab und zu durch, vor allem vor Momenten, von denen du weißt, dass sie schwierig werden können.",
+"Manter a mudança é mais fácil com um plano simples que você possa consultar quando precisar. Reúna num só lugar o que funcionou para você:\n\n**Seus motivos**, atualizados.\n\n**Seus planos “se… então…”** para as situações de risco.\n\n**Suas ferramentas favoritas** para a vontade: os 4 D, a respiração, surfar a onda.\n\n**Sua rede de apoio**, com nomes concretos.\n\n**O que você vai fazer se tropeçar.**\n\nRevise este plano de vez em quando, principalmente antes de momentos que você sabe que podem ser difíceis.",
+"Manter a mudança é mais fácil com um plano simples que possas consultar quando precisares. Reúne num só lugar o que te tem funcionado:\n\n**Os teus motivos**, atualizados.\n\n**Os teus planos «se… então…»** para as situações de risco.\n\n**As tuas ferramentas favoritas** para a vontade: os 4 D, a respiração, surfar a onda.\n\n**A tua rede de apoio**, com nomes concretos.\n\n**O que farás se tropeçares.**\n\nRevê este plano de vez em quando, sobretudo antes de momentos que sabes que te podem custar."
+],
+[
+"¿Qué elementos vas a incluir en tu plan de mantenimiento?",
+"Which elements will you include in your maintenance plan?",
+"Quels éléments vas-tu inclure dans ton plan de maintien ?",
+"Welche Elemente nimmst du in deinen Plan zum Dranbleiben auf?",
+"Quais elementos você vai incluir no seu plano de manutenção?",
+"Que elementos vais incluir no teu plano de manutenção?"
+],
+[
+"Mis motivos para no fumar",
+"My reasons for not smoking",
+"Mes raisons de ne pas fumer",
+"Meine Gründe, nicht zu rauchen",
+"Meus motivos para não fumar",
+"Os meus motivos para não fumar"
+],
+[
+"Mis planes \"si… entonces…\"",
+"My “if… then…” plans",
+"Mes plans « si… alors… »",
+"Meine „Wenn … dann …“-Pläne",
+"Meus planos “se… então…”",
+"Os meus planos «se… então…»"
+],
+[
+"Mis herramientas para las ganas",
+"My tools for urges",
+"Mes outils pour les envies",
+"Meine Werkzeuge gegen das Verlangen",
+"Minhas ferramentas para a vontade",
+"As minhas ferramentas para a vontade"
+],
+[
+"Las personas de mi red de apoyo",
+"The people in my support network",
+"Les personnes de mon réseau de soutien",
+"Die Menschen in meinem Unterstützungsnetzwerk",
+"As pessoas da minha rede de apoio",
+"As pessoas da minha rede de apoio"
+],
+[
+"Qué haré si tropiezo",
+"What I’ll do if I slip",
+"Ce que je ferai si je fais un faux pas",
+"Was ich tue, wenn ich ausrutsche",
+"O que farei se eu tropeçar",
+"O que farei se tropeçar"
+],
+[
+"Cuándo buscaré ayuda profesional",
+"When I’ll seek professional help",
+"Quand je chercherai une aide professionnelle",
+"Wann ich mir professionelle Hilfe suche",
+"Quando vou procurar ajuda profissional",
+"Quando vou procurar ajuda profissional"
+],
+[
+"Escribe un mensaje breve para ti en el futuro, para leerlo en un momento difícil.",
+"Write a short message to your future self, to read in a difficult moment.",
+"Écris un court message à ton futur toi, à lire dans un moment difficile.",
+"Schreib eine kurze Nachricht an dein zukünftiges Ich, die du in einem schwierigen Moment lesen kannst.",
+"Escreva uma mensagem curta para você no futuro, para ler em um momento difícil.",
+"Escreve uma mensagem curta para ti no futuro, para leres num momento difícil."
+],
+[
+"Hola, yo del futuro: recuerda que…",
+"Hello, future me: remember that…",
+"Salut, moi du futur : rappelle-toi que…",
+"Hallo, ich aus der Zukunft: Denk daran, dass …",
+"Oi, eu do futuro: lembre-se de que…",
+"Olá, eu do futuro: lembra-te de que…"
+],
+[
+"Es momento de celebrar",
+"Time to celebrate",
+"C’est le moment de célébrer",
+"Zeit zu feiern",
+"É hora de comemorar",
+"É altura de celebrar"
+],
+[
+"Llegar hasta aquí es un logro enorme. Has dedicado tiempo a entender tu hábito, a prepararte, a practicar herramientas nuevas y a mirarte con honestidad.\n\nSea cual sea el punto en el que estás hoy, ya no eres la misma persona que empezó este programa. Sabes mucho más sobre ti y tienes recursos que antes no tenías.\n\nCelebra este momento de una forma que tenga sentido para ti: compártelo con alguien, date un gusto o simplemente detente a reconocer todo lo que has avanzado.",
+"Getting this far is a huge achievement. You’ve given time to understanding your habit, preparing yourself, practising new tools and looking at yourself honestly.\n\nWherever you are today, you’re no longer the same person who started this programme. You know a lot more about yourself and you have resources you didn’t have before.\n\nCelebrate this moment in a way that feels meaningful to you: share it with someone, treat yourself, or simply pause to recognise how far you’ve come.",
+"Être arrivé(e) jusqu’ici est une énorme réussite. Tu as pris le temps de comprendre ton habitude, de te préparer, de pratiquer de nouveaux outils et de te regarder avec honnêteté.\n\nQuel que soit l’endroit où tu en es aujourd’hui, tu n’es plus la même personne que celle qui a commencé ce programme. Tu en sais bien plus sur toi et tu as des ressources que tu n’avais pas avant.\n\nCélèbre ce moment d’une façon qui ait du sens pour toi : partage-le avec quelqu’un, fais-toi plaisir ou simplement arrête-toi un instant pour mesurer tout le chemin parcouru.",
+"Bis hierher zu kommen ist ein riesiger Erfolg. Du hast dir Zeit genommen, deine Gewohnheit zu verstehen, dich vorzubereiten, neue Werkzeuge zu üben und ehrlich auf dich zu schauen.\n\nEgal, wo du heute stehst: Du bist nicht mehr dieselbe Person, die dieses Programm begonnen hat. Du weißt viel mehr über dich und hast Ressourcen, die du vorher nicht hattest.\n\nFeiere diesen Moment auf eine Art, die für dich Sinn ergibt: Teile ihn mit jemandem, gönn dir etwas oder halte einfach kurz inne und erkenne an, wie weit du gekommen bist.",
+"Chegar até aqui é uma conquista enorme. Você dedicou tempo a entender seu hábito, a se preparar, a praticar ferramentas novas e a se olhar com honestidade.\n\nSeja qual for o ponto em que você está hoje, você já não é a mesma pessoa que começou este programa. Você sabe muito mais sobre si e tem recursos que antes não tinha.\n\nComemore este momento de um jeito que faça sentido para você: compartilhe com alguém, se dê um presente ou simplesmente pare para reconhecer o quanto você avançou.",
+"Chegar até aqui é uma conquista enorme. Dedicaste tempo a compreender o teu hábito, a preparar-te, a praticar ferramentas novas e a olhar para ti com honestidade.\n\nSeja qual for o ponto em que estás hoje, já não és a mesma pessoa que começou este programa. Sabes muito mais sobre ti e tens recursos que antes não tinhas.\n\nCelebra este momento de uma forma que faça sentido para ti: partilha-o com alguém, oferece-te um miminho ou simplesmente pára para reconhecer tudo o que avançaste."
+],
+[
+"Voy a guardar mi plan de mantenimiento en un lugar visible y a revisarlo antes de cada situación de riesgo.",
+"I will keep my maintenance plan somewhere visible and review it before every risky situation.",
+"Je vais garder mon plan de maintien dans un endroit visible et le relire avant chaque situation à risque.",
+"Ich bewahre meinen Plan zum Dranbleiben an einem sichtbaren Ort auf und gehe ihn vor jeder riskanten Situation durch.",
+"Vou guardar meu plano de manutenção em um lugar visível e revisá-lo antes de cada situação de risco.",
+"Vou guardar o meu plano de manutenção num sítio visível e revê-lo antes de cada situação de risco."
+],
+[
+"¡Programa completado!",
+"Programme completed!",
+"Programme terminé !",
+"Programm abgeschlossen!",
+"Programa concluído!",
+"Programa concluído!"
+],
+[
+"Terminaste el Programa Alento. Vuelve a cualquier lección cuando lo necesites: todo lo que construiste aquí sigue siendo tuyo. Y recuerda que un profesional de salud puede seguir acompañándote.",
+"You’ve finished the Alento Programme. Come back to any lesson whenever you need: everything you built here is still yours. And remember that a health professional can keep supporting you.",
+"Tu as terminé le Programme Alento. Reviens à n’importe quelle leçon quand tu en as besoin : tout ce que tu as construit ici t’appartient toujours. Et souviens-toi qu’un professionnel de santé peut continuer à t’accompagner.",
+"Du hast das Alento-Programm abgeschlossen. Kehre zu jeder Lektion zurück, wann immer du sie brauchst: Alles, was du hier aufgebaut hast, gehört weiterhin dir. Und denk daran, dass eine Fachperson aus dem Gesundheitswesen dich weiterhin begleiten kann.",
+"Você concluiu o Programa Alento. Volte a qualquer lição quando precisar: tudo o que você construiu aqui continua sendo seu. E lembre-se de que um profissional de saúde pode continuar acompanhando você.",
+"Terminaste o Programa Alento. Volta a qualquer lição quando precisares: tudo o que construíste aqui continua a ser teu. E lembra-te de que um profissional de saúde pode continuar a acompanhar-te."
+]
+]

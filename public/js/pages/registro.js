@@ -1,4 +1,4 @@
-import { $, api, h, setBusy, toast } from '../ui.js';
+import { $, api, h, setBusy, toast, locale } from '../ui.js';
 import { FEELING_LABELS, celebrate, cravingFlow, emptyState, errorState, initApp, loading, modal, page, rangeTabs, uuid } from '../shell.js';
 
 await initApp({ active: '/registro' });
@@ -9,8 +9,8 @@ let data;
 const MOOD_LABELS = { 'muy-bien': 'Muy bien', bien: 'Bien', regular: 'Regular', mal: 'Mal', 'muy-mal': 'Muy mal', ...FEELING_LABELS };
 const pad = (n) => String(n).padStart(2, '0');
 const toLocalInput = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-const fmtTime = (iso) => new Intl.DateTimeFormat('es', { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
-const fmtDay = (iso) => new Intl.DateTimeFormat('es', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso));
+const fmtTime = (iso) => new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+const fmtDay = (iso) => new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(iso));
 
 /** Formulario de cigarrillo (nuevo o edición). Un único clientRequestId por formulario evita duplicados. */
 function entryForm(entry, onSaved) {

@@ -20,6 +20,9 @@ export class BillingError extends Error {
 const money = (cents, currency) => new Intl.NumberFormat('es', { style: 'currency', currency }).format(cents / 100);
 const toDate = (unix) => (unix ? new Date(unix * 1000).toISOString() : null);
 
+// Stripe: 'pt' é o português de Portugal; o resto dos nossos códigos ele aceita como estão.
+const stripeLocale = (l) => (l === 'pt-PT' ? 'pt' : ['en', 'fr', 'de', 'pt-BR'].includes(l) ? l : 'es');
+
 export function createBilling({ db, stripe, config, log = console }) {
   const priceCaches = new Map(); // por programa
   let couponCache = null;
@@ -172,7 +175,7 @@ export function createBilling({ db, stripe, config, log = console }) {
     const existing = await customerIdOf(user.id);
     if (existing) return existing;
     const customer = await stripe.customers.create(
-      { email: user.email, name: user.name, preferred_locales: ['es'], metadata: { user_id: user.id } },
+      { email: user.email, name: user.name, preferred_locales: [stripeLocale(user.locale)], metadata: { user_id: user.id } },
       { idempotencyKey: `customer-${user.id}` },
     );
     await db.service.exec('update public.profiles set stripe_customer_id = $1 where user_id = $2 and stripe_customer_id is null', [customer.id, user.id]);
@@ -252,7 +255,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
         metadata,
         subscription_data: { metadata },
-        locale: 'es',
+        locale: stripeLocale(user.locale), // o Stripe mostra a página de pagamento no idioma da pessoa
         custom_text: {
           submit: {
             message: planInfo.renewalAmount
