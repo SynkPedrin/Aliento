@@ -75,7 +75,7 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
     pay(sessionId) {
       const s = sessions.get(sessionId);
       const sub = {
-        id: `sub_${run}${++n}`, customer: s.customer, status: 'active', cancel_at_period_end: false, metadata: s.subscription_data.metadata,
+        id: `sub_${run}${++n}`, customer: s.customer ?? `cus_${run}${n}`, status: 'active', cancel_at_period_end: false, metadata: s.subscription_data.metadata,
         items: { data: [{ price: { id: s.line_items[0].price }, current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400 }] },
       };
       subs.set(sub.id, sub);

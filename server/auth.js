@@ -153,6 +153,17 @@ export function createAuth({ config, db }) {
     cache.clear();
   }
 
+  /** Troca o e-mail da conta. false se o e-mail já pertence a outra conta. */
+  async function setEmail(userId, email) {
+    const { error } = await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
+    if (error) {
+      if (error.code === 'email_exists' || error.status === 422) return false;
+      throw error;
+    }
+    cache.clear();
+    return true;
+  }
+
   async function verifyPassword(email, password) {
     const { error } = await pub.auth.signInWithPassword({ email, password });
     if (error) {
@@ -169,7 +180,7 @@ export function createAuth({ config, db }) {
     cache.clear();
   }
 
-  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, recoveryLink, setPassword, verifyPassword, deleteUser, profile, isRecoveryToken };
+  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, recoveryLink, setPassword, setEmail, verifyPassword, deleteUser, profile, isRecoveryToken };
 }
 
 export function cookieOptions(config, maxAgeSeconds) {

@@ -776,3 +776,27 @@ test('compra sem cadastro: quiz → checkout com o e-mail do quiz → senha depo
   const again = await d('/api/checkout/guest', { method: 'POST', body: { plan: 'trimestral', email: mail, acceptTerms: true } });
   assert.equal(again.status, 409); assert.equal(again.body.code, 'LOGIN_REQUIRED');
 });
+
+test('compra sem cadastro: o e-mail fica editável na Stripe e a conta adota o e-mail digitado no pagamento', async () => {
+  await db.service.exec('delete from public.rate_limits');
+  const pay = async (quizMail, stripeMail) => {
+    const c = client();
+    await completeQuiz(c);
+    const r = await c('/api/checkout/guest', { method: 'POST', body: { plan: 'trimestral', email: quizMail, acceptTerms: true } });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    const id = [...stripe.sessions.values()].find((s) => s.url === r.body.url).id;
+    assert.equal(stripe.sessions.get(id).customer, undefined, 'sem customer a Stripe não trava o e-mail');
+    const { session } = stripe.pay(id);
+    assert.equal(await sendEvent('checkout.session.completed', { ...session, customer_details: { email: stripeMail } }), 200);
+    return c;
+  };
+  const typo = email(), right = email();
+  const c = await pay(typo, right);
+  const me = (await c('/api/me')).body;
+  assert.equal(me.access, true);
+  assert.equal(me.user.email, right);
+  // E-mail digitado na Stripe que já tem outra conta: a compra vale e a conta segue com o do quiz.
+  const other = email();
+  const c2 = await pay(other, right);
+  assert.equal((await c2('/api/me')).body.user.email, other);
+});
