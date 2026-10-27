@@ -23,7 +23,9 @@
     "access:grant": "node --env-file-if-exists=.env scripts/create-comp-account.js",
     "e2e": "playwright test",
     "stripe:programs": "node --env-file-if-exists=.env scripts/stripe-programs.js",
-    "local": "PATH=$HOME/.orbstack/bin:$PATH npx supabase start >/dev/null && node --env-file=.env scripts/demo.js"
+    "local": "PATH=$HOME/.orbstack/bin:$PATH npx supabase start >/dev/null && node --env-file=.env scripts/demo.js",
+    "i18n:build": "node scripts/i18n-build.js",
+    "i18n:missing": "node scripts/i18n-extract.js --missing"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",

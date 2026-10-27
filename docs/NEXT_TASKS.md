@@ -17,7 +17,8 @@ Ordered by priority. Everything here is planned; nothing in this list has been e
   - Mostrar uma única vez por sessão; registrar `results_step` (ou evento próprio) para medir quantos trocam.
   - Onde: `renderSalesPlans` / `goToCheckout` em `public/js/paywall.js`.
 
-- [ ] **Tradução humana do quiz e da página de venda** (EN primeiro, depois DE). Hoje fora do espanhol é Google Translate (`public/js/translate.js`); a home já tem textos próprios em 6 idiomas (`public/i18n.js`).
+- [x] **Tradução do funil** (quiz, resultado, venda, checkout) em EN, FR, DE, PT-BR, PT-PT — feito em 2026-10-27 (`i18n/*.json`).
+- [ ] **Tradução do app** (telas internas, lições `server/content/journey.js`, termos/privacidade): adicionar os arquivos em `I18N_FILES` (`scripts/i18n-extract.js`) e escrever as tabelas.
 - [ ] **Textos do checkout Stripe por idioma** (`custom_text` em `server/billing.js` ainda em espanhol).
 - [ ] **E-mail para quem não comprou** (lead sem compra; Resend já integrado em `server/services/mailer.js`).
 

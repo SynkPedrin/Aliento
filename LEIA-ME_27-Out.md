@@ -2,7 +2,7 @@
 
 Esta versão continua a de 23/10 (veja `LEIA-ME_23-Out.md`). Foi feita e testada **só no ambiente local**.
 
-- **Testes:** `npm test` passa **175/175**. Os 4 testes novos estão em `test/release-27out.test.js`.
+- **Testes:** `npm test` passa **178/178**. Testes novos: `test/release-27out.test.js` e `test/i18n.test.js`.
 - **Migração nova:** `supabase/migrations/20261027100000_profile_locale.sql` (o idioma da conta). O rollback está em `supabase/rollback/`.
 
 ## O que mudou
@@ -28,12 +28,12 @@ Esta versão continua a de 23/10 (veja `LEIA-ME_23-Out.md`). Foi feita e testada
 - **Quiz sem pedido de cookies:** no quiz e no resultado o banner não aparece, e quem ainda não escolheu conta como aceite (`public/js/track.js`).
   - **Atenção:** é decisão do negócio, com risco de RGPD na UE.
   - Para voltar ao banner, basta apagar a linha que fica em `initTracking`.
-- **Idioma em todas as telas:**
-  - A home usa os textos próprios dela em 6 idiomas e agora começa pelo **idioma do navegador**.
-  - Quiz, resultado e app são traduzidos pelo Google Translate, também começando pelo idioma do navegador. O seletor aparece em todas as telas: no quiz fica discreto no topo.
-  - Com login, o idioma é salvo na conta (`profiles.locale`), e o campo "Idioma" do perfil agora funciona.
-  - A escolha feita na home vale para o quiz e para o app.
-  - O checkout do Stripe abre no idioma da pessoa.
+- **Idioma (sem Google Tradutor):** traduções próprias em **espanhol, inglês, francês, alemão, português do Brasil e de Portugal**.
+  - A tela abre no idioma do navegador (ou `?lang=en` no link). O seletor fica em todas as telas: no quiz, discreto no topo. Com login, o idioma é salvo na conta (`profiles.locale`) e no perfil.
+  - **Já traduzido:** home (textos próprios dela), quiz, resultado, página de venda, planos, popups, checkout, login/cadastro, criar senha, boas-vindas, suporte, instalação do app, mensagens de erro do servidor, e-mail de compra. A página do Stripe abre no idioma da pessoa.
+  - **Ainda em espanhol:** as telas internas do app (painel, jornada, registros…), as lições e os termos/privacidade — próxima etapa.
+  - **Como funciona (para o dev):** o texto-fonte continua o espanhol escrito no código. As traduções ficam em tabelas `i18n/*.json` (cada linha: espanhol + 5 idiomas) e `npm run i18n:build` gera os catálogos `public/js/lang/<idioma>.js`. No navegador, `public/js/lang/dom.js` troca cada texto da tela pelo do catálogo (sem marcar string por string); no servidor, toda resposta JSON da API sai traduzida pelo cabeçalho `X-Alento-Lang`. Textos com números usam modelos (`'Baja de {a} a {b} cigarrillos al día'`).
+  - **Texto novo no código:** rode `npm run i18n:missing`; o teste `test/i18n.test.js` falha se algum texto dos arquivos traduzidos ficar sem tradução.
 - **Home:**
   - Saiu "¿No encuentras lo que buscabas? Escríbenos".
   - "Área de usuario" vai para o login.
@@ -49,7 +49,7 @@ Esta versão continua a de 23/10 (veja `LEIA-ME_23-Out.md`). Foi feita e testada
 
 ### E-mail de confirmação de compra (Resend)
 - **Envio:** em `server/services/mailer.js`, disparado pelo webhook do Stripe na primeira compra paga.
-  - É enviado no idioma da conta (es, en, pt, fr, de, it), com o plano e o total.
+  - É enviado no idioma da conta (es, en, fr, de, pt-BR, pt-PT), com o plano e o total.
   - Quem comprou sem cadastro recebe o botão **"Crear mi contraseña"**, que é um link de recuperação do Supabase. Quem já tem senha recebe "Entrar".
   - Usa `idempotency-key`, então um webhook repetido não manda o e-mail duas vezes.
 - **Proteção:** uma falha de e-mail nunca bloqueia o pagamento.
@@ -64,8 +64,6 @@ Esta versão continua a de 23/10 (veja `LEIA-ME_23-Out.md`). Foi feita e testada
 6. **Compra de teste de ponta a ponta:** conferir o e-mail que chega, o link de criar senha e a venda aparecendo em Vendas e em Leads ("comprou").
 
 ## Pendências
-- **Tradução automática:** a do Google é boa para navegar, mas não para vender.
-  - Para EUA, México e Alemanha, o ideal é ter quiz e página de venda traduzidos por gente, como já é a home.
-  - Isso dá para fazer língua por língua, começando pelo inglês.
+- **Tradução das telas internas do app, das lições e dos termos/privacidade** (mesmo sistema: só falta escrever as tabelas). Termos e privacidade traduzidos devem passar por revisão jurídica de cada país.
 - **Textos do checkout:** o aviso de renovação e os textos do checkout no Stripe continuam em espanhol.
 - **Lista completa:** em `docs/NEXT_TASKS.md`.

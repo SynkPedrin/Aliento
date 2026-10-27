@@ -1,5 +1,11 @@
 // Utilidades compartidas: API, formato, marca e iconos.
 
+import { locale, t } from './lang/index.js';
+
+export { locale, t };
+// Números e moedas no formato do idioma da tela (em espanhol, o formato que o servidor indicar).
+const numLocale = (fallback) => (locale === 'es' ? fallback : locale);
+
 // ---- App instalable (PWA): service worker y diálogo de instalación (se captura lo antes posible).
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
@@ -28,7 +34,7 @@ export async function api(path, { method = 'GET', body } = {}) {
     res = await fetch(path, {
       method,
       credentials: 'same-origin',
-      headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+      headers: { 'X-Alento-Lang': locale, ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
@@ -62,13 +68,13 @@ export const $ = (sel, root = document) => root.querySelector(sel);
 export function money(value, currency = 'EUR', locale = 'es-US', decimals) {
   const opts = { style: 'currency', currency };
   if (decimals !== undefined) Object.assign(opts, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-  return new Intl.NumberFormat(locale, opts).format(value);
+  return new Intl.NumberFormat(numLocale(locale), opts).format(value);
 }
 
 /** Importe en céntimos (Stripe) → texto. */
 export const moneyCents = (cents, currency, locale = 'es-US') => money(cents / 100, currency, locale);
 
-export const num = (n, locale = 'es-US') => new Intl.NumberFormat(locale).format(n);
+export const num = (n, locale = 'es-US') => new Intl.NumberFormat(numLocale(locale)).format(n);
 
 export function longDate(iso, locale = 'es-US') {
   const d = iso.length === 10 ? new Date(`${iso}T12:00:00`) : new Date(iso);
@@ -177,10 +183,3 @@ export function revealOnScroll(elements) {
   elements.forEach((el) => io.observe(el));
 }
 
-/** Idioma da pessoa (o mesmo que o translate.js usa): escolha salva → navegador → espanhol. */
-export function uiLocale() {
-  const ok = ['es', 'en', 'pt', 'fr', 'de', 'it'];
-  const base = (c) => String(c ?? '').toLowerCase().split('-')[0];
-  try { const s = base(localStorage.getItem('alento-gt') ?? localStorage.getItem('alento-lang')); if (ok.includes(s)) return s; } catch { /* modo privado */ }
-  return (navigator.languages ?? [navigator.language]).map(base).find((c) => ok.includes(c)) ?? 'es';
-}

@@ -1,6 +1,6 @@
 // Paywall: tres planes con precios reales de Stripe, condiciones visibles y
 // botón principal "Comenzar mi transformación".
-import { api, h, icon, moneyCents, setBusy, toast, uiLocale } from './ui.js';
+import { api, h, icon, locale, moneyCents, setBusy, t, toast } from './ui.js';
 import { isNativeApp, nativePurchase, loadNativePlans } from './native-iap.js';
 import { pixelFor, track } from './track.js';
 import { needsLead, renderLeadGate } from './lead-gate.js';
@@ -85,7 +85,7 @@ export async function goToCheckout(plan, btn, { exitOffer = false, program = 'se
       if (lead.email && lead.terms) {
         try {
           if (btn) setBusy(btn, true, 'Preparando el pago seguro…');
-          const { url } = await api('/api/checkout/guest', { method: 'POST', body: { plan, exitOffer, program, email: lead.email, name: lead.name, acceptTerms: true, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale: uiLocale() } });
+          const { url } = await api('/api/checkout/guest', { method: 'POST', body: { plan, exitOffer, program, email: lead.email, name: lead.name, acceptTerms: true, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale } });
           busyBtn = btn;
           return window.location.assign(url);
         } catch (e2) {

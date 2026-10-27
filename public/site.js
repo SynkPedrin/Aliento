@@ -40,8 +40,8 @@
     document.querySelector('.lang__code').textContent = lang.short;
     document.querySelectorAll('.lang__menu [data-lang]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.lang === lang.code)));
     if (save) {
-      // alento-gt: o mesmo idioma no quiz e no app (traduzidos pelo translate.js)
-      try { localStorage.setItem('alento-lang', lang.code); localStorage.setItem('alento-gt', lang.code.split('-')[0].toLowerCase()); } catch (e) {}
+      // A mesma chave vale para o quiz e o app (public/js/lang).
+      try { localStorage.setItem('alento-lang', lang.code); } catch (e) {}
       const u = new URL(location.href); u.searchParams.set('lang', lang.code); history.replaceState(null, '', u);
     }
   }

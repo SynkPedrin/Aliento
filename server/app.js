@@ -14,6 +14,7 @@ import { trackRoutes } from './routes/track.js';
 import { growthRoutes, growthCron } from './routes/growth.js';
 import { HttpError } from './routes/util.js';
 import { createMailer, purchaseEmail } from './services/mailer.js';
+import { langOf, localizeFor } from './i18n.js';
 
 const PUBLIC_DIR = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'public');
 
@@ -29,10 +30,6 @@ const PIXEL_IMG = ' https://www.facebook.com https://analytics.tiktok.com';
 const PIXEL_CONN = ' https://www.facebook.com https://*.facebook.com https://analytics.tiktok.com https://*.tiktok.com';
 
 // Traducción de pantalla (Google Translate, solo si la persona la activa).
-const GT_SCRIPT = " https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.gstatic.com 'sha256-R6kjt5FwTd5vAw94Q08NLDZsSaGTzg4NsdIfKtECSp0='"; // hash del script de arranque del widget
-const GT_STYLE = ' https://www.gstatic.com https://translate.googleapis.com';
-const GT_IMG = ' https://www.gstatic.com https://fonts.gstatic.com https://translate.googleapis.com https://www.google.com';
-const GT_CONN = ' https://translate.googleapis.com https://translate-pa.googleapis.com https://translate.google.com';
 
 const NO_NOTIFIER = { enabled: false, publicKey: '', runDue: async () => ({ disabled: true }), notifyAchievements() {}, test: async () => 'disabled' };
 
@@ -53,12 +50,12 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
       'Content-Security-Policy': [
         "default-src 'self'",
-        `script-src 'self'${PIXEL_SCRIPT}${GT_SCRIPT}`,
-        isLanding ? `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com${GT_STYLE}` : `style-src 'self'${GT_STYLE}`,
+        `script-src 'self'${PIXEL_SCRIPT}`,
+        isLanding ? `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com` : `style-src 'self'`,
         isLanding ? "font-src 'self' https://fonts.gstatic.com" : "font-src 'self'",
-        `img-src 'self' data:${PIXEL_IMG}${GT_IMG}${req.path === '/growth' ? ' https:' : ''}`, // /growth: miniaturas de anuncios (CDN de Meta/TikTok)
+        `img-src 'self' data:${PIXEL_IMG}${req.path === '/growth' ? ' https:' : ''}`, // /growth: miniaturas de anuncios (CDN de Meta/TikTok)
         "media-src 'self' data:",
-        `connect-src 'self'${PIXEL_CONN}${GT_CONN}`,
+        `connect-src 'self'${PIXEL_CONN}`,
         "worker-src 'self'",
         "manifest-src 'self'",
         "form-action 'self' https://checkout.stripe.com",
@@ -102,7 +99,7 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
     const needsPassword = Boolean(p?.needs_password);
     const link = (needsPassword && await auth.recoveryLink(email)) || `${config.appUrl}/acceso?modo=entrar&email=${encodeURIComponent(email)}`;
     const msg = purchaseEmail({ locale: p?.locale, name: p?.name, plan: s.metadata?.plan, amountCents: s.amount_total, currency: s.currency,
-      link, needsPassword, supportUrl: `${config.appUrl}/soporte` });
+      link, needsPassword, supportUrl: `${config.appUrl}/soporte`, appUrl: config.appUrl });
     await mailer.send({ to: email, ...msg, idempotencyKey: `purchase-${s.id}` });
   }
 
@@ -152,6 +149,15 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
 
   // Por defecto, ninguna respuesta de la API se guarda en cachés (datos personales).
   app.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+
+  // Idioma: o navegador manda X-Alento-Lang; toda resposta JSON (textos, erros) sai traduzida pelo catálogo.
+  // O painel growth fica de fora (é em português e não tem catálogo).
+  app.use('/api', (req, res, next) => {
+    req.lang = langOf(req.get('x-alento-lang'));
+    res.vary('X-Alento-Lang');
+    if (req.lang !== 'es' && !req.path.startsWith('/growth')) { const json = res.json.bind(res); res.json = (body) => json(localizeFor(req.lang, body)); }
+    next();
+  });
 
   // Protección CSRF: las peticiones que modifican estado deben venir de nuestro origen.
   app.use('/api', (req, res, next) => {

@@ -1,4 +1,4 @@
-import { $, api, h, icon, money, num, renderFooter, renderHeader, revealOnScroll } from '../ui.js';
+import { $, api, h, icon, locale, money, num, renderFooter, renderHeader, revealOnScroll } from '../ui.js';
 import { gauge, hbars, radarChart, xyChart } from '../charts.js';
 import { renderPaywall } from '../paywall.js';
 import { track } from '../track.js';
@@ -371,7 +371,7 @@ function semFumoResults(data, me) {
 const FUNNEL = ['perfil', 'explicacion', 'proyeccion', 'planes'];
 const savedName = () => { try { const n = (localStorage.getItem('alento-name') || '').trim(); return n ? n[0].toUpperCase() + n.slice(1).toLowerCase() : ''; } catch { return ''; } };
 const addDays = (n, d = new Date()) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-const fmtDay = (d) => new Intl.DateTimeFormat('es', { day: 'numeric', month: 'short' }).format(d);
+const fmtDay = (d) => new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(d);
 
 // Respuestas por orden (1, 2, 3…), como las usa el embudo original.
 const ORDER = {
@@ -425,7 +425,7 @@ function semFumoFunnel(data, me) {
   const fmt = (v, d) => money(v, currency, locale, d);
   const name = savedName();
   const next = (to) => h('div', { class: 'sticky-cta' }, h('a', { class: 'btn btn--lg', href: `#${to}` }, 'Continuar'));
-  const months = [1, 2, 3].map((m) => new Intl.DateTimeFormat('es', { month: 'short', year: 'numeric' }).format(new Date(new Date().getFullYear(), new Date().getMonth() + m, 1)));
+  const months = [1, 2, 3].map((m) => new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' }).format(new Date(new Date().getFullYear(), new Date().getMonth() + m, 1)));
 
   const screens = {
     perfil: () => funnelStep(
@@ -618,7 +618,7 @@ function salesPage(r, fmt, name, me) {
     const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { benefitList.classList.add('is-in'); io.disconnect(); } }, { threshold: 0.3 });
     io.observe(benefitList);
   } else benefitList.classList.add('is-in');
-  const rel = new Intl.RelativeTimeFormat('es');
+  const rel = new Intl.RelativeTimeFormat(locale);
   const ticker = [RECENT_SIGNUPS.filter((_, i) => i % 2 === 0), RECENT_SIGNUPS.filter((_, i) => i % 2 === 1)];
   const paywallRoot = h('div');
 
@@ -633,7 +633,7 @@ function salesPage(r, fmt, name, me) {
             h('div', { class: 'week-strip__item' },
               pf.vape ? h('div', { class: 'smk-vape', ...delay }) : [h('img', { src: '/assets/quiz/cigarette.webp', alt: '', class: 'week-strip__cig' }), h('span', { class: 'smk-glow', ...delay, 'aria-hidden': 'true' })],
               h('span', { class: 'smk-wisp', ...delay, 'aria-hidden': 'true' })),
-            h('strong', {}, d.getDate()), h('span', {}, new Intl.DateTimeFormat('es', { weekday: 'short' }).format(d)));
+            h('strong', {}, d.getDate()), h('span', {}, new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(d)));
         })),
         h('p', { class: 'week-strip__stamp smk-stamp' }, pf.vape ? 'Se permite vapear' : pf.burnsTobacco ? 'Se permite fumar' : 'Se permite la nicotina')),
       h('div', { class: 'sales__stats' },

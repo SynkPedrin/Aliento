@@ -2,6 +2,8 @@
 import { $, api, h, longDate, setBusy, toast } from '../ui.js';
 import { MORE, errorState, initApp, loading, modal, page, userTimezone } from '../shell.js';
 import { installAction, installState } from '../install.js';
+import { LOCALES, LOCALE_NAMES } from '../lang/core.js';
+import { setLocale } from '../lang/index.js';
 
 const me = await initApp({ active: '/perfil', access: 'account' });
 const root = $('[data-root]');
@@ -19,9 +21,8 @@ async function load() {
   const zones = [...new Set([p.timezone, userTimezone(), ...ZONES])];
   const name = h('input', { class: 'input', id: 'name', value: p.name, maxlength: 80, autocomplete: 'given-name', required: true });
   const tz = h('select', { class: 'select', id: 'tz' }, zones.map((z) => h('option', { value: z, selected: z === p.timezone }, z.replace(/_/g, ' '))));
-  // Idioma da conta: o app é traduzido para ele (translate.js) em qualquer aparelho.
-  const LANGS = [['es', 'Español'], ['en', 'English'], ['pt', 'Português'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano']];
-  const lang = h('select', { class: 'select notranslate', id: 'lang', translate: 'no' }, LANGS.map(([v, l]) => h('option', { value: v, selected: v === p.locale }, l)));
+  // Idioma da conta: vale em qualquer aparelho (e nos e-mails).
+  const lang = h('select', { class: 'select', id: 'lang' }, LOCALES.map((v) => h('option', { value: v, lang: v, selected: v === p.locale }, LOCALE_NAMES[v])));
   const saveBtn = h('button', { class: 'btn btn--sm', type: 'submit' }, 'Guardar');
   const personal = h('form', { class: 'card stack', onsubmit: async (e) => {
     e.preventDefault();
@@ -29,8 +30,7 @@ async function load() {
     try {
       await api('/api/profile', { method: 'PATCH', body: { name: name.value, timezone: tz.value, locale: lang.value } });
       if (lang.value !== p.locale) {
-        // Mesmas chaves do translate.js: ao recarregar, a tela já abre no idioma novo.
-        try { localStorage.setItem('alento-gt', lang.value); localStorage.setItem('alento-lang', lang.value === 'pt' ? 'pt-BR' : lang.value); } catch { /* modo privado */ }
+        setLocale(lang.value); // ao recarregar, a tela já abre no idioma novo
         return location.reload();
       }
       toast('Datos guardados.');

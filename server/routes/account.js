@@ -9,7 +9,7 @@ import { HttpError, requireUser, wrap } from './util.js';
 
 import { attributionFromRequest, clientInfo, eventIdFor } from '../growth/context.js';
 
-const LOCALES = ['es', 'en', 'pt', 'fr', 'de', 'it'];
+const LOCALES = ['es', 'en', 'fr', 'de', 'pt-BR', 'pt-PT'];
 
 export function accountRoutes({ db, auth, billing, config, store, programs, growth = null, log = console }) {
   const r = Router();
