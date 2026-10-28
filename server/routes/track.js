@@ -81,6 +81,8 @@ export function trackRoutes({ db, config, growth, store, log = console }) {
         valueCents: Number.isInteger(props.valueCents) ? props.valueCents : null, currency: clip(props.currency, 3) });
       recorded += 1;
     }
+    // Envia já para Meta/TikTok (o cron da Vercel Hobby roda 1x por dia; sem isto o evento chegaria no dia seguinte).
+    if (recorded) await growth.forwarders?.processOutbox({ limit: 10 }).catch(() => null);
     res.json({ ok: true, recorded });
   }));
 

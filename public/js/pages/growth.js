@@ -13,7 +13,7 @@ const ROUTES = [
   ['funnel', null, funnel, 'funnels'],
   ['sales', 'Vendas', sales, null, 'cash'],
   ['leads', 'Leads', leads, null, 'mail'],
-  ['people', 'Clientes', people, null, 'user'],
+  ['people', null, people, 'sales'], // fora do menu: busca por e-mail para pedidos LGPD (exportar/excluir)
   ['emails', 'Funis de e-mail', emails, null, 'send'],
   ['ai', 'Modo IA', ai, null, 'spark'],
   ['tracking', 'Traqueamento', tracking, null, 'target'],

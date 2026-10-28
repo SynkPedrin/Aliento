@@ -76,15 +76,14 @@ test('de punta a punta: con consentimiento el evento llega a Meta y TikTok con e
   const vid = randomUUID(); vids.push(vid);
   const touch = { first: { utm_source: 'facebook', utm_content: 'ad_9' }, last: { utm_source: 'facebook', utm_content: 'ad_9', fbclid: 'abc123', fbp: 'fb.1.111.222' } };
   const idYes = randomUUID(), idNo = randomUUID();
+  calls.length = 0; // o /api/track já envia na hora (sem esperar o cron)
   const send = (marketing, id) => post('/api/track', { visitor: { id: vid, session: randomUUID(), touch }, language: 'pt-BR', page: '/quiz/alcohol', consent: { marketing }, events: [{ id, name: 'quiz_started', props: { program: 'alcohol' } }] });
   assert.equal((await send(false, idNo)).status, 200);
   assert.equal((await send(true, idYes)).status, 200);
   const cfg = await (await fetch(base + '/api/track/config')).json();
   assert.equal(cfg.meta[0].pixelId, '111222333'); assert.equal(cfg.tiktok[0].pixelId, 'TTPIX9');
   assert.ok(!JSON.stringify(cfg).includes('secreto') && !JSON.stringify(cfg).includes('tt-token'), 'o navegador não recebe tokens');
-  calls.length = 0;
-  const out = await growth.forwarders.processOutbox({ limit: 100 });
-  assert.ok(out.sent >= 2, JSON.stringify(out));
+  await growth.forwarders.processOutbox({ limit: 100 }); // o que sobrar na fila
   const meta = calls.find((c) => c.url.includes('facebook') && c.body.data[0].event_id === idYes);
   const tik = calls.find((c) => c.url.includes('tiktok') && c.body.data[0].event_id === idYes);
   assert.ok(meta && tik, 'ambos reciben el evento con su event_id');
@@ -109,8 +108,8 @@ test('vários pixels por rede: a venda vai para o pixel do perfil do anúncio (?
     const vid = randomUUID(); vids.push(vid);
     const id = randomUUID();
     const touch = { first: { utm_source: 'facebook', px: 'perfil10' }, last: { utm_source: 'facebook', px: 'perfil10' } };
-    assert.equal((await post('/api/track', { visitor: { id: vid, session: randomUUID(), touch }, page: '/quiz', consent: { marketing: true }, events: [{ id, name: 'quiz_started', props: {} }] })).status, 200);
     calls.length = 0;
+    assert.equal((await post('/api/track', { visitor: { id: vid, session: randomUUID(), touch }, page: '/quiz', consent: { marketing: true }, events: [{ id, name: 'quiz_started', props: {} }] })).status, 200);
     await growth.forwarders.processOutbox({ limit: 100 });
     const sent = calls.find((c) => c.url.includes('facebook') && c.body.data[0].event_id === id);
     assert.ok(sent, 'evento enviado ao Meta');
