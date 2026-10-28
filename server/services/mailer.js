@@ -142,3 +142,32 @@ ${w.intro.map((p) => `<p style="${P}">${esc(p)}</p>`).join('\n')}
 </td></tr></table></td></tr></table></body></html>`;
   return { subject: t.subject, text, html };
 }
+
+// ---------------------------------------------------------------- redefinir senha («esqueci minha senha»)
+const R = {
+  es: { subject: 'Crea una nueva contraseña para Alento', title: 'Nueva contraseña', body: 'Recibimos una solicitud para cambiar la contraseña de tu cuenta. Toca el botón para crear una nueva. El enlace caduca en 1 hora.', btn: 'Crear nueva contraseña', ignore: 'Si no lo pediste tú, ignora este correo: tu contraseña sigue igual.' },
+  en: { subject: 'Create a new password for Alento', title: 'New password', body: 'We received a request to change your account password. Tap the button to create a new one. The link expires in 1 hour.', btn: 'Create new password', ignore: 'If you didn’t ask for this, ignore this email: your password stays the same.' },
+  fr: { subject: 'Crée un nouveau mot de passe pour Alento', title: 'Nouveau mot de passe', body: 'Nous avons reçu une demande de changement du mot de passe de ton compte. Touche le bouton pour en créer un nouveau. Le lien expire dans 1 heure.', btn: 'Créer un nouveau mot de passe', ignore: 'Si ce n’est pas toi, ignore cet e-mail : ton mot de passe ne change pas.' },
+  de: { subject: 'Erstelle ein neues Passwort für Alento', title: 'Neues Passwort', body: 'Wir haben eine Anfrage erhalten, das Passwort deines Kontos zu ändern. Tippe auf den Button, um ein neues zu erstellen. Der Link läuft in 1 Stunde ab.', btn: 'Neues Passwort erstellen', ignore: 'Wenn du das nicht warst, ignoriere diese E-Mail: Dein Passwort bleibt gleich.' },
+  'pt-BR': { subject: 'Crie uma nova senha para o Alento', title: 'Nova senha', body: 'Recebemos um pedido para trocar a senha da sua conta. Toque no botão para criar uma nova. O link vale por 1 hora.', btn: 'Criar nova senha', ignore: 'Se não foi você, ignore este e-mail: sua senha continua a mesma.' },
+  'pt-PT': { subject: 'Cria uma nova palavra-passe para o Alento', title: 'Nova palavra-passe', body: 'Recebemos um pedido para alterar a palavra-passe da tua conta. Toca no botão para criares uma nova. A ligação é válida durante 1 hora.', btn: 'Criar nova palavra-passe', ignore: 'Se não foste tu, ignora este e-mail: a tua palavra-passe mantém-se.' },
+};
+
+/** E-mail de redefinir senha com o link no nosso domínio (o do Supabase sai em inglês e cai no spam). */
+export function recoveryEmail({ locale, link, appUrl = '' }) {
+  const r = R[locale] ?? R.es;
+  const F = "font-family:Figtree,Helvetica,Arial,sans-serif";
+  const P = `${F};font-size:16px;font-weight:300;line-height:1.6;color:#0A0F3C;margin:0 0 16px`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;background:#FFFFFF;color:#0A0F3C">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 16px 40px">
+<table role="presentation" width="100%" style="max-width:600px" cellpadding="0" cellspacing="0">
+<tr><td align="center" bgcolor="#1E3FFF" style="background:#1E3FFF;border-radius:22px;padding:36px 24px"><img src="${esc(appUrl)}/assets/brand/alento-logo-branco.png" width="150" height="29" alt="Alento" style="display:block;border:0;margin:0 auto"></td></tr>
+<tr><td style="padding:36px 8px 0">
+<p style="font-family:Varela,'Varela Round',Helvetica,Arial,sans-serif;font-weight:400;font-size:30px;line-height:1.15;color:#0A0F3C;margin:0 0 20px">${esc(r.title)}</p>
+<p style="${P}">${esc(r.body)}</p>
+<p style="margin:8px 0 32px"><a href="${esc(link)}" style="display:inline-block;background:#1E3FFF;color:#FFFFFF;text-decoration:none;${F};font-weight:500;font-size:16px;padding:16px 32px;border-radius:30px">${esc(r.btn)}</a></p>
+<p style="${F};font-size:13px;font-weight:300;line-height:1.6;color:#4A5185;margin:0">${esc(r.ignore)}</p>
+</td></tr></table></td></tr></table></body></html>`;
+  return { subject: r.subject, text: `${r.title}\n\n${r.body}\n\n${link}\n\n${r.ignore}`, html };
+}

@@ -5,13 +5,14 @@ import {
   AuthError, ACCESS_COOKIE, clearSessionCookies, isValidEmail, setSessionCookies, sharedRateLimiter,
 } from '../auth.js';
 import { isValidTimezone } from '../services/stats.js';
+import { recoveryEmail } from '../services/mailer.js';
 import { HttpError, requireUser, wrap } from './util.js';
 
 import { attributionFromRequest, clientInfo, eventIdFor } from '../growth/context.js';
 
 const LOCALES = ['es', 'en', 'fr', 'de', 'pt-BR', 'pt-PT'];
 
-export function accountRoutes({ db, auth, billing, config, store, programs, growth = null, log = console }) {
+export function accountRoutes({ db, auth, billing, config, store, programs, growth = null, mailer = null, log = console }) {
   const r = Router();
   // Límites compartidos entre instancias (Postgres): por IP y por cuenta.
   const ipLimiter = sharedRateLimiter(db, { windowSeconds: 15 * 60, max: 30 });
@@ -70,7 +71,15 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
     const { email } = req.body ?? {};
     if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
     if (await recoveryLimiter(`forgot:${req.ip}`) && await recoveryLimiter(`forgot:${email.trim().toLowerCase()}`)) {
-      await auth.sendRecovery(email.trim().toLowerCase());
+      const addr = email.trim().toLowerCase();
+      if (mailer?.enabled) {
+        // Pelo Resend, no idioma da conta e com link no nosso domínio. Sem conta, não há link e nada é enviado.
+        const link = await auth.recoveryLink(addr);
+        const p = link && await db.service.one('select p.locale from public.profiles p join auth.users u on u.id = p.user_id where lower(u.email) = $1', [addr]);
+        if (link) await mailer.send({ to: addr, ...recoveryEmail({ locale: p?.locale, link, appUrl: config.appUrl }) }).catch((e) => log.error?.(`[mail] senha: ${e.message}`));
+      } else {
+        await auth.sendRecovery(addr);
+      }
     }
     res.json({ ok: true });
   }));
