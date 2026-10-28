@@ -1,7 +1,7 @@
 // Panel de Operación y Growth: SPA por hash (#/overview, #/funnel, …). Solo equipo con 2FA.
 import { $, ApiError, api, brandLink, h, localDay, setBusy, toast } from '../ui.js';
 import { act, errorEl, loadingEl, state, field } from '../growth/lib.js';
-import { ai, emails } from '../growth/screens2.js';
+import { ai, emails, people } from '../growth/screens2.js';
 import { config as configScreen, funnel, funnels, home, leads, roadmap, sales, tracking } from '../growth/v2.js';
 
 const root = $('[data-root]');
@@ -13,6 +13,7 @@ const ROUTES = [
   ['funnel', null, funnel, 'funnels'],
   ['sales', 'Vendas', sales, null, 'cash'],
   ['leads', 'Leads', leads, null, 'mail'],
+  ['people', 'Clientes', people, null, 'user'],
   ['emails', 'Funis de e-mail', emails, null, 'send'],
   ['ai', 'Modo IA', ai, null, 'spark'],
   ['tracking', 'Traqueamento', tracking, null, 'target'],
@@ -24,6 +25,7 @@ const ICONS = {
   home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   chart: '<path d="M4 20V4M4 20h16"/><path d="M7 15l4-5 3 3 5-6"/>',
   cash: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M7 9v.01M17 15v.01"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   send: '<path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>',
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z"/>',
