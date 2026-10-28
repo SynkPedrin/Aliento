@@ -1,15 +1,17 @@
-/* Seletor de idioma (flutuante). */
-.gt-btn { position: fixed; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 45; display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 13px; border-radius: 999px; border: 1px solid rgba(30, 63, 255, .25); background: #fff; color: #0A0F3C; font: 500 13px/1 'Figtree', system-ui, sans-serif;
-  box-shadow: 0 10px 24px -12px rgba(10, 15, 60, .45); cursor: pointer; }
-.gt-btn:hover { border-color: #1E3FFF; }
+/* Seletor de idioma: no topo do quiz (à direita do logo) e no canto do resultado. Rola junto, nunca fica por cima do conteúdo. */
+.gt-wrap { position: relative; }
+.gt-wrap--page { position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 12px; z-index: 5; }
+.quiz__end { justify-self: end; display: flex; align-items: center; gap: 8px; }
+.gt-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 999px; border: 1px solid currentColor; background: none;
+  color: inherit; opacity: .7; font: 500 12px/1 'Figtree', system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+.gt-btn:hover, .gt-btn[aria-expanded='true'] { opacity: 1; }
 .gt-btn:focus-visible, .gt-menu button:focus-visible { outline: 3px solid #3EE0B5; outline-offset: 2px; }
-.gt-menu { position: fixed; right: 12px; bottom: calc(128px + env(safe-area-inset-bottom)); z-index: 46; width: min(240px, calc(100vw - 24px)); padding: 8px; background: #fff; color: #0A0F3C;
+.gt-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 46; width: 220px; max-width: calc(100vw - 24px); padding: 8px; background: #fff; color: #0A0F3C;
   border-radius: 16px; border: 1px solid rgba(30, 63, 255, .18); box-shadow: 0 24px 50px -20px rgba(10, 15, 60, .5); }
 .gt-menu[hidden] { display: none; }
 .gt-menu button { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; border-radius: 10px; background: none; color: inherit; font: 500 14px/1.2 'Figtree', system-ui, sans-serif; cursor: pointer; }
 .gt-menu button:hover { background: #EEF3FF; }
 .gt-menu button[aria-checked='true'] { background: #EEF3FF; font-weight: 700; }
-/* Quiz e resultado: no canto superior, menor. */
-.gt-btn--top { top: calc(10px + env(safe-area-inset-top)); bottom: auto; padding: 7px 10px; font-size: 12px; box-shadow: none; }
-.gt-menu--top { top: calc(48px + env(safe-area-inset-top)); bottom: auto; }
+/* Celular: não cabem contagem e idioma ao lado do logo; a barra de progresso já mostra o avanço. */
+.quiz__end .quiz__count { white-space: nowrap; }
+@media (max-width: 420px) { .quiz__end .quiz__count { display: none; } }

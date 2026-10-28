@@ -195,7 +195,7 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
         tasks: tasks.map((t) => ({ ...t, done: Boolean(t.done_at) })),
       };
     });
-    res.json({ ...data, currency: config.currency, locale: config.locale, subscription: subscriptionView(req.subscription),
+    res.json({ ...data, currency: req.subscription?.currency ?? config.currency, locale: config.locale, subscription: subscriptionView(req.subscription),
       triggerOptions: Object.entries(TRIGGERS).map(([id, t]) => ({ id, label: t.label })) });
   }));
 
@@ -381,7 +381,7 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
     await requireProgram(req, program);
     const rows = await asUser(req, (q) => q.rows('select * from public.user_goals where user_id = $1 and program_slug = $2 order by created_at desc limit 50',
       [req.user.id, program]));
-    res.json({ program, current: rows.find((g) => !g.superseded_at) ?? null, history: rows.filter((g) => g.superseded_at), strategies: Object.values(STRATEGIES), currency: config.currency });
+    res.json({ program, current: rows.find((g) => !g.superseded_at) ?? null, history: rows.filter((g) => g.superseded_at), strategies: Object.values(STRATEGIES), currency: req.subscription?.currency ?? config.currency });
   }));
 
   r.put('/goals', semFumo, wrap(async (req, res) => {
@@ -499,7 +499,7 @@ export function appRoutes({ db, billing, config, notifier, programs }) {
         journey: { totals: journey.totals, chapters: journey.chapters.map((c) => ({ number: c.number, title: c.title, status: c.status, completedLessons: c.completedLessons, totalLessons: c.lessons.length })) },
       };
     });
-    res.json({ ...out, currency: config.currency, locale: config.locale });
+    res.json({ ...out, currency: req.subscription?.currency ?? config.currency, locale: config.locale });
   }));
 
   // ---------------------------------------------------------------- logros

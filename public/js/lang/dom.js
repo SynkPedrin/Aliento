@@ -18,7 +18,7 @@ export function startDomTranslation(t) {
     done.set(node, node.nodeValue);
   }
   function attrs(el) {
-    if (skip(el)) return;
+    if (!el || el.closest?.('[translate="no"], [contenteditable="true"]')) return; // placeholder de textarea também traduz
     for (const a of ATTRS) {
       const v = el.getAttribute(a);
       if (v && /[A-Za-zÁÉÍÓÚáéíóúñ]/.test(v)) { const out = t(v.trim()); if (out !== v.trim()) el.setAttribute(a, out); }
