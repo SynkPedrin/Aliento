@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { ASSESSMENT_COOKIE, cookieOptions, sharedRateLimiter } from '../auth.js';
 import { QUIZ_VERSION, PROGRAM_STEPS, STEPS, missingAnswers, publicQuiz, validateAnswer } from '../quiz.js';
 import { computeResult } from '../results.js';
+import { localizePlans } from '../billing.js';
 import { wrap } from './util.js';
 
 /** Sesión de cuestionario del navegador o, si no hay, la última completada de la cuenta. */
@@ -183,7 +184,7 @@ export function publicRoutes({ db, billing, config, store, programs }) {
     const program = String(req.query.program ?? 'sem-fumo');
     const p = await programs.get(program);
     res.json({
-      plans: await billing.getPlans(program),
+      plans: localizePlans(await billing.getPlans(program), req.get('x-vercel-ip-country')), // país do visitante (Vercel)
       paymentsEnabled: billing.enabled,
       purchasable: Boolean(p && p.commercial_status === 'active'),
     });
@@ -192,7 +193,7 @@ export function publicRoutes({ db, billing, config, store, programs }) {
   r.post('/exit-offer', wrap(async (req, res) => {
     const program = req.body?.program ? String(req.body.program) : null;
     const s = await store.current(req, program);
-    res.json({ offer: await billing.claimExitOffer(s?.id, req.user?.id ?? s?.claimed_user_id, req.body?.plan) });
+    res.json({ offer: await billing.claimExitOffer(s?.id, req.user?.id ?? s?.claimed_user_id, req.body?.plan, req.get('x-vercel-ip-country')) });
   }));
 
   return r;
