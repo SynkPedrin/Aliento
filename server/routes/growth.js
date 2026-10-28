@@ -271,31 +271,36 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
     res.json({ ok: true });
   }));
 
-  // ---------------------------------------------------------------- suporte de acesso
+  // ---------------------------------------------------------------- suporte de acesso (Clientes e Vendas)
   const accountOf = async (key) => {
     const userId = (await people.timeline(String(key)))?.person?.user_id;
     if (!userId) throw new HttpError(404, 'Esta pessoa não tem conta no app.', 'NO_ACCOUNT');
     return userId;
   };
+  const userIdOf = (id) => { if (!/^[0-9a-f-]{36}$/i.test(String(id))) throw new HttpError(404, 'Conta não encontrada.', 'NO_ACCOUNT'); return String(id); };
   // Link para entrar e criar/redefinir a senha; o suporte envia por e-mail ou WhatsApp.
-  r.post('/people/:key/access-link', wrap(async (req, res) => {
+  async function accessLink(req, res, userId) {
     canEdit(req);
-    const { email } = await q.one('select email from auth.users where id = $1', [await accountOf(req.params.key)]);
-    const link = await auth.recoveryLink(email);
+    const u = await q.one('select email from auth.users where id = $1', [userId]);
+    if (!u) throw new HttpError(404, 'Conta não encontrada.', 'NO_ACCOUNT');
+    const link = await auth.recoveryLink(u.email);
     if (!link) throw new HttpError(502, 'Não foi possível gerar o link agora. Tente de novo.', 'LINK_FAILED');
-    await audit(req, 'person.access_link', 'person', String(req.params.key));
-    res.json({ email, link });
-  }));
-  r.post('/people/:key/email', wrap(async (req, res) => {
+    await audit(req, 'person.access_link', 'user', userId);
+    res.json({ email: u.email, link });
+  }
+  async function changeEmail(req, res, userId) {
     canEdit(req);
-    const userId = await accountOf(req.params.key);
     const email = String(req.body?.email ?? '').trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new HttpError(422, 'E-mail inválido.', 'INVALID');
     if (!(await auth.setEmail(userId, email))) throw new HttpError(409, 'Este e-mail já tem outra conta.', 'EMAIL_TAKEN');
     await billing?.setCustomerEmail(userId, email);
-    await audit(req, 'person.email', 'person', String(req.params.key), { email });
+    await audit(req, 'person.email', 'user', userId, { email });
     res.json({ ok: true, email });
-  }));
+  }
+  r.post('/people/:key/access-link', wrap(async (req, res) => accessLink(req, res, await accountOf(req.params.key))));
+  r.post('/people/:key/email', wrap(async (req, res) => changeEmail(req, res, await accountOf(req.params.key))));
+  r.post('/users/:id/access-link', wrap(async (req, res) => accessLink(req, res, userIdOf(req.params.id))));
+  r.post('/users/:id/email', wrap(async (req, res) => changeEmail(req, res, userIdOf(req.params.id))));
 
   // ---------------------------------------------------------------- e-mails
   r.get('/emails', wrap(async (req, res) => {

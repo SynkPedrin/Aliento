@@ -1,6 +1,6 @@
 // Painel v2: visão geral, analytics (retenção tela a tela, estilo VTurb), vendas, leads, traqueamento por pixel, melhorias futuras e configurações.
 import { h, toast } from '../ui.js';
-import { act, csvButton, dt, emptyEl, eur, field, gapi, int, load, pct, state } from './lib.js';
+import { act, csvButton, dt, emptyEl, eur, field, gapi, int, load, pct, state, supportActions } from './lib.js';
 import { GROUPS, groupForm, staffSection } from './settings.js';
 
 const PROGRAM_NAMES = { 'sem-fumo': 'Sem Fumo · ES', alcohol: 'Álcool', azucar: 'Açúcar', ansiedad: 'Ansiedade', sueno: 'Sono' };
@@ -251,9 +251,12 @@ async function openSale(id) {
     const o = d.order, t = o.last_touch ?? {}, f = o.first_touch ?? {};
     const dl = (pairs) => h('dl', { class: 'v2-dl' }, pairs.filter(([, v]) => v != null && v !== '').flatMap(([k, v]) => [h('dt', {}, k), h('dd', {}, v)]));
     const DEST = { meta: 'Meta', tiktok: 'TikTok', customerio: 'E-mail' };
+    const who = h('p', { class: 'muted' }, [o.email, o.country].filter(Boolean).join(' · '));
+    const support = o.user_id ? supportActions(o.user_id, o.email, (email) => { who.textContent = [email, o.country].filter(Boolean).join(' · '); }) : null;
     drawer.replaceChildren(
       h('button', { type: 'button', class: 'v2-back', onclick: close }, '✕ Fechar'),
-      h('h2', { class: 'v2-drawer__title' }, o.name ?? 'Cliente'), h('p', { class: 'muted' }, [o.email, o.country].filter(Boolean).join(' · ')),
+      h('h2', { class: 'v2-drawer__title' }, o.name ?? 'Cliente'), who,
+      support?.buttons.length ? h('div', { class: 'gr-actions' }, ...support.buttons) : null, support?.box ?? null,
       card(h('h3', {}, 'Compra'), dl([['Plano', PLAN_NAMES[o.plan] ?? o.plan], ['Tipo', o.kind === 'renewal' ? 'Renovação' : 'Primeira compra'], ['Valor', eur(o.amount_cents, o.currency)], ['Data', dt(o.paid_at)],
         ['Assinatura', d.subscription ? chip(d.subscription.status, d.subscription.status === 'active' ? 'up' : null) : '—'], ['Reembolsos', d.refunds.length ? d.refunds.map((r) => eur(r.amount_cents)).join(', ') : null]])),
       card(h('h3', {}, 'De onde veio (último clique)'), dl([['Origem', t.utm_source ?? 'direto'], ['Mídia', t.utm_medium], ['Campanha', t.utm_campaign], ['Conjunto', t.utm_term], ['Criativo', t.utm_content], ['Pixel (px)', t.px], ['Página de entrada', t.landing]])),

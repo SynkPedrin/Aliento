@@ -158,3 +158,24 @@ export function testMessage(what, r) {
   if (/[ñ¿¡]|ción\b|\b(sin|falta|error|configurad[oa])\b/i.test(m)) return r?.ok ? 'Conexão verificada.' : 'A conexão falhou. Revise as credenciais e tente novamente.';
   return m;
 }
+
+/** Suporte de acesso de uma conta: link para criar senha nova e troca de e-mail. Devolve { buttons, box }. */
+export function supportActions(userId, currentEmail, onEmail) {
+  const base = `/users/${encodeURIComponent(userId)}`;
+  const box = h('div', { 'aria-live': 'polite' });
+  const link = (btn) => act(btn, () => gapi(`${base}/access-link`, { method: 'POST' }), null, ({ email, link: url }) => {
+    const input = h('input', { class: 'input', readonly: true, value: url, onfocus: (e) => e.target.select() });
+    box.replaceChildren(h('div', { class: 'notice u-mt' },
+      h('p', {}, `Link de acesso de ${email}. Envie para a pessoa: ao abrir, ela cria uma senha nova. Vale por cerca de 1 hora e só funciona uma vez.`),
+      h('div', { class: 'gr-search' }, input, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => navigator.clipboard.writeText(url).then(() => toast('Link copiado')) }, 'Copiar'))));
+  });
+  const email = async (btn) => {
+    const next = prompt(`Novo e-mail da conta (hoje: ${currentEmail ?? '—'}). A pessoa passa a entrar com ele, e os recibos da Stripe vão para ele.`)?.trim();
+    if (next) await act(btn, () => gapi(`${base}/email`, { method: 'POST', body: { email: next } }), `E-mail trocado para ${next}`, (r) => onEmail?.(r.email));
+  };
+  const buttons = state.canEdit ? [
+    h('button', { class: 'btn btn--sm', type: 'button', onclick: (e) => link(e.currentTarget) }, 'Gerar link de acesso'),
+    h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: (e) => email(e.currentTarget) }, 'Trocar e-mail'),
+  ] : [];
+  return { buttons, box };
+}
