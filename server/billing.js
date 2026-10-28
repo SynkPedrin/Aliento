@@ -369,7 +369,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         currency = excluded.currency, interval = excluded.interval, interval_count = excluded.interval_count,
         current_period_end = excluded.current_period_end, cancel_at_period_end = excluded.cancel_at_period_end`,
     [sub.id, userId, customerId, await programFromSubscription(sub), await planFromSubscription(sub), price?.id ?? '',
-      price?.unit_amount ?? null, price?.currency?.toUpperCase() ?? null, price?.recurring?.interval ?? null,
+      price?.unit_amount ?? null, (sub.currency ?? price?.currency)?.toUpperCase() ?? null, price?.recurring?.interval ?? null, // sub.currency = moeda cobrada (currency_options)
       price?.recurring?.interval_count ?? null, sub.status, periodEnd, Boolean(sub.cancel_at_period_end || sub.cancel_at)]);
     if (customerId) {
       await q.exec('update public.profiles set stripe_customer_id = $1 where user_id = $2 and stripe_customer_id is null', [customerId, userId]);

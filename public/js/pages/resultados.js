@@ -1,11 +1,10 @@
-import { $, api, h, icon, locale, money, num, renderFooter, renderHeader, revealOnScroll } from '../ui.js';
+import { $, api, h, icon, locale, money, num, renderHeader, revealOnScroll } from '../ui.js';
 import { gauge, hbars, radarChart, xyChart } from '../charts.js';
 import { renderPaywall } from '../paywall.js';
 import { track } from '../track.js';
 import { FAQ, MEMBERS, RECENT_SIGNUPS } from '../content/sem-fumo-es.js';
 
-const root = $('[data-root]');
-renderFooter($('[data-footer]'));
+const root = $('[data-root]'); // sem rodapé: o funil termina no botão
 
 const SLUGS = ['sem-fumo', 'alcohol', 'azucar', 'ansiedad', 'sueno'];
 

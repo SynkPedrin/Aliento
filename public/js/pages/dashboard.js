@@ -30,8 +30,8 @@ async function render() {
   const today = h('section', { class: 'card today-card' },
     h('p', { class: 'kicker' }, 'Hoy'),
     h('p', { class: 'big-number' }, num(t.cigarettes, d.locale), h('span', { class: 'muted', style: 'font-size:18px;margin-left:8px' }, t.cigarettes === 1 ? 'cigarrillo' : 'cigarrillos')),
-    h('p', { class: 'muted' }, `Objetivo de hoy: ${t.target === 0 ? 'cero' : `máximo ${t.target}`} · `,
-      t.checkedIn ? h('span', { class: 'pill pill--ok' }, 'Día sin fumar registrado')
+    h('p', { class: 'muted' }, `Objetivo de hoy: ${t.target === 0 ? 'cero' : `máximo ${t.target}`}`),
+    h('p', {}, t.checkedIn ? h('span', { class: 'pill pill--ok' }, 'Día sin fumar registrado')
         : h('span', { class: `pill ${within ? 'pill--ok' : 'pill--warn'}` }, within ? 'Dentro de tu objetivo' : 'Por encima del objetivo')),
     h('div', { class: 'progress-line', 'aria-hidden': 'true' }, h('span', { style: `width:${Math.min(100, t.target ? (t.cigarettes / t.target) * 100 : t.cigarettes ? 100 : 0)}%` })),
     h('div', { class: 'actions-row' },

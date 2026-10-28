@@ -1,4 +1,4 @@
-import { $, api, h, ICONS, MARK_SVG, setBusy, toast } from '../ui.js';
+import { $, api, h, ICONS, MARK_SVG, money, setBusy, toast } from '../ui.js';
 import { giveHealthConsent, submitLead, track } from '../track.js';
 import { radarChart } from '../charts.js';
 import { markLead, needsLead } from '../lead-gate.js';
@@ -115,8 +115,7 @@ function renderHero(step) {
       h('button', { type: 'button', class: 'option-pair', 'aria-pressed': String(answers[step.id] === o.id), onclick: pick(step, o) }, o.label))),
     h('p', { class: 'help hero-screen__legal' },
       'Si sigues adelante, aceptas nuestros ', h('a', { href: '/terminos', target: '_blank' }, 'Términos y condiciones'), ' | ',
-      h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.'),
-    h('p', { class: 'help hero-screen__legal' }, `© ${new Date().getFullYear()} Alento. Todos los derechos reservados.`));
+      h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.')); // fica: é o aceite que permite guardar respostas de saúde (RGPD)
 }
 
 function renderSingle(step) {
@@ -261,7 +260,7 @@ function renderScience(step) {
 /** Ahorro anual según el gasto mensual elegido, con barra animada y etiqueta (como en el original). */
 function renderSavings(step) {
   const annual = steps.find((s) => s.id === step.from)?.options?.find((o) => o.id === answers[step.from])?.annual ?? 2304;
-  const fmt = (v) => new Intl.NumberFormat(config.locale, { style: 'currency', currency: config.currency, maximumFractionDigits: 0 }).format(v);
+  const fmt = (v) => money(v, config.currency, config.locale, 0);
   const pct = Math.max(6, Math.min(100, Math.round((annual / (annual + 200)) * 100)));
   const fill = h('span', { class: 'savings-bar__fill' });
   const pill = h('span', { class: 'savings-bar__pill' }, fmt(annual));
@@ -429,8 +428,10 @@ async function init() {
   try {
     const [quiz, cfg, state] = await Promise.all([
       api(`/api/quiz?program=${PROGRAM}`), api('/api/config'), api(`/api/assessment?program=${PROGRAM}`)]);
-    steps = quiz.steps;
     config = cfg;
+    // shortcut: as faixas de gasto são as mesmas em qualquer moeda (só troca o símbolo); criar faixas por moeda se o Brasil virar mercado.
+    const sym = currencySymbol();
+    steps = config.currency === 'USD' ? quiz.steps : quiz.steps.map((s) => (s.options ? { ...s, options: s.options.map((o) => ({ ...o, label: o.label.replaceAll('$', sym) })) } : s));
     let assessment = state.assessment;
     const restart = new URLSearchParams(location.search).has('nuevo');
     if (assessment?.completed && !restart) return window.location.replace(`/resultados?program=${PROGRAM}`);

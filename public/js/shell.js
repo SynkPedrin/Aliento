@@ -1,5 +1,5 @@
 // Estructura común del área privada: protección de acceso, navegación y componentes compartidos.
-import { $, api, h, ICONS, MARK_SVG, mountSplash, splashReady, toast } from './ui.js';
+import { $, api, h, ICONS, MARK_SVG, mountSplash, splashReady, t, toast } from './ui.js';
 
 import { listenNativeUpdates } from './native-iap.js';
 listenNativeUpdates();
@@ -207,7 +207,7 @@ export function cravingFlow({ triggerOptions, onDone } = {}) {
 export function greeting(name) {
   const hour = new Date().getHours();
   const part = hour < 6 ? 'Buenas noches' : hour < 13 ? 'Buenos días' : hour < 20 ? 'Buenas tardes' : 'Buenas noches';
-  return `${part}, ${name}`;
+  return `${t(part)}, ${name}`; // o nome junto impede o catálogo de achar a saudação
 }
 
 export function rangeTabs(current, onChange) {

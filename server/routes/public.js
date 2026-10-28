@@ -3,7 +3,7 @@ import { Router } from 'express';
 import { ASSESSMENT_COOKIE, cookieOptions, sharedRateLimiter } from '../auth.js';
 import { QUIZ_VERSION, PROGRAM_STEPS, STEPS, missingAnswers, publicQuiz, validateAnswer } from '../quiz.js';
 import { computeResult } from '../results.js';
-import { localizePlans } from '../billing.js';
+import { currencyForCountry, localizePlans } from '../billing.js';
 import { wrap } from './util.js';
 
 /** Sesión de cuestionario del navegador o, si no hay, la última completada de la cuenta. */
@@ -91,9 +91,12 @@ export function publicRoutes({ db, billing, config, store, programs }) {
   // Respuestas públicas, iguales para todos (sin datos personales): caché en la CDN.
   const publicCache = (res) => res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400');
 
+  // Moeda do país do visitante (a mesma do checkout): varia por pessoa, então sem cache na CDN.
+  const visitorCurrency = (req) => currencyForCountry(req.get('x-vercel-ip-country')) ?? config.currency;
+
   r.get('/config', (req, res) => {
-    publicCache(res);
-    res.json({ currency: config.currency, locale: config.locale, paymentsEnabled: billing.enabled });
+    res.set('Cache-Control', 'private, max-age=300');
+    res.json({ currency: visitorCurrency(req), locale: config.locale, paymentsEnabled: billing.enabled });
   });
 
   r.get('/quiz', (req, res) => {
@@ -172,7 +175,7 @@ export function publicRoutes({ db, billing, config, store, programs }) {
     const s = await store.current(req, program);
     const a = s?.completed_at ? await store.assessmentFor(s.id) : null;
     if (!a) return res.status(404).json({ error: 'Aún no has completado el cuestionario.', code: 'NO_RESULT' });
-    res.json({ result: a.result, program: a.program_slug || s.program_slug || 'sem-fumo', completedAt: s.completed_at, currency: config.currency, locale: config.locale });
+    res.json({ result: a.result, program: a.program_slug || s.program_slug || 'sem-fumo', completedAt: s.completed_at, currency: visitorCurrency(req), locale: config.locale });
   }));
 
   r.get('/catalog', wrap(async (req, res) => {
