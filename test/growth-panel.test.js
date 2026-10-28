@@ -201,6 +201,14 @@ test('painel v2: visão geral, funis com retenção tela a tela, vendas com UTMs
     assert.ok(home.recent.some((r) => r.order_id === orderId));
     const funnels = (await s.c('/api/growth/funnels?days=1')).body.rows;
     assert.ok(funnels.find((f) => f.program === 'sem-fumo').started >= 1);
+    assert.ok(funnels.every((f) => f.status === 'active'), 'Analytics: só quizzes à venda');
+    assert.match(funnels.find((f) => f.program === 'sem-fumo').link, /\/quiz\/sem-fumo$/);
+    // Moeda escolhida no painel: cada moeda separada, sem conversão.
+    const other = config.currency === 'BRL' ? 'EUR' : 'BRL';
+    const inOther = (await s.c(`/api/growth/home?currency=${other}`)).body;
+    assert.equal(inOther.currency, other);
+    assert.ok(inOther.cards.d30.revenue_cents < home.cards.d30.revenue_cents, 'a venda em outra moeda não entra no total');
+    assert.ok(Array.isArray((await s.c('/api/growth/leads?days=7')).body.quizzes), 'leads separados por quiz');
     const f = (await s.c('/api/growth/funnels/sem-fumo?days=1&dim=country&val=ES')).body;
     assert.equal(f.screens[0].id, 'q_diario'); assert.equal(f.screens[0].n, 1); assert.equal(f.screens[0].label, 'P1');
     assert.equal(f.screens[0].retention_pct, 100);

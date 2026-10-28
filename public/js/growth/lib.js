@@ -86,7 +86,15 @@ export async function load(target, fn) {
   }
 }
 
-export const gapi = (path, opts) => api(`/api/growth${path}`, opts);
+// Moeda que o painel mostra (escolhida na Visão geral). Cada moeda fica separada, sem conversão.
+export const CURRENCIES = ['USD', 'BRL', 'EUR', 'GBP'];
+export function viewCurrency(set) {
+  try { if (set) localStorage.setItem('gr-currency', set); const c = localStorage.getItem('gr-currency'); return CURRENCIES.includes(c) ? c : null; } catch { return set ?? null; }
+}
+export const gapi = (path, opts) => {
+  const cur = !opts?.method && viewCurrency();
+  return api(`/api/growth${path}${cur ? `${path.includes('?') ? '&' : '?'}currency=${cur}` : ''}`, opts);
+};
 
 /** Acción con botón ocupado y aviso. */
 export async function act(btn, fn, okMsg, after) {

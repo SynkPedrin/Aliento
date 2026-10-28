@@ -1,6 +1,6 @@
 // Painel v2: visão geral, analytics (retenção tela a tela, estilo VTurb), vendas, leads, traqueamento por pixel, melhorias futuras e configurações.
 import { h, toast } from '../ui.js';
-import { act, csvButton, dt, emptyEl, eur, field, gapi, int, load, pct, state, supportActions } from './lib.js';
+import { CURRENCIES, act, csvButton, dt, emptyEl, eur, field, gapi, int, load, pct, state, supportActions, viewCurrency } from './lib.js';
 import { GROUPS, groupForm, staffSection } from './settings.js';
 
 const PROGRAM_NAMES = { 'sem-fumo': 'Sem Fumo · ES', alcohol: 'Álcool', azucar: 'Açúcar', ansiedad: 'Ansiedade', sueno: 'Sono' };
@@ -35,7 +35,9 @@ const N = (label) => ({ label, num: true });
 
 // ---------------------------------------------------------------- Visão geral
 export async function home(root) {
-  root.replaceChildren(head('Visão geral', 'Faturamento confirmado pelo Stripe, já descontados os reembolsos.'), h('div', { 'data-body': '' }));
+  const pick = h('select', { class: 'v2-input', 'aria-label': 'Moeda', onchange: (e) => { viewCurrency(e.target.value); home(root); } },
+    CURRENCIES.map((c) => h('option', { value: c, selected: c === (viewCurrency() ?? state.currency) }, { USD: 'US$ · Dólar', BRL: 'R$ · Real', EUR: '€ · Euro', GBP: '£ · Libra' }[c])));
+  root.replaceChildren(head('Visão geral', 'Faturamento confirmado pelo Stripe, já descontados os reembolsos. Cada moeda é vista separadamente.', pick), h('div', { 'data-body': '' }));
   const body = root.querySelector('[data-body]');
   await load(body, async () => {
     const d = await gapi('/home');
@@ -53,7 +55,7 @@ export async function home(root) {
             { onRow: (i) => goto('funnel', { p: d.funnels[i].program, days: '1' }) })
           : emptyEl('Sem visitas hoje', 'Quando alguém abrir um quiz, ele aparece aqui.')),
         card(h('h2', {}, 'Últimas vendas'), d.recent.length
-          ? table(['Quando', 'Cliente', 'Origem', N('Valor')], d.recent.map((o) => [dt(o.paid_at), o.name ?? '—', chip(o.source ?? 'direto'), eur(o.amount_cents)]), { onRow: (i) => goto('sales', { open: d.recent[i].order_id, days: '30' }) })
+          ? table(['Quando', 'Cliente', 'Origem', N('Valor')], d.recent.map((o) => [dt(o.paid_at), o.name ?? '—', chip(o.source ?? 'direto'), eur(o.amount_cents, o.currency)]), { onRow: (i) => goto('sales', { open: d.recent[i].order_id, days: '30' }) })
           : emptyEl('Nenhuma venda ainda'))));
   });
 }
@@ -65,10 +67,15 @@ export async function funnels(root, _f, params) {
   await load(body, async () => {
     const d = await gapi(`/funnels?days=${params.days ?? '7'}`);
     state.currency = d.currency;
+    if (!d.rows.length) { body.replaceChildren(emptyEl('Nenhum quiz à venda', 'Quando um programa estiver ativo, o funil dele aparece aqui.')); return; }
     body.replaceChildren(h('div', { class: 'v2-grid v2-grid--3' }, d.rows.map((f) => {
-      const active = f.status === 'active';
-      return h('button', { type: 'button', class: `v2-card v2-funnel${active ? '' : ' is-off'}`, onclick: () => goto('funnel', { p: f.program, days: params.days ?? '7' }) },
-        h('span', { class: 'v2-row' }, h('strong', {}, PROGRAM_NAMES[f.program] ?? f.program), chip(active ? 'ativo' : 'em breve', active ? 'up' : null)),
+      // Copia o link do quiz sem abrir o funil (o card inteiro é um botão).
+      const copy = h('span', { role: 'button', tabindex: '0', class: 'v2-chip', title: `Copiar link: ${f.link}`, 'aria-label': 'Copiar link do quiz',
+        onclick: (e) => { e.stopPropagation(); navigator.clipboard.writeText(f.link).then(() => toast('Link do quiz copiado')); },
+        onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } } }, '⧉ Copiar link');
+      return h('div', { role: 'button', tabindex: '0', class: 'v2-card v2-funnel', onclick: () => goto('funnel', { p: f.program, days: params.days ?? '7' }),
+        onkeydown: (e) => { if (e.key === 'Enter' && e.target === e.currentTarget) goto('funnel', { p: f.program, days: params.days ?? '7' }); } },
+        h('span', { class: 'v2-row' }, h('strong', {}, PROGRAM_NAMES[f.program] ?? f.program), copy),
         sparkline(f.daily),
         h('span', { class: 'v2-grid v2-grid--3 v2-funnel__nums' },
           h('span', {}, h('b', {}, int(f.started)), h('small', {}, 'Iniciaram')),
@@ -234,7 +241,7 @@ export async function sales(root, _f, params) {
         d.rows.length ? table(['Data', 'Cliente', 'Plano', 'Origem', 'Campanha', 'Criativo', 'País', N('Valor')], d.rows.map((o) => [
           dt(o.paid_at), o.name ?? o.email ?? '—', PLAN_NAMES[o.plan] ?? o.plan ?? '—', chip(o.last_touch?.utm_source ?? 'direto'),
           h('span', { class: 'muted' }, o.last_touch?.utm_campaign ?? '—'), h('span', { class: 'muted' }, o.last_touch?.utm_content ?? '—'), o.country ?? '—',
-          o.refunded ? h('span', { class: 'v2-down' }, `${eur(o.amount_cents)} · reembolsada`) : eur(o.amount_cents)]), { onRow: (i) => openSale(d.rows[i].order_id) })
+          o.refunded ? h('span', { class: 'v2-down' }, `${eur(o.amount_cents, o.currency)} · reembolsada`) : eur(o.amount_cents, o.currency)]), { onRow: (i) => openSale(d.rows[i].order_id) })
           : emptyEl('Nenhuma venda neste período')));
     if (params.open) openSale(params.open);
   });
@@ -373,16 +380,21 @@ function pixelForm(net, px, appUrl) {
 export async function leads(root, _f, params) {
   const search = h('input', { class: 'v2-input', type: 'search', placeholder: 'Buscar por nome ou e-mail', value: params.q ?? '', 'aria-label': 'Buscar lead' });
   search.addEventListener('change', () => goto('leads', { ...params, q: search.value.trim() }));
-  root.replaceChildren(head('Leads', 'E-mails deixados no quiz. Quem já comprou aparece marcado.', periodSeg(params, (p) => goto('leads', p))), h('div', { 'data-body': '' }));
+  root.replaceChildren(head('Leads', 'E-mails deixados no quiz, separados por quiz. Quem já comprou aparece marcado.', periodSeg(params, (p) => goto('leads', p))), h('div', { 'data-body': '' }));
   const body = root.querySelector('[data-body]');
   await load(body, async () => {
-    const d = await gapi(`/leads?${new URLSearchParams({ days: params.days ?? '7', q: params.q ?? '' })}`);
+    const filter = { days: params.days ?? '7', q: params.q ?? '', quiz: params.quiz ?? '' };
+    const d = await gapi(`/leads?${new URLSearchParams(filter)}`);
     const bought = d.rows.filter((x) => x.bought).length;
+    const all = d.quizzes.reduce((a, x) => a + x.n, 0);
+    const tabs = h('div', { class: 'v2-seg', role: 'group', 'aria-label': 'Quiz' }, [['', `Todos (${all})`], ...d.quizzes.map((x) => [x.topic, `${PROGRAM_NAMES[x.topic] ?? x.topic} (${x.n})`])].map(([v, l]) =>
+      h('button', { type: 'button', class: v === filter.quiz ? 'on' : '', 'aria-pressed': String(v === filter.quiz), onclick: () => goto('leads', { ...params, quiz: v }) }, l)));
     body.replaceChildren(
+      d.quizzes.length ? h('div', { class: 'v2-mb' }, tabs) : null,
       h('div', { class: 'v2-grid v2-grid--3' }, metric(int(d.total), 'Leads no período'), metric(int(bought), 'Já compraram'), metric(int(d.total - bought), 'Ainda não compraram')),
-      card(h('div', { class: 'v2-row v2-mb' }, search, csvButton('/leads', {}, { days: params.days ?? '7', q: params.q ?? '' })),
-        d.rows.length ? table(['Quando', 'Nome', 'E-mail', 'País', 'Origem', 'Anúncio', 'Status'], d.rows.map((x) => [
-          dt(x.created_at), x.first_name ?? '—', x.email, x.country ? segLabel('country', x.country) : '—', chip(x.utm_source ?? 'direto'),
+      card(h('div', { class: 'v2-row v2-mb' }, search, csvButton('/leads', {}, filter)),
+        d.rows.length ? table(['Quando', 'Quiz', 'Nome', 'E-mail', 'País', 'Origem', 'Anúncio', 'Status'], d.rows.map((x) => [
+          dt(x.created_at), PROGRAM_NAMES[x.topic] ?? x.topic ?? '—', x.first_name ?? '—', x.email, x.country ? segLabel('country', x.country) : '—', chip(x.utm_source ?? 'direto'),
           h('span', { class: 'muted v2-wrap' }, x.utm_content ?? '—'), x.bought ? chip('comprou', 'up') : chip('lead')]))
           : emptyEl('Nenhum lead neste período', 'Quando alguém deixar o e-mail no quiz, aparece aqui.')));
   });

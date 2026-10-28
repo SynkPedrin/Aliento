@@ -79,6 +79,7 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
     try {
       await billing.handleEvent(event);
       if (growth) await growth.hooks.onStripeEvent(event); // rastreo/atribución: nunca bloquea el cobro
+      if (growth) await growth.forwarders.processOutbox({ limit: 25 }).catch(() => null); // compra vai na hora para Meta/TikTok
       await sendPurchaseEmail(event).catch((err) => log.warn(`[mail] compra ${event.id}: ${err.message}`)); // e-mail nunca bloqueia o cobro
       res.json({ received: true });
     } catch (err) {

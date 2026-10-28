@@ -31,6 +31,8 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
   const q = db.service;
   const { staff, settings, people, experiments, ai, ads, forwarders, email } = growth;
   const currency = config.currency;
+  // Moeda escolhida no painel: os valores de cada moeda ficam separados, sem conversão.
+  const curOf = (req) => { const c = String(req.query.currency ?? '').toUpperCase(); return ['USD', 'BRL', 'EUR', 'GBP'].includes(c) ? c : currency; };
 
   const tzOf = async () => (await settings.get('timezone', { tz: config.growth.timezone })).tz || config.growth.timezone;
   const send = (req, res, body, rows) => {
@@ -448,11 +450,11 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
     return { from: dayStr(new Date(new Date(`${to}T00:00:00Z`).getTime() - (days - 1) * 86400_000)), to, days };
   };
   // since: momento em que as métricas do funil foram zeradas no painel (nada é apagado; só passa a contar daí).
-  const revenueBetween = async (from, to, program = null, since = null) => {
+  const revenueBetween = async (from, to, program = null, since = null, cur = currency) => {
     const o = await q.one(`select coalesce(sum(amount_cents), 0) as gross, count(*) filter (where kind = 'first') as orders, count(*) as payments from growth.orders
-      where paid_at::date between $1 and $2 and upper(currency) = $3 and ($4::text is null or program_slug = $4) and ($5::timestamptz is null or paid_at >= $5)`, [from, to, currency, program, since]);
+      where paid_at::date between $1 and $2 and upper(currency) = $3 and ($4::text is null or program_slug = $4) and ($5::timestamptz is null or paid_at >= $5)`, [from, to, cur, program, since]);
     const rf = await q.one(`select coalesce(sum(r.amount_cents), 0) as refunded from growth.refunds r left join growth.orders o on o.order_id = r.order_id
-      where r.refunded_at::date between $1 and $2 and upper(r.currency) = $3 and ($4::text is null or o.program_slug = $4) and ($5::timestamptz is null or r.refunded_at >= $5)`, [from, to, currency, program, since]);
+      where r.refunded_at::date between $1 and $2 and upper(r.currency) = $3 and ($4::text is null or o.program_slug = $4) and ($5::timestamptz is null or r.refunded_at >= $5)`, [from, to, cur, program, since]);
     return { revenue_cents: num(o.gross) - num(rf.refunded), orders: num(o.orders), payments: num(o.payments) };
   };
   const shift = (d, n) => dayStr(new Date(new Date(`${d}T00:00:00Z`).getTime() + n * 86400_000));
@@ -462,23 +464,23 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
   const resetOf = async (program) => (await settings.get('funnels.reset', {}))[program] ?? null;
 
   r.get('/home', wrap(async (req, res) => {
-    const today = dayStr(new Date());
+    const today = dayStr(new Date()), money = curOf(req);
     const cards = {};
     for (const [k, days] of [['today', 1], ['d7', 7], ['d30', 30]]) {
       const from = shift(today, -(days - 1));
-      const [cur, prev] = await Promise.all([revenueBetween(from, today), revenueBetween(shift(from, -days), shift(today, -days))]);
+      const [cur, prev] = await Promise.all([revenueBetween(from, today, null, null, money), revenueBetween(shift(from, -days), shift(today, -days), null, null, money)]);
       cards[k] = { ...cur, prev_revenue_cents: prev.revenue_cents };
     }
     const funnels = [];
     for (const program of Object.keys(PROGRAM_STEPS)) {
-      const [st, rev] = await Promise.all([started(today, today, program), revenueBetween(today, today, program)]);
+      const [st, rev] = await Promise.all([started(today, today, program), revenueBetween(today, today, program, null, money)]);
       if (num(st.n) || rev.orders) funnels.push({ program, started: num(st.n), orders: rev.orders, revenue_cents: rev.revenue_cents, conversion_pct: pct(rev.orders, num(st.n)) });
     }
-    const recent = await q.rows(`select o.order_id, o.paid_at, o.plan, o.program_slug, o.kind, o.amount_cents, o.last_touch->>'utm_source' as source,
+    const recent = await q.rows(`select o.order_id, o.paid_at, o.plan, o.program_slug, o.kind, o.amount_cents, o.currency, o.last_touch->>'utm_source' as source,
         coalesce(p.name, lp.first_name) as name from growth.orders o
       left join public.profiles p on p.user_id = o.user_id left join growth_pii.lead_pii lp on lp.lead_id = o.lead_id
       order by o.paid_at desc limit 6`);
-    res.json({ currency, cards, funnels, recent });
+    res.json({ currency: money, cards, funnels, recent });
   }));
 
   const STAGES = [['lead_created', 'Lead'], ['results_step', 'Resultado'], ['plan_viewed', 'Oferta'], ['checkout_started', 'Checkout'], ['purchase', 'Compra']];
@@ -490,22 +492,23 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
 
   r.get('/funnels', wrap(async (req, res) => {
     const p = periodOf(req);
-    const programs = await q.rows('select slug, commercial_status from public.programs').catch(() => []);
+    const programs = await q.rows('select slug, commercial_status from public.journey_programs');
     const rows = [];
     for (const program of Object.keys(PROGRAM_STEPS)) {
+      const status = programs.find((x) => x.slug === program)?.commercial_status ?? 'coming_soon';
+      if (status !== 'active') continue; // Analytics mostra só os quizzes à venda
       const since = await resetOf(program);
       const [st, rev, leads, daily] = await Promise.all([
-        started(p.from, p.to, program, since), revenueBetween(p.from, p.to, program, since),
+        started(p.from, p.to, program, since), revenueBetween(p.from, p.to, program, since, curOf(req)),
         q.one(`select count(distinct visitor_id) as n from growth.events where name = 'lead_created' and program_slug = $3 and occurred_at::date between $1 and $2
           and ($4::timestamptz is null or occurred_at >= $4)`, [p.from, p.to, program, since]),
         q.rows(`select occurred_at::date::text as day, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and props->>'step' = $4
           and program_slug = $3 and occurred_at::date between $1 and $2 and ($5::timestamptz is null or occurred_at >= $5) group by 1 order by 1`, [p.from, p.to, program, PROGRAM_STEPS[program][0].id, since]),
       ]);
-      const status = programs.find((x) => x.slug === program)?.commercial_status ?? 'coming_soon';
-      rows.push({ program, status, started: num(st.n), leads: num(leads.n), orders: rev.orders, revenue_cents: rev.revenue_cents,
+      rows.push({ program, status, link: `${config.appUrl}/quiz/${program}`, started: num(st.n), leads: num(leads.n), orders: rev.orders, revenue_cents: rev.revenue_cents,
         conversion_pct: pct(rev.orders, num(st.n)), daily: daily.map((d) => num(d.n)) });
     }
-    res.json({ currency, period: p, rows });
+    res.json({ currency: curOf(req), period: p, rows });
   }));
 
   r.get('/funnels/:program', wrap(async (req, res) => {
@@ -551,11 +554,11 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
         purchases: c.stageCounts.purchase ?? 0, finished_pct: pct(c.counts.analisis ?? 0, c.base), purchase_pct: pct(c.stageCounts.purchase ?? 0, c.base),
         retention: c.screens.map((x) => x.retention_pct) };
     })) : [];
-    const rev = await revenueBetween(p.from, p.to, program, since);
+    const rev = await revenueBetween(p.from, p.to, program, since, curOf(req));
     const { screens, counts, stageCounts, base } = main;
     const leads = stageCounts.lead_created ?? 0;
     res.json({
-      currency, period: p, program, dim, val, since, screens, segments, series,
+      currency: curOf(req), period: p, program, dim, val, since, screens, segments, series,
       metrics: { started: base, finished: counts.analisis ?? 0, leads, lead_pct: pct(leads, base), offer: stageCounts.plan_viewed ?? 0, checkouts: stageCounts.checkout_started ?? 0,
         purchases: val ? (stageCounts.purchase ?? 0) : rev.orders, conversion_pct: pct(val ? (stageCounts.purchase ?? 0) : rev.orders, base),
         revenue_cents: val ? null : rev.revenue_cents, ticket_cents: !val && rev.orders ? Math.round(rev.revenue_cents / rev.orders) : (val ? null : 0) },
@@ -579,6 +582,8 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
   r.get('/leads', wrap(async (req, res) => {
     const p = periodOf(req);
     const term = String(req.query.q ?? '').trim().slice(0, 80);
+    const quiz = String(req.query.quiz ?? '').slice(0, 40);
+    const quizzes = await q.rows(`select topic, count(*)::int as n from growth.leads where created_at::date between $1 and $2 and topic is not null group by 1 order by 2 desc`, [p.from, p.to]);
     const rows = await q.rows(`select l.lead_id, l.created_at, lp.email, lp.first_name, l.topic, l.language, v.country,
         coalesce(l.attribution->'last'->>'utm_source', v.last_touch->>'utm_source') as utm_source, coalesce(l.attribution->'last'->>'utm_campaign', v.last_touch->>'utm_campaign') as utm_campaign,
         coalesce(l.attribution->'last'->>'utm_content', v.last_touch->>'utm_content') as utm_content,
@@ -586,9 +591,10 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
           or o.user_id = (select u.id from auth.users u where lower(u.email) = lower(lp.email))) as bought
       from growth.leads l join growth_pii.lead_pii lp on lp.lead_id = l.lead_id left join growth.visitors v on v.visitor_id = l.visitor_id
       where l.created_at::date between $1 and $2 and ($3 = '' or lp.email ilike '%' || $3 || '%' or coalesce(lp.first_name, '') ilike '%' || $3 || '%')
-      order by l.created_at desc limit 1000`, [p.from, p.to, term]);
+        and ($4 = '' or l.topic = $4)
+      order by l.created_at desc limit 1000`, [p.from, p.to, term, quiz]);
     await audit(req, 'leads.list', 'lead', null, { days: p.days, csv: req.query.format === 'csv' });
-    send(req, res, { period: p, rows, total: rows.length }, rows.map((x) => ({ data: x.created_at, email: x.email, nome: x.first_name, funil: x.topic, idioma: x.language, pais: x.country,
+    send(req, res, { period: p, rows, total: rows.length, quizzes }, rows.map((x) => ({ data: x.created_at, email: x.email, nome: x.first_name, funil: x.topic, idioma: x.language, pais: x.country,
       origem: x.utm_source, campanha: x.utm_campaign, anuncio: x.utm_content, comprou: x.bought ? 'sim' : 'não' })));
   }));
 
@@ -623,9 +629,9 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
       where o.paid_at::date between $1 and $2 and ($3::text is null or o.kind = $3)
         and ($4 = '' or coalesce(u.email, lp.email, '') ilike '%' || $4 || '%' or coalesce(p.name, lp.first_name, '') ilike '%' || $4 || '%')
       order by o.paid_at desc limit 300`, [p.from, p.to, kind, term]);
-    const rev = await revenueBetween(p.from, p.to);
+    const rev = await revenueBetween(p.from, p.to, null, null, curOf(req));
     const refunds = await q.one('select count(*)::int as n from growth.refunds where refunded_at::date between $1 and $2', [p.from, p.to]);
-    res.json({ currency, period: p, summary: { ...rev, ticket_cents: rev.orders ? Math.round(rev.revenue_cents / rev.orders) : 0, refunds: refunds.n }, rows });
+    res.json({ currency: curOf(req), period: p, summary: { ...rev, ticket_cents: rev.orders ? Math.round(rev.revenue_cents / rev.orders) : 0, refunds: refunds.n }, rows });
   }));
 
   r.get('/orders/:id', wrap(async (req, res) => {
