@@ -5,6 +5,12 @@ export const state = { currency: 'EUR', canEdit: false, role: 'readonly' };
 
 const nf = new Intl.NumberFormat('pt-BR', { useGrouping: 'always' });
 const nf1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1, useGrouping: 'always' });
+/** Detalhe por moeda de um total convertido: «≈ convertido · R$ 9,90 + € 19,99». null se tudo já está na moeda do painel. */
+export function byCurrency(list) {
+  if (!list?.length || list.every((x) => x.currency === state.currency)) return null;
+  return h('small', { class: 'muted', title: 'Total convertido pela cotação do dia. Cada venda segue exata na moeda em que foi paga.' },
+    `≈ convertido · ${list.map((x) => eur(x.cents, x.currency)).join(' + ')}`);
+}
 export const int = (n) => (n == null ? '—' : nf.format(n));
 export const dec = (n) => (n == null ? '—' : nf1.format(n));
 export const pct = (n) => (n == null ? '—' : `${nf1.format(n)}%`);

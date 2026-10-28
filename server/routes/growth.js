@@ -29,7 +29,10 @@ export function filtersOf(req, tz = 'UTC') {
 export function growthRoutes({ db, config, growth, auth, billing, log = console }) {
   const r = Router();
   const q = db.service;
-  const { staff, settings, people, experiments, ai, ads, forwarders, email } = growth;
+  const { staff, settings, people, experiments, ai, ads, forwarders, email, fx } = growth;
+  // Totais em várias moedas → moeda dos relatórios (cotação do dia), com o detalhe por moeda ao lado.
+  const byCurrency = (rows) => rows.map((x) => ({ currency: String(x.currency ?? currency).toUpperCase(), cents: num(x.cents) })).filter((x) => x.cents);
+  const inReport = async (rows) => (await fx.total(rows)).cents;
   const currency = config.currency;
 
   const tzOf = async () => (await settings.get('timezone', { tz: config.growth.timezone })).tz || config.growth.timezone;
@@ -83,18 +86,19 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
     const win = async (days) => {
       const from = new Date(new Date(`${f.today}T00:00:00Z`).getTime() - (days - 1) * 86400_000).toISOString().slice(0, 10);
       const [sales, spend, fun, mrr] = await Promise.all([
-        q.one(`select coalesce(sum(net_cents), 0) as revenue, count(*) filter (where kind = 'first') as orders from growth.v_atribuicao
-          where day between $1 and $2 and currency = $3`, [from, f.today, currency]),
+        q.rows(`select currency, coalesce(sum(net_cents), 0) as cents, count(*) filter (where kind = 'first') as orders from growth.v_atribuicao
+          where day between $1 and $2 group by 1`, [from, f.today]),
         q.one('select coalesce(sum(spend_cents), 0) as spend from growth.ad_spend_daily where day between $1 and $2', [from, f.today]),
         q.one(`select coalesce(sum(visits), 0) as visits, coalesce(sum(quiz_started), 0) as quiz_started, coalesce(sum(purchases), 0) as purchases
           from growth.v_funil_diario where day between $1 and $2`, [from, f.today]),
-        q.one(`select coalesce(round(sum(case interval when 'week' then amount * 52.0 / 12 / interval_count when 'month' then amount * 1.0 / interval_count
-            when 'year' then amount / 12.0 / interval_count end)), 0)::bigint as mrr from public.subscriptions
-          where status in ('active','trialing','past_due') and amount is not null and upper(currency) = $1`, [currency]),
+        q.rows(`select upper(currency) as currency, coalesce(round(sum(case interval when 'week' then amount * 52.0 / 12 / interval_count when 'month' then amount * 1.0 / interval_count
+            when 'year' then amount / 12.0 / interval_count end)), 0)::bigint as cents from public.subscriptions
+          where status in ('active','trialing','past_due') and amount is not null group by 1`),
       ]);
+      const revenue = await inReport(sales), orders = sales.reduce((a, x) => a + num(x.orders), 0);
       return {
-        revenue_cents: num(sales.revenue), orders: num(sales.orders), spend_cents: num(spend.spend), roas: ratio(num(sales.revenue), num(spend.spend)),
-        cac_cents: num(sales.orders) ? Math.round(num(spend.spend) / num(sales.orders)) : 0, mrr_cents: num(mrr.mrr),
+        revenue_cents: revenue, revenue_by_currency: byCurrency(sales), orders, spend_cents: num(spend.spend), roas: ratio(revenue, num(spend.spend)),
+        cac_cents: orders ? Math.round(num(spend.spend) / orders) : 0, mrr_cents: await inReport(mrr), mrr_by_currency: byCurrency(mrr),
         conversion_pct: pct(num(fun.purchases), num(fun.quiz_started)), visits: num(fun.visits), quiz_started: num(fun.quiz_started),
       };
     };
@@ -233,7 +237,8 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
     const f = filtersOf(req, await tzOf());
     const daily = (await q.rows(`select day, program, plan, currency, kind, orders, gross_cents, refunded_cents, net_cents from growth.v_ventas_diarias
       where day between $1 and $2 and ($3::text is null or program = $3) order by day desc`, [f.from, f.to, f.program])).map((x) => ({ ...x, gross_cents: num(x.gross_cents), refunded_cents: num(x.refunded_cents), net_cents: num(x.net_cents), orders: num(x.orders) }));
-    const s = daily.reduce((a, x) => ({ orders: a.orders + x.orders, gross: a.gross + x.gross_cents, refunded: a.refunded + x.refunded_cents, net: a.net + x.net_cents }), { orders: 0, gross: 0, refunded: 0, net: 0 });
+    const sumBy = (key) => inReport(daily.map((x) => ({ currency: x.currency, cents: x[key] })));
+    const s = { orders: daily.reduce((a, x) => a + x.orders, 0), gross: await sumBy('gross_cents'), refunded: await sumBy('refunded_cents'), net: await sumBy('net_cents') };
     const st = await q.rows('select status, count(*)::int as n from growth.subscriptions group by 1');
     const failed = await q.one(`select count(*)::int as n from growth.events where name = 'payment_failed' and occurred_at::date between $1 and $2`, [f.from, f.to]);
     const k = (await windowKpis(f, 'UTC')).d30;
@@ -250,6 +255,7 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
       from growth.subscriptions order by updated_at desc limit 200`);
     send(req, res, {
       summary: { orders: s.orders, gross_cents: s.gross, refunded_cents: s.refunded, net_cents: s.net, mrr_cents: k.mrr_cents,
+        net_by_currency: byCurrency(Object.entries(Object.groupBy(daily, (x) => x.currency)).map(([cur, l]) => ({ currency: cur, cents: l.reduce((a, x) => a + x.net_cents, 0) }))),
         active: num(st.find((x) => ['active', 'trialing', 'past_due'].includes(x.status))?.n), canceled: num(st.find((x) => x.status === 'canceled')?.n), failed_payments: num(failed.n) },
       daily, ltv, subscriptions: subs, rows: daily,
     }, daily);
@@ -449,11 +455,13 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
   };
   // since: momento em que as métricas do funil foram zeradas no painel (nada é apagado; só passa a contar daí).
   const revenueBetween = async (from, to, program = null, since = null) => {
-    const o = await q.one(`select coalesce(sum(amount_cents), 0) as gross, count(*) filter (where kind = 'first') as orders, count(*) as payments from growth.orders
-      where paid_at::date between $1 and $2 and upper(currency) = $3 and ($4::text is null or program_slug = $4) and ($5::timestamptz is null or paid_at >= $5)`, [from, to, currency, program, since]);
-    const rf = await q.one(`select coalesce(sum(r.amount_cents), 0) as refunded from growth.refunds r left join growth.orders o on o.order_id = r.order_id
-      where r.refunded_at::date between $1 and $2 and upper(r.currency) = $3 and ($4::text is null or o.program_slug = $4) and ($5::timestamptz is null or r.refunded_at >= $5)`, [from, to, currency, program, since]);
-    return { revenue_cents: num(o.gross) - num(rf.refunded), orders: num(o.orders), payments: num(o.payments) };
+    const o = await q.rows(`select upper(currency) as currency, coalesce(sum(amount_cents), 0) as cents, count(*) filter (where kind = 'first') as orders, count(*) as payments from growth.orders
+      where paid_at::date between $1 and $2 and ($3::text is null or program_slug = $3) and ($4::timestamptz is null or paid_at >= $4) group by 1`, [from, to, program, since]);
+    const rf = await q.rows(`select upper(r.currency) as currency, -coalesce(sum(r.amount_cents), 0) as cents from growth.refunds r left join growth.orders o on o.order_id = r.order_id
+      where r.refunded_at::date between $1 and $2 and ($3::text is null or o.program_slug = $3) and ($4::timestamptz is null or r.refunded_at >= $4) group by 1`, [from, to, program, since]);
+    const net = Object.entries(Object.groupBy([...o, ...rf], (x) => x.currency)).map(([cur, l]) => ({ currency: cur, cents: l.reduce((a, x) => a + num(x.cents), 0) }));
+    return { revenue_cents: await inReport(net), revenue_by_currency: byCurrency(net),
+      orders: o.reduce((a, x) => a + num(x.orders), 0), payments: o.reduce((a, x) => a + num(x.payments), 0) };
   };
   const shift = (d, n) => dayStr(new Date(new Date(`${d}T00:00:00Z`).getTime() + n * 86400_000));
   const started = (from, to, program, since = null) => q.one(`select count(distinct visitor_id) as n from growth.events

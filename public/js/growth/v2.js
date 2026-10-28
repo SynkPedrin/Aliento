@@ -1,6 +1,6 @@
 // Painel v2: visão geral, analytics (retenção tela a tela, estilo VTurb), vendas, leads, traqueamento por pixel, melhorias futuras e configurações.
 import { h, toast } from '../ui.js';
-import { act, csvButton, dt, emptyEl, eur, field, gapi, int, load, pct, state, supportActions } from './lib.js';
+import { act, byCurrency, csvButton, dt, emptyEl, eur, field, gapi, int, load, pct, state, supportActions } from './lib.js';
 import { GROUPS, groupForm, staffSection } from './settings.js';
 
 const PROGRAM_NAMES = { 'sem-fumo': 'Sem Fumo · ES', alcohol: 'Álcool', azucar: 'Açúcar', ansiedad: 'Ansiedade', sueno: 'Sono' };
@@ -9,7 +9,7 @@ const PERIODS = [['1', 'Hoje'], ['7', '7 dias'], ['30', '30 dias'], ['90', '90 d
 
 const head = (title, sub, ...right) => h('div', { class: 'v2-head' }, h('div', {}, h('h1', {}, title), sub ? h('p', { class: 'v2-sub' }, sub) : null), h('div', { class: 'v2-head__right' }, right));
 const card = (...c) => h('section', { class: 'v2-card' }, ...c);
-const metric = (v, l) => h('div', { class: 'v2-card v2-metric' }, h('div', { class: 'v2-metric__v' }, v), h('div', { class: 'v2-metric__l' }, l));
+const metric = (v, l, note = null) => h('div', { class: 'v2-card v2-metric' }, h('div', { class: 'v2-metric__v' }, v), h('div', { class: 'v2-metric__l' }, l), note);
 const chip = (text, tone) => h('span', { class: `v2-chip${tone ? ` v2-chip--${tone}` : ''}` }, text);
 const delta = (cur, prev) => {
   if (!prev) return cur ? chip('novo', 'up') : h('span', { class: 'muted' }, '—');
@@ -43,7 +43,7 @@ export async function home(root) {
     const k = (key, label) => {
       const c = d.cards[key];
       return h('div', { class: 'v2-card v2-kpi' }, h('p', { class: 'v2-kpi__l' }, label), h('p', { class: 'v2-kpi__v' }, eur(c.revenue_cents)),
-        h('p', { class: 'v2-kpi__m' }, h('span', {}, `${int(c.orders)} ${c.orders === 1 ? 'venda' : 'vendas'}`), delta(c.revenue_cents, c.prev_revenue_cents)));
+        h('p', { class: 'v2-kpi__m' }, h('span', {}, `${int(c.orders)} ${c.orders === 1 ? 'venda' : 'vendas'}`), delta(c.revenue_cents, c.prev_revenue_cents)), byCurrency(c.revenue_by_currency));
     };
     body.replaceChildren(
       h('div', { class: 'v2-grid v2-grid--3' }, k('today', 'Hoje'), k('d7', 'Últimos 7 dias'), k('d30', 'Últimos 30 dias')),
@@ -229,7 +229,7 @@ export async function sales(root, _f, params) {
     const s = d.summary;
     const kinds = h('div', { class: 'v2-seg' }, KIND_TABS.map(([k, l]) => h('button', { type: 'button', class: (params.kind ?? '') === k ? 'on' : '', onclick: () => goto('sales', { ...params, kind: k, open: '' }) }, l)));
     body.replaceChildren(
-      h('div', { class: 'v2-grid v2-grid--4' }, metric(eur(s.revenue_cents), 'Faturamento'), metric(int(s.orders), 'Vendas novas'), metric(eur(s.ticket_cents), 'Ticket médio'), metric(int(s.refunds), 'Reembolsos')),
+      h('div', { class: 'v2-grid v2-grid--4' }, metric(eur(s.revenue_cents), 'Faturamento', byCurrency(s.revenue_by_currency)), metric(int(s.orders), 'Vendas novas'), metric(eur(s.ticket_cents), 'Ticket médio'), metric(int(s.refunds), 'Reembolsos')),
       card(h('div', { class: 'v2-row v2-mb' }, kinds, search),
         d.rows.length ? table(['Data', 'Cliente', 'Plano', 'Origem', 'Campanha', 'Criativo', 'País', N('Valor')], d.rows.map((o) => [
           dt(o.paid_at), o.name ?? o.email ?? '—', PLAN_NAMES[o.plan] ?? o.plan ?? '—', chip(o.last_touch?.utm_source ?? 'direto'),

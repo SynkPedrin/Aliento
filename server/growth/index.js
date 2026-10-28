@@ -10,6 +10,7 @@ import { createStaff } from './staff.js';
 import { createPeople } from './people.js';
 import { createExperiments } from './experiments.js';
 import { createPixels } from './pixels.js';
+import { createFx } from './fx.js';
 
 export function createGrowth({ db, config, auth = null, fetchImpl = globalThis.fetch, log = console }) {
   const settings = createSettings({ db, config });
@@ -23,5 +24,6 @@ export function createGrowth({ db, config, auth = null, fetchImpl = globalThis.f
   const staff = createStaff({ db, settings, config, log });
   const people = createPeople({ db, tracker, auth, settings, config, fetchImpl, log });
   const ai = createAi({ db, settings, config, ads, email, experiments, fetchImpl, log });
-  return { settings, pixels, tracker, hooks, email, forwarders, ads, experiments, staff, people, ai };
+  const fx = createFx({ base: config.currency, fetchImpl, log });
+  return { settings, pixels, tracker, hooks, email, forwarders, ads, experiments, staff, people, ai, fx };
 }
