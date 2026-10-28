@@ -195,7 +195,7 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
   app.use('/api', accountRoutes({ db, auth, billing, config, store, programs, growth, log }));
   if (growth) {
     app.use('/api', trackRoutes({ db, config, growth, store, log }));
-    app.use('/api/growth', growthRoutes({ db, config, growth, auth, log }));
+    app.use('/api/growth', growthRoutes({ db, config, growth, auth, billing, log }));
     const cron = growthCron({ config, growth, log });
     app.use('/api/cron', cron);
     app.use('/api/webhooks', cron); // /api/webhooks/customerio (firma HMAC propia)

@@ -34,6 +34,7 @@ export function fakeStripe({ webhooks, baseUrl = 'https://checkout.stripe.test' 
     },
     customers: {
       create: async () => ({ id: `cus_${run}${++n}` }),
+      update: async (id, params) => ({ id, ...params }),
       del: async (id) => { for (const sub of subs.values()) if (sub.customer === id) sub.status = 'canceled'; calls.deletedCustomers = (calls.deletedCustomers ?? 0) + 1; return { id, deleted: true }; },
     },
     invoices: { retrieve: async (id) => ({ id, parent: { subscription_details: { subscription: invoiceSubs.get(id) } } }) },

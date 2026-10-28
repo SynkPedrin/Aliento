@@ -203,6 +203,12 @@ export function createBilling({ db, stripe, config, log = console }) {
     return customer.id;
   }
 
+  /** E-mail do customer na Stripe (recibos) quando o e-mail da conta muda. Melhor esforço. */
+  async function setCustomerEmail(userId, email) {
+    const id = stripe ? await customerIdOf(userId) : null;
+    if (id) await stripe.customers.update(id, { email }).catch((err) => log.warn(`[billing] e-mail do customer ${id}: ${err.message}`));
+  }
+
   /**
    * Crea (o reutiliza) una sesión de Stripe Checkout.
    * Garantías: no se crea si hay suscripción activa; una sesión abierta del mismo plan,
@@ -632,7 +638,7 @@ export function createBilling({ db, stripe, config, log = console }) {
 
   return {
     getPlans, getExitOffer, claimExitOffer, startCheckout, handleEvent, constructEvent, portalUrl, checkoutState,
-    activeSubscription, latestSubscription, subscriptionsByProgram, pendingCheckout, reconcile, ensureActivated, customerIdOf, deleteCustomer, offerBlockedFor, programFromSubscription,
+    activeSubscription, latestSubscription, subscriptionsByProgram, pendingCheckout, reconcile, ensureActivated, customerIdOf, setCustomerEmail, deleteCustomer, offerBlockedFor, programFromSubscription,
     enabled: Boolean(stripe),
   };
 }
