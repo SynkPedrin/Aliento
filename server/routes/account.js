@@ -77,16 +77,18 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
 
   // El enlace del correo trae un token de acceso de recuperación; con él se fija la nueva contraseña.
   r.post('/auth/reset', wrap(async (req, res) => {
-    const { accessToken, refreshToken } = req.body ?? {};
+    const { refreshToken, tokenHash } = req.body ?? {};
     if (!(await ipLimiter(`reset:${req.ip}`))) throw tooMany();
     password(req.body?.password);
+    // Link do nosso e-mail (?th=…) ou o do e-mail do Supabase (#access_token=…).
+    const accessToken = tokenHash ? await auth.verifyRecovery(tokenHash) : req.body?.accessToken;
     const user = await auth.userFromToken(accessToken);
     // Solo un token del enlace de recuperación (no un token de sesión cualquiera).
     if (!user || !auth.isRecoveryToken(accessToken)) throw new HttpError(400, 'El enlace no es válido o ha caducado. Solicita uno nuevo.', 'INVALID_LINK');
     await auth.setPassword(user.id, req.body.password);
     await db.service.exec('update public.profiles set needs_password = false where user_id = $1', [user.id]); // comprou sem cadastro e criou a senha pelo e-mail
     const session = await auth.signIn({ email: user.email, password: req.body.password });
-    if (refreshToken) await auth.signOut(accessToken);
+    if (refreshToken || tokenHash) await auth.signOut(accessToken);
     setSessionCookies(res, config, session);
     res.json({ ok: true });
   }));

@@ -152,6 +152,8 @@ p { margin: 0; text-wrap: pretty; }
   width: 100%; min-height: 52px; padding: 12px 16px; border-radius: var(--radius-sm);
   border: 1px solid var(--line); background: var(--surface); font-size: 16px;
 }
+/* iPhone: campo de hora/data ignora a largura e vaza do cartão sem isto. */
+.input[type='time'], .input[type='date'] { -webkit-appearance: none; appearance: none; min-width: 0; max-width: 100%; display: block; text-align: left; }
 .input:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 25%, transparent); }
 .input[aria-invalid="true"] { border-color: var(--danger); }
 .check { display: flex; gap: 12px; align-items: flex-start; font-size: 14.5px; color: var(--ink-2); cursor: pointer; }
@@ -245,7 +247,8 @@ p { margin: 0; text-wrap: pretty; }
 .range { width: 100%; accent-color: var(--chart-1); margin-top: 12px; }
 
 /* En el flujo de la página: nunca tapa el contenido; se queda visible abajo solo si la pantalla no alcanza. */
-.sticky-cta { position: sticky; bottom: 0; z-index: 10; margin-top: 32px; padding: 16px 0 calc(16px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 70%, transparent); }
+/* Botão no fim do conteúdo (não fixo): fixo, cobria imagens e cartões enquanto a pessoa lia. */
+.sticky-cta { margin-top: 32px; padding: 0 0 calc(24px + env(safe-area-inset-bottom)); }
 .sticky-cta .btn { max-width: 440px; margin: 0 auto; display: flex; width: 100%; }
 .theme-deep .sticky-cta { background: none; }
 
@@ -673,8 +676,8 @@ textarea.input { min-height: 96px; resize: vertical; line-height: 1.5; }
 .install-step { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); text-align: left; }
 .install-step__n { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--brand); color: var(--brand-ink); font: 400 14px/1 var(--font-title); }
 .install-step__text { flex: 1; font-size: 15px; }
-.install-step__icon { flex: none; color: var(--azul); display: inline-grid; place-items: center; }
-.install-step__icon--inline { display: inline-grid; vertical-align: middle; margin-left: 6px; }
+.install-step__icon { flex: none; color: var(--azul); display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #fff; } /* caixinha branca: no fundo azul o ícone sumia */
+.install-step__icon--inline { display: inline-grid; vertical-align: middle; margin-left: 6px; width: 28px; height: 28px; }
 .install-card { text-align: left; margin-top: 20px; }
 .install-actions { max-width: 420px; margin-left: auto; margin-right: auto; }
 .install-banner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
@@ -1099,3 +1102,9 @@ body.has-cookiebar { padding-bottom: 190px; }
 .upsell .upsell__cta { margin-top: 16px; background: #F0643A; color: #fff; border-color: #F0643A; }
 .upsell .upsell__cta:hover { background: #DC5329; }
 .upsell__no { margin-top: 12px; display: inline-block; color: var(--muted); }
+/* Telas de texto do quiz: texto, imagem e botão entram em sequência (a imagem sobe e cresce um pouco). */
+.info-screen--story > * { animation: rise .5s ease both; }
+.info-screen--story > :nth-child(2) { animation-delay: .15s; }
+.info-screen--story > .info-screen__img { animation: story-img .7s .35s ease both; }
+.info-screen--story > .sticky-cta { animation-delay: .7s; }
+@keyframes story-img { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }

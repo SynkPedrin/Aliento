@@ -1,6 +1,6 @@
 // Instalación de Alento como app (PWA).
 //  · Android / Chrome / Edge: diálogo nativo (beforeinstallprompt) cuando el navegador lo ofrece.
-//  · iPhone / iPad: la instalación la hace el usuario desde Safari → tutorial ilustrado.
+//  · iPhone / iPad: la instalación la hace el usuario desde Safari o Chrome (iOS 16.4+) → tutorial ilustrado.
 //  · Navegadores integrados (Instagram, Facebook, TikTok…): primero hay que abrir en el navegador.
 //  · Nunca se promete una instalación automática donde no existe.
 import { h } from './ui.js';
@@ -8,11 +8,11 @@ import { h } from './ui.js';
 export const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 export const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 export const isInAppBrowser = () => /FBAN|FBAV|FB_IAB|Instagram|TikTok|musical_ly|Line\/|Twitter|LinkedInApp|GSA\//i.test(navigator.userAgent);
-const isIOSSafari = () => isIOS() && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent) && !isInAppBrowser();
+const isIOSSafari = () => isIOS() && /Safari/.test(navigator.userAgent) && !/FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent) && !isInAppBrowser(); // CriOS (Chrome) también instala
 
 /**
  * Estado de instalación:
- * 'installed' | 'prompt' (diálogo nativo disponible) | 'ios' (Safari) | 'ios-other' (otro navegador en iOS)
+ * 'installed' | 'prompt' (diálogo nativo disponible) | 'ios' (Safari o Chrome) | 'ios-other' (otro navegador en iOS)
  * | 'in-app' (navegador integrado de una red social) | 'manual' (menú del navegador) .
  */
 export function installState() {
@@ -49,8 +49,8 @@ export function installHelp(state = installState()) {
       h('h2', { class: 'title-md' }, 'Instala Alento en tu iPhone'),
       h('p', { class: 'muted u-mt-8' }, 'Accede a tu espacio de bienestar directamente desde tu pantalla de inicio.'),
       h('ol', { class: 'install-steps' },
-        step(1, 'Abre Alento en Safari.'),
-        step(2, 'Toca el botón Compartir (abajo en el iPhone, arriba en el iPad).', SHARE_ICON),
+        step(1, 'Abre Alento en Safari o Chrome.'),
+        step(2, 'Toca el botón Compartir (en Safari, abajo; en Chrome, arriba a la derecha).', SHARE_ICON),
         step(3, 'Selecciona «Añadir a pantalla de inicio».', ADD_ICON),
         step(4, 'Confirma tocando «Añadir».'),
         step(5, 'Abre Alento desde el icono de tu pantalla de inicio.')),
@@ -58,8 +58,8 @@ export function installHelp(state = installState()) {
     ];
   }
   if (state === 'ios-other') {
-    return [h('h2', { class: 'title-md' }, 'Abre Alento en Safari'),
-      h('p', { class: 'muted u-mt-8' }, 'En iPhone y iPad, la instalación se hace desde Safari. Copia la dirección de esta página, ábrela en Safari y sigue los pasos para «Añadir a pantalla de inicio».')];
+    return [h('h2', { class: 'title-md' }, 'Abre Alento en Safari o Chrome'),
+      h('p', { class: 'muted u-mt-8' }, 'En iPhone y iPad, la instalación se hace desde Safari o Chrome. Copia la dirección de esta página, ábrela en uno de ellos y sigue los pasos para «Añadir a pantalla de inicio».')];
   }
   if (state === 'in-app') {
     return [h('h2', { class: 'title-md' }, 'Ábrelo en tu navegador'),

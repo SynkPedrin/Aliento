@@ -138,10 +138,19 @@ export function createAuth({ config, db }) {
     await pub.auth.resetPasswordForEmail(email, { redirectTo: `${config.appUrl}/restablecer` }).catch(() => {});
   }
 
-  /** Link de criar/redefinir senha para mandar no nosso e-mail (não dispara e-mail do Supabase). */
+  /** Link de criar/redefinir senha para mandar no nosso e-mail (não dispara e-mail do Supabase).
+   *  Aponta para o nosso domínio (link de outro domínio cai no spam) e o token só é usado ao salvar a senha,
+   *  então o robô do provedor que abre links do e-mail não queima o link. */
   async function recoveryLink(email) {
     const { data, error } = await admin.auth.admin.generateLink({ type: 'recovery', email, options: { redirectTo: `${config.appUrl}/restablecer` } });
-    return error ? null : data?.properties?.action_link ?? null;
+    const hash = data?.properties?.hashed_token;
+    return error || !hash ? null : `${config.appUrl}/restablecer?th=${encodeURIComponent(hash)}`;
+  }
+
+  /** Troca o token do nosso link por um token de acesso de recuperação (uso único). */
+  async function verifyRecovery(tokenHash) {
+    const { data, error } = await pub.auth.verifyOtp({ token_hash: String(tokenHash), type: 'recovery' });
+    return error ? null : data?.session?.access_token ?? null;
   }
 
   async function setPassword(userId, password) {
@@ -182,7 +191,7 @@ export function createAuth({ config, db }) {
     cache.clear();
   }
 
-  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, recoveryLink, setPassword, setEmail, verifyPassword, deleteUser, profile, isRecoveryToken };
+  return { register, signIn, userFromToken, refresh, signOut, sendRecovery, recoveryLink, verifyRecovery, setPassword, setEmail, verifyPassword, deleteUser, profile, isRecoveryToken };
 }
 
 export function cookieOptions(config, maxAgeSeconds) {

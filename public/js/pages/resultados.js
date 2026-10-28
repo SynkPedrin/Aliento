@@ -673,8 +673,7 @@ function salesPage(r, fmt, name, me) {
       h('h2', { class: 'title-lg' }, 'No eres el único.'),
       autoCarousel(h('div', { class: 'members' }, MEMBERS.map((m) => h('figure', { class: 'member' },
         h('img', { src: `/assets/quiz/members/card-${m.photo}.jpg`, alt: '', loading: 'lazy', width: 240, height: 320 }),
-        h('blockquote', {}, m.quote), h('figcaption', {}, m.name))))),
-      h('p', { class: 'tiny muted' }, 'Las citas son mensajes reales de los miembros, ligeramente editados para acortar su extensión. Se han cambiado los nombres y las fotos son ilustrativas para proteger su privacidad.')),
+        h('blockquote', {}, m.quote), h('figcaption', {}, m.name)))))),
     funnelStep(
       h('h2', { class: 'title-lg' }, 'Preguntas frecuentes'),
       h('div', { class: 'faq' }, FAQ.map(([q, a]) => h('details', { class: 'faq__item' }, h('summary', {}, q), h('p', {}, a)))),
