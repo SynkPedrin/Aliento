@@ -7,7 +7,7 @@ import { createAuth } from '../server/auth.js';
 import { loadConfig } from '../server/config.js';
 import { createDb } from '../server/db.js';
 import { createGrowth } from '../server/growth/index.js';
-import { purchaseEmail } from '../server/services/mailer.js';
+import { purchaseEmail, recoveryEmail } from '../server/services/mailer.js';
 import { localSupabaseEnv } from '../scripts/local-supabase.js';
 
 const silent = { log() {}, info() {}, warn() {}, error() {} };
@@ -109,4 +109,26 @@ test('e-mail de compra: idioma da conta, link de criar senha e nome escapado', (
   assert.match(m.html, /Create my password/); assert.match(m.html, /&lt;b&gt;Ana&lt;\/b&gt;/);
   assert.match(purchaseEmail({ locale: 'xx', link: 'l', supportUrl: 's' }).subject, /Tu acceso/); // idioma desconhecido → espanhol
   assert.match(purchaseEmail({ locale: 'es', link: 'l', supportUrl: 's', needsPassword: false }).text, /Entra en la app/);
+});
+
+test('e-mail de redefinir senha: idioma da conta, link no nosso domínio e espanhol como reserva', () => {
+  const link = 'https://alentohealth.com/restablecer?th=abc';
+  const pt = recoveryEmail({ locale: 'pt-BR', link, appUrl: 'https://alentohealth.com' });
+  assert.equal(pt.subject, 'Crie uma nova senha para o Alento');
+  assert.ok(pt.html.includes(`href="${link}"`) && pt.text.includes(link));
+  assert.equal(recoveryEmail({ locale: 'xx', link }).subject, 'Crea una nueva contraseña para Alento');
+});
+
+test('esqueci a senha: sai pelo nosso e-mail com link no nosso domínio; e-mail sem conta não envia nada', async () => {
+  const c = client(); const mail = `r27-${randomUUID().slice(0, 8)}@example.com`;
+  assert.equal((await c('/api/auth/register', { method: 'POST', body: { name: 'Ana', email: mail, password: 'secreta123', acceptTerms: true, healthConsent: true, timezone: 'Europe/Madrid', locale: 'pt-BR' } })).status, 201);
+  created.push((await db.service.one('select id from auth.users where email = $1', [mail])).id);
+  const before = sent.length;
+  assert.equal((await client()('/api/auth/forgot', { method: 'POST', body: { email: mail } })).status, 200);
+  const msg = sent.at(-1);
+  assert.equal(sent.length, before + 1);
+  assert.equal(msg.to, mail);
+  assert.match(msg.text, /http:\/\/localhost\/restablecer\?th=/);
+  assert.equal((await client()('/api/auth/forgot', { method: 'POST', body: { email: `ninguem-${randomUUID().slice(0, 6)}@example.com` } })).status, 200);
+  assert.equal(sent.length, before + 1);
 });

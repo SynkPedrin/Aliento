@@ -193,7 +193,7 @@ export function createApp({ db, auth, billing, config, notifier = NO_NOTIFIER, p
 
   const store = createAssessmentStore({ db, config });
   app.use('/api', publicRoutes({ db, billing, config, store, programs }));
-  app.use('/api', accountRoutes({ db, auth, billing, config, store, programs, growth, log }));
+  app.use('/api', accountRoutes({ db, auth, billing, config, store, programs, growth, mailer, log }));
   if (growth) {
     app.use('/api', trackRoutes({ db, config, growth, store, log }));
     app.use('/api/growth', growthRoutes({ db, config, growth, auth, billing, log }));

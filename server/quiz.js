@@ -97,8 +97,8 @@ export const STEPS = [
   { id: 'q_objetivo', type: 'single', title: '¿Cuál es tu objetivo ahora mismo?', options: opts(['parar', 'Dejarlo por completo'], ['reducir', 'Reducir el consumo'], ['gradual', 'Sin tabaco, se permite la nicotina (terapia de sustitución de nicotina)']) },
   {
     id: 'q_gasto', type: 'single', title: '¿Cuánto te gastas más o menos al mes en nicotina?',
-    // annual: ahorro anual que muestra la pantalla siguiente; weekly = annual / 52 para el cálculo.
-    options: opts(['0a49', '$0–49', { annual: 588, weekly: 11.31 }], ['50a149', '$50–149', { annual: 1788, weekly: 34.38 }], ['150a299', '$150–299', { annual: 3588, weekly: 69 }], ['300mas', '$300+', { annual: 4944, weekly: 95.08 }]),
+    // annual: ahorro anual que muestra la pantalla siguiente (punto medio de la franja × 12; «300+» cuenta 350); weekly = annual / 52.
+    options: opts(['0a49', '$0–49', { annual: 300, weekly: 5.77 }], ['50a149', '$50–149', { annual: 1200, weekly: 23.08 }], ['150a299', '$150–299', { annual: 2700, weekly: 51.92 }], ['300mas', '$300+', { annual: 4200, weekly: 80.77 }]),
   },
   { id: 'info_ahorro', type: 'savings', tone: 'dark', from: 'q_gasto', title: 'Con Alento podrías ahorrarte unos {amount} al año', body: 'En función de tu gasto mensual.' },
   {
