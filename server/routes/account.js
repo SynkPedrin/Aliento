@@ -147,6 +147,19 @@ export function accountRoutes({ db, auth, billing, config, store, programs, grow
     return startCheckoutFor(req, res);
   }));
 
+  // Comprou sem cadastro: corrige o e-mail (ex.: erro de digitação na Stripe) antes de criar a senha.
+  r.post('/auth/first-email', requireUser, wrap(async (req, res) => {
+    const row = await db.service.one('select needs_password from public.profiles where user_id = $1', [req.user.id]);
+    if (!row?.needs_password) throw new HttpError(409, 'Tu cuenta ya tiene contraseña.', 'ALREADY_SET');
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    if (!isValidEmail(email)) throw new HttpError(422, 'Revisa tu correo electrónico.', 'INVALID', { field: 'email' });
+    if (email !== req.user.email.toLowerCase()) {
+      if (!(await auth.setEmail(req.user.id, email))) throw new HttpError(409, 'Ya existe una cuenta con este correo.', 'EMAIL_TAKEN', { field: 'email' });
+      await billing.setCustomerEmail(req.user.id, email);
+    }
+    res.json({ ok: true, email });
+  }));
+
   // Primeira senha de quem comprou sem cadastro (só enquanto needs_password = true).
   r.post('/auth/first-password', requireUser, wrap(async (req, res) => {
     const row = await db.service.one('select needs_password from public.profiles where user_id = $1', [req.user.id]);

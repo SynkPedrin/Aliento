@@ -15,6 +15,7 @@ let PROGRAM_NAME = 'Sem Fumo';
 const destination = () => (PROGRAM === 'sem-fumo' ? '/configuracion' : `/programa?p=${PROGRAM}&nuevo=1`);
 
 let needsPassword = false;
+let accountEmail = '';
 
 function showWelcome() {
   // Compra sin registro previo: primero crea la contraseña; después, instalar la app.
@@ -29,20 +30,29 @@ function showWelcome() {
   );
 }
 
-/** Crea la contraseña de acceso a la app (la cuenta nació en el checkout con el e-mail del test). */
+/** Crea la contraseña de acceso a la app (la cuenta nació en el checkout con el e-mail del pago). */
 function showPassword(next) {
+  // E-mail del pago, bloqueado; «Corregir» lo libera por si hubo un error al escribirlo en Stripe.
+  const email = h('input', { class: 'input', id: 'em', type: 'email', autocomplete: 'email', value: accountEmail, readonly: true, required: true });
+  const fix = h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: () => { email.readOnly = false; email.focus(); email.select(); fix.remove(); } }, 'Corregir');
   const pass = h('input', { class: 'input', id: 'pw', type: 'password', autocomplete: 'new-password', minlength: '8', required: true });
   const err = h('p', { class: 'form-error', role: 'alert' });
   const cta = h('button', { class: 'btn btn--lg btn--block', type: 'submit' }, 'Guardar y continuar');
   const form = h('form', { class: 'stack welcome-form' },
+    h('label', { class: 'field', for: 'em' }, h('span', { class: 'field__label' }, 'Correo de tu cuenta'), email),
+    h('p', { class: 'help' }, 'Es el correo que usaste al pagar. Con él entrarás en la app.', ' ', fix),
     h('label', { class: 'field', for: 'pw' }, h('span', { class: 'field__label' }, 'Crea tu contraseña'), pass),
     h('p', { class: 'help' }, 'Mínimo 8 caracteres. La usarás para entrar en la app.'), err, cta);
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     err.textContent = '';
     setBusy(cta, true, 'Guardando…');
-    try { await api('/api/auth/first-password', { method: 'POST', body: { password: pass.value } }); needsPassword = false; next(); }
-    catch (ex) { setBusy(cta, false); err.textContent = ex.message; }
+    try {
+      if (email.value.trim().toLowerCase() !== accountEmail.toLowerCase()) {
+        accountEmail = (await api('/api/auth/first-email', { method: 'POST', body: { email: email.value } })).email;
+      }
+      await api('/api/auth/first-password', { method: 'POST', body: { password: pass.value } }); needsPassword = false; next();
+    } catch (ex) { setBusy(cta, false); err.textContent = ex.message; }
   });
   root.replaceChildren(
     h('div', { class: 'hero__mark', html: LOGO_BRANCO_HTML }),
@@ -85,7 +95,9 @@ async function poll() {
       PROGRAM_NAME = cat?.programs?.find((x) => x.slug === PROGRAM)?.name ?? PROGRAM;
     }
     if (st.state === 'active') {
-      needsPassword = Boolean((await api('/api/me').catch(() => ({}))).needsPassword);
+      const me = await api('/api/me').catch(() => ({}));
+      needsPassword = Boolean(me.needsPassword);
+      accountEmail = me.user?.email ?? '';
       // Pixel de compra con el mismo event_id que la API de conversiones (una sola vez por pago).
       let firedKey = `al_px_${sessionId}`, fired = false;
       try { fired = sessionStorage.getItem(firedKey) === '1'; } catch { /* modo privado */ }

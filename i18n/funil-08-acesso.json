@@ -93,5 +93,9 @@
 ["Recuperar contraseña · Alento","Recover password · Alento","Récupérer le mot de passe · Alento","Passwort wiederherstellen · Alento","Recuperar senha · Alento","Recuperar palavra-passe · Alento"],
 ["Nueva contraseña · Alento","New password · Alento","Nouveau mot de passe · Alento","Neues Passwort · Alento","Nova senha · Alento","Nova palavra-passe · Alento"],
 ["Soporte · Alento","Support · Alento","Assistance · Alento","Support · Alento","Suporte · Alento","Apoio · Alento"],
-["Escríbenos: te respondemos por correo electrónico.","Write to us: we reply by email.","Écris-nous : nous te répondons par e-mail.","Schreib uns: Wir antworten per E-Mail.","Escreva para a gente: respondemos por e-mail.","Escreve-nos: respondemos por e-mail."]
+["Escríbenos: te respondemos por correo electrónico.","Write to us: we reply by email.","Écris-nous : nous te répondons par e-mail.","Schreib uns: Wir antworten per E-Mail.","Escreva para a gente: respondemos por e-mail.","Escreve-nos: respondemos por e-mail."],
+["Ya existe una cuenta con este correo.","An account with this email already exists.","Un compte existe déjà avec cet e-mail.","Mit dieser E-Mail gibt es bereits ein Konto.","Já existe uma conta com este e-mail.","Já existe uma conta com este e-mail."],
+["Corregir","Fix it","Corriger","Korrigieren","Corrigir","Corrigir"],
+["Correo de tu cuenta","Your account email","E-mail de ton compte","E-Mail deines Kontos","E-mail da sua conta","E-mail da tua conta"],
+["Es el correo que usaste al pagar. Con él entrarás en la app.","This is the email you used to pay. You'll use it to sign in to the app.","C'est l'e-mail utilisé pour payer. Tu l'utiliseras pour te connecter à l'app.","Das ist die E-Mail, mit der du bezahlt hast. Damit meldest du dich in der App an.","É o e-mail que você usou para pagar. Com ele você vai entrar no app.","É o e-mail que usaste para pagar. Vais usá-lo para entrar na app."]
 ]

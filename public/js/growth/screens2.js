@@ -1,5 +1,5 @@
 // Telas 6-9: pessoas, e-mails, experimentos, IA.
-import { h } from '../ui.js';
+import { h, toast } from '../ui.js';
 import { N, act, csvButton, dec, dt, emptyEl, eur, field, genericTable, gapi, head, int, legend, load, pct, pill, qs, state, table, term } from './lib.js';
 
 // ---------------------------------------------------------------- personas
@@ -28,13 +28,32 @@ export async function people(root, f, params) {
       const present = sections.filter(([k]) => Array.isArray(t[k]));
       const timeline = present.length ? present.map(([k, title]) => h('section', { class: 'u-mt' }, h('h3', { class: 'gr-h3' }, `${title} (${t[k].length})`), t[k].length ? genericTable(t[k], title) : h('p', { class: 'muted' }, 'Sem registros.')))
         : [genericTable(t.timeline ?? [], 'Linha do tempo')];
+      const access = h('div', { 'aria-live': 'polite' });
+      const support = t.person?.user_id && state.canEdit ? [
+        h('button', { class: 'btn btn--sm', type: 'button', onclick: (e) => accessLink(e.currentTarget, r, access) }, 'Gerar link de acesso'),
+        h('button', { class: 'btn btn--ghost btn--sm', type: 'button', onclick: (e) => changeEmail(e.currentTarget, r) }, 'Trocar e-mail'),
+      ] : [];
       detail.replaceChildren(h('section', { class: 'card u-mt' },
         h('div', { class: 'gr-head' }, h('h2', { class: 'gr-h2' }, `Linha do tempo · ${r.email ?? r.key}`),
-          h('div', { class: 'gr-actions' },
+          h('div', { class: 'gr-actions' }, ...support,
             h('a', { class: 'btn btn--ghost btn--sm', href: `/api/growth/people/${encodeURIComponent(r.key)}/export`, download: '' }, 'Exportar dados (JSON)'),
             state.role === 'admin' ? h('button', { class: 'btn btn--ghost btn--sm btn--danger', type: 'button', onclick: (e) => del(e.currentTarget, r) }, 'Excluir pessoa') : null)),
-        ...timeline));
+        access, ...timeline));
     });
+  }
+  // Suporte: link de uso único para a pessoa entrar e criar uma senha nova (vale ~1 hora).
+  async function accessLink(btn, r, box) {
+    await act(btn, () => gapi(`/people/${encodeURIComponent(r.key)}/access-link`, { method: 'POST' }), null, ({ email, link }) => {
+      const input = h('input', { class: 'input', readonly: true, value: link, onfocus: (e) => e.target.select() });
+      box.replaceChildren(h('div', { class: 'notice u-mt' },
+        h('p', {}, `Link de acesso de ${email}. Envie para a pessoa: ao abrir, ela cria uma senha nova. Vale por cerca de 1 hora e só funciona uma vez.`),
+        h('div', { class: 'gr-search' }, input, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => navigator.clipboard.writeText(link).then(() => toast('Link copiado')) }, 'Copiar'))));
+    });
+  }
+  async function changeEmail(btn, r) {
+    const email = prompt(`Novo e-mail da conta (hoje: ${r.email ?? '—'}). A pessoa passa a entrar com ele, e os recibos da Stripe vão para ele.`)?.trim();
+    if (!email) return;
+    await act(btn, () => gapi(`/people/${encodeURIComponent(r.key)}/email`, { method: 'POST', body: { email } }), `E-mail trocado para ${email}`);
   }
   async function del(btn, r) {
     if (!confirm(`Todos os dados de ${r.email ?? r.key} serão excluídos (inclusive no Customer.io). Esta ação não pode ser desfeita. Continuar?`)) return;

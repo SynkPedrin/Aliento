@@ -155,6 +155,8 @@ export function createAuth({ config, db }) {
 
   /** Troca o e-mail da conta. false se o e-mail já pertence a outra conta. */
   async function setEmail(userId, email) {
+    // Checa antes: o Supabase responde a e-mail repetido com códigos diferentes conforme a versão.
+    if (await db.service.one('select 1 from auth.users where lower(email) = lower($1) and id <> $2', [email, userId])) return false;
     const { error } = await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
     if (error) {
       if (error.code === 'email_exists' || error.status === 422) return false;

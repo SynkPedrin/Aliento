@@ -800,3 +800,22 @@ test('compra sem cadastro: o e-mail fica editável na Stripe e a conta adota o e
   const c2 = await pay(other, right);
   assert.equal((await c2('/api/me')).body.user.email, other);
 });
+
+test('compra sem cadastro: a pessoa corrige o e-mail na tela de senha antes de criar a senha', async () => {
+  await db.service.exec('delete from public.rate_limits');
+  const c = client();
+  await completeQuiz(c);
+  const typo = email(), right = email(), taken = email();
+  const reg = await client()('/api/auth/register', { method: 'POST', body: { name: 'Otra', email: taken, password: 'clave-segura-123', acceptTerms: true, healthConsent: true } });
+  assert.equal(reg.status, 201, JSON.stringify(reg.body));
+  assert.equal((await c('/api/checkout/guest', { method: 'POST', body: { plan: 'trimestral', email: typo, acceptTerms: true } })).status, 200);
+  const taken409 = await c('/api/auth/first-email', { method: 'POST', body: { email: taken } });
+  assert.equal(taken409.status, 409); assert.equal(taken409.body.code, 'EMAIL_TAKEN');
+  assert.equal((await c('/api/auth/first-email', { method: 'POST', body: { email: 'no-es-correo' } })).status, 422);
+  const ok = await c('/api/auth/first-email', { method: 'POST', body: { email: right } });
+  assert.equal(ok.status, 200, JSON.stringify(ok.body));
+  assert.equal((await c('/api/me')).body.user.email, right);
+  assert.equal((await c('/api/auth/first-password', { method: 'POST', body: { password: 'nueva-clave-123' } })).status, 200);
+  // Com senha criada, o e-mail não muda mais por aqui.
+  assert.equal((await c('/api/auth/first-email', { method: 'POST', body: { email: email() } })).body.code, 'ALREADY_SET');
+});

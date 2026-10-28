@@ -26,7 +26,7 @@ export function filtersOf(req, tz = 'UTC') {
   return { from, to, today, language: pick('language'), country: pick('country'), device: pick('device'), source: pick('source'), program: pick('program') };
 }
 
-export function growthRoutes({ db, config, growth, auth, log = console }) {
+export function growthRoutes({ db, config, growth, auth, billing, log = console }) {
   const r = Router();
   const q = db.service;
   const { staff, settings, people, experiments, ai, ads, forwarders, email } = growth;
@@ -269,6 +269,32 @@ export function growthRoutes({ db, config, growth, auth, log = console }) {
     adminOnly(req);
     await people.erase(String(req.params.key), req.staff.userId);
     res.json({ ok: true });
+  }));
+
+  // ---------------------------------------------------------------- suporte de acesso
+  const accountOf = async (key) => {
+    const userId = (await people.timeline(String(key)))?.person?.user_id;
+    if (!userId) throw new HttpError(404, 'Esta pessoa não tem conta no app.', 'NO_ACCOUNT');
+    return userId;
+  };
+  // Link para entrar e criar/redefinir a senha; o suporte envia por e-mail ou WhatsApp.
+  r.post('/people/:key/access-link', wrap(async (req, res) => {
+    canEdit(req);
+    const { email } = await q.one('select email from auth.users where id = $1', [await accountOf(req.params.key)]);
+    const link = await auth.recoveryLink(email);
+    if (!link) throw new HttpError(502, 'Não foi possível gerar o link agora. Tente de novo.', 'LINK_FAILED');
+    await audit(req, 'person.access_link', 'person', String(req.params.key));
+    res.json({ email, link });
+  }));
+  r.post('/people/:key/email', wrap(async (req, res) => {
+    canEdit(req);
+    const userId = await accountOf(req.params.key);
+    const email = String(req.body?.email ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new HttpError(422, 'E-mail inválido.', 'INVALID');
+    if (!(await auth.setEmail(userId, email))) throw new HttpError(409, 'Este e-mail já tem outra conta.', 'EMAIL_TAKEN');
+    await billing?.setCustomerEmail(userId, email);
+    await audit(req, 'person.email', 'person', String(req.params.key), { email });
+    res.json({ ok: true, email });
   }));
 
   // ---------------------------------------------------------------- e-mails
