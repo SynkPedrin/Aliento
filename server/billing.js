@@ -17,6 +17,22 @@ export class BillingError extends Error {
   }
 }
 
+// País do visitante → moeda local. A Stripe escolhe a mesma moeda no checkout pela localização,
+// desde que o preço tenha essa moeda em currency_options; sem ela, fica a moeda base.
+const EUROZONE = ['AT', 'BE', 'HR', 'CY', 'EE', 'FI', 'FR', 'DE', 'GR', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PT', 'SK', 'SI', 'ES', 'AD', 'MC', 'SM', 'VA', 'ME'];
+export const currencyForCountry = (country) => {
+  const c = String(country ?? '').toUpperCase();
+  return c === 'BR' ? 'BRL' : c === 'GB' ? 'GBP' : EUROZONE.includes(c) ? 'EUR' : null;
+};
+
+/** Planes com o valor na moeda do país (se o preço tiver essa moeda); senão, na moeda base. */
+export function localizePlans(plans, country) {
+  const cur = currencyForCountry(country);
+  return plans.map(({ currencies, renewalCurrencies, ...p }) => (cur && currencies?.[cur] != null
+    ? { ...p, amount: currencies[cur], currency: cur, ...(p.renewalAmount ? { renewalAmount: renewalCurrencies?.[cur] ?? null } : {}) }
+    : p));
+}
+
 const money = (cents, currency) => new Intl.NumberFormat('es', { style: 'currency', currency }).format(cents / 100);
 const toDate = (unix) => (unix ? new Date(unix * 1000).toISOString() : null);
 
@@ -39,11 +55,15 @@ export function createBilling({ db, stripe, config, log = console }) {
 
   async function resolvePrice(ref) {
     if (ref.startsWith('lookup:')) {
-      const list = await stripe.prices.list({ lookup_keys: [ref.slice(7)], active: true, limit: 1 });
+      const list = await stripe.prices.list({ lookup_keys: [ref.slice(7)], active: true, limit: 1, expand: ['data.currency_options'] });
       return list.data[0] ?? null;
     }
-    return stripe.prices.retrieve(ref);
+    return stripe.prices.retrieve(ref, { expand: ['currency_options'] });
   }
+
+  /** Preços fixos por moeda do Stripe (currency_options), ex.: { BRL: 990, EUR: 799 }. */
+  const currencyAmounts = (price) => Object.fromEntries(Object.entries(price?.currency_options ?? {})
+    .filter(([cur, o]) => cur !== price.currency && o?.unit_amount != null).map(([cur, o]) => [cur.toUpperCase(), o.unit_amount]));
 
   /** Planes de un programa con el precio real de Stripe. Nunca se muestran importes que no vengan de Stripe. */
   async function getPlans(program = 'sem-fumo') {
@@ -69,7 +89,8 @@ export function createBilling({ db, stripe, config, log = console }) {
           && renewal.currency === price.currency && renewal.unit_amount > price.unit_amount;
         return {
           ...base, available: true, priceId: price.id, amount: price.unit_amount, currency: price.currency.toUpperCase(),
-          ...(validRenewal ? { renewalPriceId: renewal.id, renewalAmount: renewal.unit_amount } : {}),
+          currencies: currencyAmounts(price),
+          ...(validRenewal ? { renewalPriceId: renewal.id, renewalAmount: renewal.unit_amount, renewalCurrencies: currencyAmounts(renewal) } : {}),
         };
       } catch (err) {
         log.error(`[billing] No se pudo cargar el precio "${program}/${id}": ${err.message}`);
@@ -86,7 +107,7 @@ export function createBilling({ db, stripe, config, log = console }) {
 
   // ------------------------------------------------------------ oferta de salida
   /** Oferta real (cupón de Stripe de un solo uso por suscripción) o null si no está configurada. */
-  async function getExitOffer(plan = config.stripe.exitOffer.plan) {
+  async function getExitOffer(plan = config.stripe.exitOffer.plan, country = null) {
     const { couponId } = config.stripe.exitOffer;
     if (!stripe || !couponId) return null;
     try {
@@ -94,7 +115,7 @@ export function createBilling({ db, stripe, config, log = console }) {
         couponCache = { at: Date.now(), coupon: await stripe.coupons.retrieve(couponId) };
       }
       const { coupon } = couponCache;
-      const planInfo = (await getPlans('sem-fumo')).find((p) => p.id === plan);
+      const planInfo = localizePlans(await getPlans('sem-fumo'), country).find((p) => p.id === plan);
       if (!coupon?.valid || coupon.duration !== 'once' || !planInfo?.available) return null;
       const discounted = coupon.percent_off
         ? Math.round(planInfo.amount * (100 - coupon.percent_off) / 100)
@@ -119,8 +140,8 @@ export function createBilling({ db, stripe, config, log = console }) {
     return r.blocked;
   }
 
-  async function claimExitOffer(sessionId, userId, plan) {
-    const offer = await getExitOffer(PLAN_IDS.includes(plan) ? plan : undefined);
+  async function claimExitOffer(sessionId, userId, plan, country = null) {
+    const offer = await getExitOffer(PLAN_IDS.includes(plan) ? plan : undefined, country);
     if (!offer || !sessionId) return null;
     if (await offerBlockedFor(userId)) return null;
     const row = await db.service.one(`
