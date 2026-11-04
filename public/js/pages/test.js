@@ -12,6 +12,7 @@ backBtn.innerHTML = `${ICONS.back}<span>Atrás</span>`;
 
 const QUESTION_TYPES = ['single', 'multi', 'number'];
 let steps = [];
+let QV = null; // versão do quiz nos eventos (v4, v5…): o painel separa os funis por ela
 let answers = {};
 let index = 0;
 let config = { currency: 'USD', locale: 'es-US' };
@@ -24,6 +25,7 @@ const PROGRAM =
   || new URLSearchParams(location.search).get('program')
   || 'sem-fumo';
 const PROGRAM_OK = SLUGS.includes(PROGRAM);
+const BETA = new URLSearchParams(location.search).get('beta'); // /test?beta=5 abre o quiz v5 (só para análise)
 
 function currencySymbol() {
   const parts = new Intl.NumberFormat(config.locale, { style: 'currency', currency: config.currency }).formatToParts(0);
@@ -36,7 +38,7 @@ async function save(questionId, value, nextStepId) {
   const { assessment } = await api('/api/assessment/answers', { method: 'PUT', body });
   answers = assessment.answers;
   // Solo a la base propia (pixel:false): las respuestas del quiz nunca viajan a plataformas de anuncios.
-  if (questionId) track('quiz_answered', { program: PROGRAM, question: questionId, answer: value, seconds: Math.round((Date.now() - shownAt) / 100) / 10, version: 'v1' }, { pixel: false });
+  if (questionId) track('quiz_answered', { program: PROGRAM, question: questionId, answer: value, seconds: Math.round((Date.now() - shownAt) / 100) / 10, quiz_version: QV }, { pixel: false });
 }
 
 function goTo(i, { push = true } = {}) {
@@ -81,6 +83,7 @@ function updateChrome() {
 
 function optionButton(opt, selected, { multi, onClick }) {
   return h('button', { type: 'button', class: `option${selected ? ' is-selected' : ''}`, 'aria-pressed': String(selected), onclick: onClick },
+    opt.emoji ? h('span', { class: 'option__emoji', 'aria-hidden': 'true' }, opt.emoji) : null,
     h('span', { class: 'option__label' }, opt.label),
     multi ? h('span', { class: 'option__check', html: ICONS.check }) : h('span', { class: 'option__radio', 'aria-hidden': 'true' }));
 }
@@ -112,7 +115,7 @@ function renderHero(step) {
     h('h1', { class: 'hero-screen__title' }, `${step.title} `, h('span', { class: 'mark' }, step.titleMark)),
     h('p', { class: 'hero-screen__q' }, step.question),
     h('div', { class: 'options options--pair' }, step.options.map((o) =>
-      h('button', { type: 'button', class: 'option-pair', 'aria-pressed': String(answers[step.id] === o.id), onclick: pick(step, o) }, o.label))),
+      h('button', { type: 'button', class: 'option-pair', 'aria-pressed': String(answers[step.id] === o.id), onclick: pick(step, o) }, o.emoji ? h('span', { class: 'option__emoji', 'aria-hidden': 'true' }, o.emoji) : null, o.label))),
     h('p', { class: 'help hero-screen__legal' },
       'Si sigues adelante, aceptas nuestros ', h('a', { href: '/terminos', target: '_blank' }, 'Términos y condiciones'), ' | ',
       h('a', { href: '/privacidad', target: '_blank' }, 'Política de privacidad'), '.')); // fica: é o aceite que permite guardar respostas de saúde (RGPD)
@@ -125,9 +128,9 @@ function renderSingle(step) {
     const attrs = { type: 'button', 'aria-pressed': String(current === o.id), onclick: pick(step, o) };
     if (step.layout === 'cards') {
       return h('button', { ...attrs, class: `option-card${current === o.id ? ' is-selected' : ''}` },
-        h('span', { class: 'option-card__icon', html: OPTION_ICONS[o.icon] ?? '' }), h('span', {}, o.label));
+        o.emoji ? h('span', { class: 'option-card__emoji', 'aria-hidden': 'true' }, o.emoji) : h('span', { class: 'option-card__icon', html: OPTION_ICONS[o.icon] ?? '' }), h('span', {}, o.label));
     }
-    if (step.layout === 'pair') return h('button', { ...attrs, class: `option-pair${current === o.id ? ' is-selected' : ''}` }, o.label);
+    if (step.layout === 'pair') return h('button', { ...attrs, class: `option-pair${current === o.id ? ' is-selected' : ''}` }, o.emoji ? h('span', { class: 'option__emoji', 'aria-hidden': 'true' }, o.emoji) : null, o.label);
     return optionButton(o, current === o.id, { onClick: attrs.onclick });
   };
   return h('section', { class: 'quiz__screen' },
@@ -204,6 +207,19 @@ const orderOf = (qid, value) => (steps.find((s) => s.id === qid)?.options?.findI
 const FORM_KEYS = { 1: 'cigarettes', 2: 'e-cig/vape', 3: 'heated-tobacco', 4: 'cigars', 5: 'shisha/hookah', 6: 'pouches/snus' };
 const YEAR_KEYS = { 1: 'less-than-1-year', 2: '1-2-years', 3: '3-5-years', 4: '6-9-years', 5: '10-plus-years' };
 
+// {q_id} nos textos vira a frase da opção escolhida; optionsFrom mostra só as opções marcadas na pergunta indicada.
+const phraseOf = (qid) => {
+  const o = steps.find((s) => s.id === qid)?.options?.find((x) => x.id === answers[qid]);
+  return o ? (o.phrase ?? o.label) : '…';
+};
+const fill = (t) => (typeof t === 'string' ? t.replace(/\{(q_\w+)\}/g, (_, id) => phraseOf(id)) : t);
+function prepare(step) {
+  const s = { ...step, title: fill(step.title), subtitle: fill(step.subtitle), html: fill(step.html), question: fill(step.question) };
+  if (step.popups) s.popups = step.popups.map((p) => ({ ...p, question: fill(p.question) }));
+  if (step.optionsFrom) s.options = step.options.filter((o) => [].concat(answers[step.optionsFrom] ?? []).includes(o.id));
+  return s;
+}
+
 function personalText(step) {
   const t = step.texts ?? {};
   if (step.personalize === 'duration') {
@@ -212,7 +228,7 @@ function personalText(step) {
   if (step.personalize === 'friend') {
     const picked = [].concat(answers.q_disfrute ?? []).map((v) => orderOf('q_disfrute', v)).filter(Boolean);
     const add = picked.length ? t.pleasure?.[picked[Math.floor(Math.random() * picked.length)]] : '';
-    return [t.friend?.[orderOf('q_amigo', answers.q_amigo)] ?? t.friend?.FALLBACK, add].filter(Boolean).join('\n\n');
+    return [step.lead ?? t.friend?.[orderOf('q_amigo', answers.q_amigo)] ?? t.friend?.FALLBACK, add].filter(Boolean).join('\n\n');
   }
   if (step.personalize === 'goal') {
     const tried = [].concat(answers.q_metodos ?? []).map((v) => orderOf('q_metodos', v)).find((o) => t.tried?.[o]);
@@ -227,13 +243,30 @@ const continueBtn = () => {
   return h('div', { class: 'sticky-cta' }, cta);
 };
 
+// Beta v5: texto com mais de um parágrafo aparece um por toque, para cada ideia ser lida antes da próxima.
+function revealText(paras) {
+  let shown = 1;
+  const items = paras.map((p, i) => h('p', { class: `info-screen__text reveal${i ? ' is-hidden' : ''}`, html: p.html }, p.text));
+  const dots = h('div', { class: 'reveal__dots', 'aria-hidden': 'true' }, paras.map((_, i) => h('span', { class: i ? '' : 'is-on' })));
+  const cta = h('button', { type: 'button', class: 'btn btn--lg', onclick: () => {
+    if (shown >= paras.length) return answerAndNext(null, null, cta);
+    items[shown].classList.remove('is-hidden');
+    dots.children[shown].classList.add('is-on');
+    items[shown].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (++shown === paras.length) cta.textContent = 'Continuar';
+  } }, 'Seguir leyendo');
+  return { text: h('div', { class: 'reveal__list' }, items), cta: h('div', { class: 'sticky-cta' }, dots, cta) };
+}
+
 function renderInfo(step) {
   const image = step.imageByGender?.[answers.q_genero] ?? step.image;
+  const paras = step.html ? step.html.split(/<br\s*\/?>\s*<br\s*\/?>/).map((x) => ({ html: x })) : String(personalText(step) ?? '').split(/\n\n+/).map((x) => ({ text: x }));
+  const reveal = BETA && paras.length > 1 ? revealText(paras) : null;
   return h('section', { class: `quiz__screen info-screen${step.tone === 'dark' ? ' info-screen--dark' : ''} info-screen--story` },
     step.title ? h('h1', { class: 'title-lg' }, step.title) : null,
-    step.html ? h('p', { class: 'info-screen__text', html: step.html }) : h('p', { class: 'info-screen__text' }, personalText(step)),
+    reveal ? reveal.text : step.html ? h('p', { class: 'info-screen__text', html: step.html }) : h('p', { class: 'info-screen__text' }, personalText(step)),
     image ? h('img', { class: 'info-screen__img info-screen__img--leaf', src: image, alt: '', loading: 'eager' }) : null,
-    continueBtn());
+    reveal ? reveal.cta : continueBtn());
 }
 
 function renderNotalone() {
@@ -297,7 +330,7 @@ function renderAnalysis(step) {
   function popup({ question }) {
     paused = true;
     const answer = (value) => () => {
-      track('quiz_commitment', { program: PROGRAM, question, answer: value }, { pixel: false });
+      track('quiz_commitment', { program: PROGRAM, quiz_version: QV, question, answer: value }, { pixel: false });
       overlay.remove(); paused = false; last = performance.now();
     };
     const no = h('button', { type: 'button', class: 'btn btn--ghost btn--lg', onclick: answer('no') }, 'No');
@@ -373,11 +406,11 @@ function renderLeadEmail(error = '') {
     Object.assign(lead, { email: email.value.trim(), marketing: false });
     renderLeadName();
   });
-  track('quiz_step', { program: PROGRAM, step: 'email' }, { pixel: false });
+  track('quiz_step', { program: PROGRAM, quiz_version: QV, step: 'email' }, { pixel: false });
   leadScreen(h('h1', { class: 'title-lg' }, 'Consulta tus resultados'),
     h('p', { class: 'subtitle' }, 'Introduce tu dirección de correo electrónico para recibir los resultados de tu prueba y seguir avanzando con nuestro plan personalizado.'),
     form);
-  track('lead_form_shown', { program: PROGRAM }, { pixel: false });
+  track('lead_form_shown', { program: PROGRAM, quiz_version: QV }, { pixel: false });
 }
 
 function renderLeadName() {
@@ -399,7 +432,7 @@ function renderLeadName() {
     try { if (first) localStorage.setItem('alento-name', first); localStorage.setItem('alento-email', lead.email); } catch { /* modo privado */ }
     window.location.assign(`/resultados?program=${PROGRAM}`);
   });
-  track('quiz_step', { program: PROGRAM, step: 'nombre' }, { pixel: false });
+  track('quiz_step', { program: PROGRAM, quiz_version: QV, step: 'nombre' }, { pixel: false });
   leadScreen(h('h1', { class: 'title-lg' }, 'Alento quiere saludarte como es debido'),
     h('p', { class: 'subtitle' }, '¿Cómo te podemos llamar?'),
     form);
@@ -408,10 +441,13 @@ function renderLeadName() {
 function render() {
   shownAt = Date.now();
   const step = steps[index];
+  // optionsFrom com uma opção só (ex.: um gatilho marcado): responde sozinho e segue.
+  const only = step.optionsFrom ? prepare(step).options : null;
+  if (only?.length === 1 && answers[step.id] !== only[0].id) return setTimeout(() => answerAndNext(step, only[0].id)); // depois do save anterior liberar o `saving`
   // Retenção tela a tela no painel (só para a base própria; nunca para anúncios).
-  track('quiz_step', { program: PROGRAM, step: step.id }, { pixel: false });
+  track('quiz_step', { program: PROGRAM, quiz_version: QV, step: step.id }, { pixel: false });
   updateChrome();
-  const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, notalone: renderNotalone, science: renderScience, savings: renderSavings, analysis: renderAnalysis }[step.type](step);
+  const view = { single: renderSingle, multi: renderMulti, number: renderNumber, info: renderInfo, notalone: renderNotalone, science: renderScience, savings: renderSavings, analysis: renderAnalysis }[step.type](prepare(step));
   screenEl.replaceChildren(view);
   window.scrollTo({ top: 0 });
   view.querySelector('h1')?.setAttribute('tabindex', '-1');
@@ -427,10 +463,11 @@ async function init() {
   if (!PROGRAM_OK) return window.location.replace('/test');
   try {
     const [quiz, cfg, state] = await Promise.all([
-      api(`/api/quiz?program=${PROGRAM}`), api('/api/config'), api(`/api/assessment?program=${PROGRAM}`)]);
+      api(`/api/quiz?program=${PROGRAM}${BETA ? `&v=${BETA}` : ''}`), api('/api/config'), api(`/api/assessment?program=${PROGRAM}`)]);
     config = cfg;
     // shortcut: as faixas de gasto são as mesmas em qualquer moeda (só troca o símbolo); criar faixas por moeda se o Brasil virar mercado.
     const sym = currencySymbol();
+    QV = `v${quiz.version}`;
     steps = config.currency === 'USD' ? quiz.steps : quiz.steps.map((s) => (s.options ? { ...s, options: s.options.map((o) => ({ ...o, label: o.label.replaceAll('$', sym) })) } : s));
     let assessment = state.assessment;
     const restart = new URLSearchParams(location.search).has('nuevo');
@@ -445,8 +482,8 @@ async function init() {
     if (i < 0 || (firstMissing >= 0 && firstMissing < i)) i = Math.max(0, firstMissing);
     if (steps[i].type === 'analysis' && firstMissing >= 0) i = firstMissing;
     index = i;
-    history.replaceState({ step: steps[index].id }, '', `${restart ? location.pathname : ''}#${steps[index].id}`);
-    track('quiz_started', { program: PROGRAM });
+    history.replaceState({ step: steps[index].id }, '', `${restart ? location.pathname + (BETA ? `?beta=${BETA}` : '') : ''}#${steps[index].id}`);
+    track('quiz_started', { program: PROGRAM, quiz_version: QV });
     render();
   } catch (err) {
     screenEl.replaceChildren(h('p', { class: 'notice' }, err.message));

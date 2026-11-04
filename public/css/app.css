@@ -1108,3 +1108,14 @@ body.has-cookiebar { padding-bottom: 190px; }
 .info-screen--story > .info-screen__img { animation: story-img .7s .35s ease both; }
 .info-screen--story > .sticky-cta { animation-delay: .7s; }
 @keyframes story-img { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: none; } }
+
+/* Beta v5: emoji nas opções e texto longo revelado por toque */
+.option__emoji { font-size: 22px; line-height: 1; flex: none; }
+.option-pair .option__emoji { margin-right: 8px; font-size: 20px; }
+.option-card__emoji { font-size: 34px; line-height: 1; }
+.reveal__list .info-screen__text.reveal { margin-bottom: 18px; animation: reveal-in .45s ease both; }
+.reveal__list .info-screen__text.is-hidden { display: none; }
+.reveal__dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 14px; }
+.reveal__dots span { width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, #fff 30%, transparent); transition: background .2s, width .2s; }
+.reveal__dots span.is-on { background: var(--menta); }
+@keyframes reveal-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

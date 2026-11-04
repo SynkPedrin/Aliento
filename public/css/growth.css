@@ -325,3 +325,10 @@ code { font: 12.5px ui-monospace, Menlo, monospace; background: var(--surface-2)
 i[class*="v2-s"] { background: var(--s); }
 .v2-namecell { display: inline-flex; align-items: center; gap: 4px; } .v2-namecell .v2-chip { margin-left: 6px; }
 .v2-table td:first-child { white-space: nowrap; }
+/* Versões do quiz dentro do card do produto */
+.v2-versions { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+.v2-version { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); padding: 4px 6px; border-radius: 8px; cursor: pointer; }
+.v2-version:hover { background: color-mix(in srgb, var(--brand) 12%, transparent); }
+.v2-version b { color: var(--ink); }
+.v2-version__nums { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v2-version .v2-chip { margin-left: 0; }

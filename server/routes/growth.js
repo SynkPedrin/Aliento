@@ -2,7 +2,12 @@
 import { Router } from 'express';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import { HttpError, wrap } from './util.js';
-import { PROGRAM_STEPS, QUESTION_TYPES } from '../quiz.js';
+import { PROGRAM_STEPS, QUESTION_TYPES, QUIZ_VERSION, STEPS_V5 } from '../quiz.js';
+
+// Versões de quiz de cada produto: [chave, etapas, sufixo do link]. A primeira é a padrão: eventos sem quiz_version contam nela.
+const QUIZ_VERSIONS = { 'sem-fumo': [[`v${QUIZ_VERSION}`, PROGRAM_STEPS['sem-fumo'], ''], ['v5', STEPS_V5, '?beta=5']] };
+const versionsOf = (program) => QUIZ_VERSIONS[program] ?? [[`v${QUIZ_VERSION}`, PROGRAM_STEPS[program], '']];
+const versionSql = (program) => `coalesce(props->>'quiz_version', '${versionsOf(program)[0][0]}')`;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const num = (v) => (v == null ? 0 : Number(v));
@@ -505,16 +510,29 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
         q.rows(`select occurred_at::date::text as day, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and props->>'step' = $4
           and program_slug = $3 and occurred_at::date between $1 and $2 and ($5::timestamptz is null or occurred_at >= $5) group by 1 order by 1`, [p.from, p.to, program, PROGRAM_STEPS[program][0].id, since]),
       ]);
+      // Cada versão: quem começou nela no período e, dessa coorte, quantos viraram lead e compraram.
+      const versions = await Promise.all(versionsOf(program).map(async ([key, steps, suffix]) => {
+        const v = await q.one(`with c as (select distinct visitor_id from growth.events where name = 'quiz_step' and props->>'step' = $4 and program_slug = $3
+            and occurred_at::date between $1 and $2 and ($5::timestamptz is null or occurred_at >= $5) and ${versionSql(program)} = $6)
+          select (select count(*) from c) as started,
+            (select count(distinct visitor_id) from growth.events where name = 'lead_created' and occurred_at::date >= $1 and visitor_id in (select visitor_id from c)) as leads,
+            (select count(distinct visitor_id) from growth.events where name = 'purchase' and occurred_at::date >= $1 and visitor_id in (select visitor_id from c)) as purchases`,
+        [p.from, p.to, program, steps[0].id, since, key]);
+        return { key, link: `${config.appUrl}/quiz/${program}${suffix}`, started: num(v.started), leads: num(v.leads), purchases: num(v.purchases),
+          lead_pct: pct(num(v.leads), num(v.started)), conversion_pct: pct(num(v.purchases), num(v.started)) };
+      }));
       rows.push({ program, status, link: `${config.appUrl}/quiz/${program}`, started: num(st.n), leads: num(leads.n), orders: rev.orders, revenue_cents: rev.revenue_cents,
-        conversion_pct: pct(rev.orders, num(st.n)), daily: daily.map((d) => num(d.n)) });
+        conversion_pct: pct(rev.orders, num(st.n)), daily: daily.map((d) => num(d.n)), versions });
     }
     res.json({ currency: curOf(req), period: p, rows });
   }));
 
   r.get('/funnels/:program', wrap(async (req, res) => {
     const program = String(req.params.program);
-    const list = PROGRAM_STEPS[program];
-    if (!list) throw new HttpError(404, 'Funil não encontrado.', 'NOT_FOUND');
+    if (!PROGRAM_STEPS[program]) throw new HttpError(404, 'Funil não encontrado.', 'NOT_FOUND');
+    const versions = versionsOf(program);
+    const [qv, list] = versions.find(([k]) => k === req.query.qv) ?? versions[0];
+    const multi = versions.length > 1; // com mais de uma versão, compras e conversão saem da coorte da versão
     const p = periodOf(req);
     const since = await resetOf(program);
     const dim = DIMS[String(req.query.dim)] ? String(req.query.dim) : null;
@@ -522,8 +540,8 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
 
     // Curva de retenção de um recorte (val = null: todos).
     const curve = async (v) => {
-      const where = `occurred_at::date between $1 and $2 and program_slug = $3 and ($4::timestamptz is null or occurred_at >= $4) ${v != null ? `and ${DIMS[dim]} = $5` : ''}`;
-      const args = [p.from, p.to, program, since, ...(v != null ? [v] : [])];
+      const where = `occurred_at::date between $1 and $2 and program_slug = $3 and ($4::timestamptz is null or occurred_at >= $4) and ${versionSql(program)} = $5 ${v != null ? `and ${DIMS[dim]} = $6` : ''}`;
+      const args = [p.from, p.to, program, since, qv, ...(v != null ? [v] : [])];
       const counts = Object.fromEntries((await q.rows(`select props->>'step' as step, count(distinct visitor_id) as n from growth.events where name = 'quiz_step' and ${where} group by 1`, args)).map((x) => [x.step, num(x.n)]));
       // Etapas finais: só de quem começou o quiz no período (coorte), para a curva nunca subir.
       const stageCounts = Object.fromEntries((await q.rows(`select name, count(distinct visitor_id) as n from growth.events
@@ -545,7 +563,8 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
 
     const segments = dim ? (await q.rows(`select ${DIMS[dim]} as value, count(distinct visitor_id) as n from growth.events
       where name = 'quiz_step' and props->>'step' = $4 and occurred_at::date between $1 and $2 and program_slug = $3 and ($5::timestamptz is null or occurred_at >= $5)
-      group by 1 order by 2 desc limit 30`, [p.from, p.to, program, list[0].id, since])).map((x) => ({ value: x.value ?? '—', people: num(x.n) })) : [];
+        and ${versionSql(program)} = $6
+      group by 1 order by 2 desc limit 30`, [p.from, p.to, program, list[0].id, since, qv])).map((x) => ({ value: x.value ?? '—', people: num(x.n) })) : [];
     const main = await curve(val);
     // Sem recorte escolhido numa dimensão: uma linha por valor (os mais acessados), para comparar anúncios.
     const series = dim && !val ? await Promise.all(segments.filter((s) => s.value !== '—').slice(0, SERIES_MAX).map(async (s) => {
@@ -559,9 +578,10 @@ export function growthRoutes({ db, config, growth, auth, billing, log = console 
     const leads = stageCounts.lead_created ?? 0;
     res.json({
       currency: curOf(req), period: p, program, dim, val, since, screens, segments, series,
+      qv, versions: versions.map(([key, , suffix]) => ({ key, link: `${config.appUrl}/quiz/${program}${suffix}` })),
       metrics: { started: base, finished: counts.analisis ?? 0, leads, lead_pct: pct(leads, base), offer: stageCounts.plan_viewed ?? 0, checkouts: stageCounts.checkout_started ?? 0,
-        purchases: val ? (stageCounts.purchase ?? 0) : rev.orders, conversion_pct: pct(val ? (stageCounts.purchase ?? 0) : rev.orders, base),
-        revenue_cents: val ? null : rev.revenue_cents, ticket_cents: !val && rev.orders ? Math.round(rev.revenue_cents / rev.orders) : (val ? null : 0) },
+        purchases: val || multi ? (stageCounts.purchase ?? 0) : rev.orders, conversion_pct: pct(val || multi ? (stageCounts.purchase ?? 0) : rev.orders, base),
+        revenue_cents: val || multi ? null : rev.revenue_cents, ticket_cents: !(val || multi) && rev.orders ? Math.round(rev.revenue_cents / rev.orders) : (val || multi ? null : 0) },
     });
   }));
 

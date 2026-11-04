@@ -185,6 +185,29 @@ test('2FA desligado (padrão): membro da equipe entra no painel só com a senha'
   } finally { app.close(); }
 });
 
+test('painel v2: cada produto separa as versões do quiz (eventos sem versão contam na padrão)', async () => {
+  const s = globalThis.__staffer;
+  const v4 = randomUUID(), v5 = randomUUID();
+  for (const vid of [v4, v5]) await db.service.exec(`insert into growth.visitors (visitor_id, country) values ($1, 'ES') on conflict do nothing`, [vid]);
+  const ev = (vid, props) => db.service.exec(`insert into growth.events (event_id, name, visitor_id, program_slug, country, props) values ($1, 'quiz_step', $2, 'sem-fumo', 'ES', $3::jsonb)`, [randomUUID(), vid, JSON.stringify(props)]);
+  await ev(v4, { step: 'q_diario' });
+  for (const step of ['q_diario', 'diag_previa']) await ev(v5, { step, quiz_version: 'v5' });
+  try {
+    const row = (await s.c('/api/growth/funnels?days=1')).body.rows.find((f) => f.program === 'sem-fumo');
+    assert.deepEqual(row.versions.map((v) => v.key), ['v4', 'v5']);
+    assert.ok(row.versions.every((v) => v.started >= 1));
+    assert.match(row.versions[1].link, /\/quiz\/sem-fumo\?beta=5$/);
+    const d5 = (await s.c('/api/growth/funnels/sem-fumo?days=1&qv=v5')).body;
+    assert.equal(d5.qv, 'v5');
+    assert.ok(d5.screens.some((x) => x.id === 'diag_previa' && x.people >= 1), 'telas da v5');
+    const d4 = (await s.c('/api/growth/funnels/sem-fumo?days=1')).body;
+    assert.equal(d4.qv, 'v4');
+    assert.ok(!d4.screens.some((x) => x.id === 'diag_previa'), 'v4 não mostra telas da v5');
+  } finally {
+    for (const vid of [v4, v5]) await db.service.exec(`select growth.erase_person(null, null, $1)`, [vid]);
+  }
+});
+
 test('painel v2: visão geral, funis com retenção tela a tela, vendas com UTMs e pixels', async () => {
   const s = globalThis.__staffer;
   const vid = randomUUID(), today = new Date().toISOString().slice(0, 10);
