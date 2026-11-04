@@ -133,6 +133,103 @@ export const STEPS = [
   },
 ];
 
+// ------------------------------------------------------------
+// 1b. Sem Fumo v5 (BETA, solo con /test?beta=5): diagnóstico + bloques genéricas → dolor → deseo → mecanismos → solución.
+// Copia aprobable en docs/QUIZ_COPY_V5.md. Reutiliza las pantallas de la v4 por id.
+// {q_id} en textos = frase de la opción elegida (option.phrase o label).
+// ------------------------------------------------------------
+const V4 = Object.fromEntries(STEPS.map((s) => [s.id, s]));
+export const STEPS_V5 = [
+  {
+    ...V4.q_diario,
+    subtitle: 'Análisis del hábito de fumar · 2 minutos',
+    title: 'Descubre qué detonante te mantiene fumando y si tu caso se resuelve en', titleMark: '28 días',
+  },
+  V4.q_genero, V4.q_edad, V4.q_producto, V4.q_anios, V4.info_duracion, V4.q_cantidad, V4.q_medico, V4.info_notalone,
+  // Dolor
+  V4.q_primer, V4.q_enfermo, V4.q_prohibido, V4.q_sin24h,
+  {
+    id: 'q_esconder', type: 'multi', title: '¿Qué has hecho alguna vez para que nadie notara que habías fumado?', minSelected: 1,
+    options: opts(['chicle', 'Chicle o caramelos'], ['perfume', 'Perfume o lavarme las manos'], ['ventana', 'Bajar la ventanilla del coche aunque hiciera frío'], ['familia', 'Fumar a escondidas de mi familia'], ['nunca', 'Nunca lo he escondido', { exclusive: true }]),
+  },
+  {
+    id: 'q_despues', type: 'single', title: '¿Cómo te sientes unos minutos después de fumar?',
+    options: opts(['alivio', 'Aliviado, pero enseguida quiero otro'], ['culpa', 'Con culpa'], ['olor', 'Con olor y algo de vergüenza'], ['nada', 'Nada, es automático']),
+  },
+  V4.q_patron, V4.q_gatillos,
+  {
+    id: 'q_gatillo_fuerte', type: 'single', optionsFrom: 'q_gatillos',
+    title: '¿Cuál de estos te cuesta más vencer?', subtitle: 'Será el primero que desactivemos.',
+    options: opts(['estres', 'El estrés o la ansiedad', { phrase: 'el estrés' }], ['aburrimiento', 'El aburrimiento o el bajón', { phrase: 'el aburrimiento' }], ['alcohol', 'Los planes sociales y las salidas', { phrase: 'las salidas' }], ['comida', 'El café o después de comer', { phrase: 'el café' }], ['trabajo', 'Las pausas del trabajo o los estudios', { phrase: 'las pausas del trabajo' }]),
+  },
+  V4.q_disfrute, { ...V4.info_amigo, lead: 'No echas de menos el cigarro. Echas de menos lo que te da. Y eso se puede conseguir sin nicotina.' }, V4.q_metodos,
+  {
+    id: 'q_recaida', type: 'single', title: 'La última vez que intentaste dejarlo, ¿cuándo volviste a fumar?',
+    subtitle: 'Casi todo el mundo vuelve en el mismo punto. Enseguida verás por qué.',
+    options: opts(['dia1', 'El 1.º o 2.º día', { phrase: 'a los pocos días' }], ['semana1', 'En la primera semana', { phrase: 'en la primera semana' }], ['semanas', 'Al cabo de unas semanas', { phrase: 'al cabo de unas semanas' }], ['nunca', 'Nunca lo he intentado en serio', { phrase: 'cada vez que lo pensaste' }]),
+  },
+  V4.q_preocupacion,
+  // Deseo
+  V4.q_objetivo,
+  {
+    id: 'q_primer_logro', type: 'single', title: '¿Qué te gustaría sentir primero?',
+    options: opts(['escalera', 'Subir una escalera sin quedarme sin aire'], ['tos', 'Despertarme sin tos'], ['abrazo', 'Abrazar a alguien sin oler a tabaco'], ['mente', 'Dejar de pensar en el próximo cigarrillo'], ['esconder', 'No tener que esconder nada']),
+  },
+  {
+    id: 'q_por_quien', type: 'single', title: '¿Por quién quieres dejarlo, sobre todo?',
+    options: opts(['yo', 'Por mí'], ['hijos', 'Por mis hijos'], ['pareja', 'Por mi pareja'], ['padres', 'Por mis padres'], ['perdida', 'Por alguien que perdí']),
+  },
+  V4.q_gasto, V4.info_ahorro, V4.q_ahorro, V4.q_meta3m, V4.info_metas,
+  // Diagnóstico + mecanismo del problema + mecanismo de la solución
+  {
+    id: 'diag_previa', type: 'info', tone: 'dark', title: 'Tu detonante más fuerte: {q_gatillo_fuerte}',
+    html: 'Por tus respuestas, tu cigarrillo no va de nicotina. Va de <b>{q_gatillo_fuerte}</b>.<br><br>Llevas {q_anios} fumando y {q_cantidad} veces al día: tu cerebro ya une una cosa con la otra sin pedir permiso.<br><br><i>El diagnóstico completo sale al final, con tu plan.</i>',
+  },
+  {
+    id: 'mec_problema_1', type: 'info', tone: 'dark', title: '3 días',
+    html: 'Es lo que tarda la nicotina en salir de tu cuerpo.<br><br>Entonces, ¿por qué cuesta tanto después? Porque lo que te engancha no es la sustancia. <b>Es el bucle del detonante.</b>',
+  },
+  {
+    id: 'mec_problema_2', type: 'info', tone: 'dark', title: 'Tu bucle: {q_gatillo_fuerte} → cigarrillo → alivio',
+    html: 'Repetido miles de veces, ese bucle se vuelve automático.<br><br>Por eso volviste a fumar {q_recaida}: las ganas ya habían salido del cuerpo, pero <b>el detonante seguía ahí</b>.<br><br>La fuerza de voluntad pelea con las ganas. No toca el bucle. <b>No es debilidad. Es cableado.</b>',
+  },
+  {
+    id: 'mec_solucion_1', type: 'info', tone: 'dark', title: 'El Reset de Detonantes de 28 días desactiva un bucle cada vez',
+    html: 'Cuatro semanas, un paso cada vez.<br><br><b>Semana 1, Atravesar:</b> los primeros días, con apoyo en el momento de las ganas (duran minutos y pasan).<br><br><b>Semana 2, Desactivar:</b> empezando por {q_gatillo_fuerte}, con tareas de 5 minutos.<br><br><b>Semana 3, Cambiar:</b> las respuestas nuevas se vuelven rutina.<br><br><b>Semana 4, Blindar:</b> fiestas, alcohol, días malos.',
+  },
+  {
+    id: 'mec_solucion_2', type: 'info', tone: 'dark', title: '5 veces más probabilidades',
+    html: 'Quien pasa 28 días sin fumar tiene 5 veces más probabilidades de dejarlo para siempre.*<br><br><small>*Dato de la campaña Stoptober, salud pública de Inglaterra.</small>',
+  },
+  // Solución: la persona monta su plan
+  {
+    id: 'sol_tiempo', type: 'single', title: '¿Cuánto tiempo al día puedes dedicarle?', subtitle: 'Con 5 minutos basta para el Reset.',
+    options: opts(['5', '5 minutos'], ['10', '10 minutos'], ['15', '15 minutos o más']),
+  },
+  {
+    id: 'sol_horario', type: 'single', title: '¿Cuándo quieres recibir la tarea del día?',
+    options: opts(['manana', 'Nada más despertarme'], ['mediodia', 'A la hora de comer'], ['noche', 'Al final del día']),
+  },
+  {
+    id: 'sol_aviso', type: 'single', title: '¿Quieres un aviso en el móvil en tus momentos de riesgo ({q_gatillo_fuerte})?',
+    options: opts(['si', 'Sí, avísame'], ['no', 'No, prefiero hacerlo solo']),
+  },
+  {
+    id: 'sol_inicio', type: 'single', title: '¿Cuándo quieres empezar?', subtitle: 'No tienes que dejarlo hoy. El plan te dice cuándo.',
+    options: opts(['hoy', 'Hoy'], ['manana', 'Mañana'], ['lunes', 'El próximo lunes']),
+  },
+  V4.info_ciencia,
+  {
+    ...V4.analisis,
+    items: ['Perfil y rutina', 'Mapa de tus detonantes', 'Intentos anteriores', 'Tu plan de 28 días'],
+    popups: [
+      { at: 0.3, question: '¿Estás listo para recuperar el control, a partir de hoy?' },
+      { at: 0.55, question: '¿Quieres empezar desactivando {q_gatillo_fuerte}?' },
+      { at: 0.8, question: '¿Te apetece un plan claro y paso a paso?' },
+    ],
+  },
+];
+
 // ============================================================
 // 2. PROGRAMA ALCOHOL (Educativo · Triaje AUDIT-C · Seguridad)
 // ============================================================
@@ -496,7 +593,7 @@ export const PROGRAM_STEPS = {
 export const QUESTION_TYPES = new Set(['single', 'multi', 'number']);
 export const QUESTIONS = STEPS.filter((s) => QUESTION_TYPES.has(s.type));
 
-export const ALL_QUESTIONS = Object.values(PROGRAM_STEPS).flatMap((list) =>
+export const ALL_QUESTIONS = [...Object.values(PROGRAM_STEPS), STEPS_V5].flatMap((list) =>
   list.filter((s) => QUESTION_TYPES.has(s.type))
 );
 
@@ -529,26 +626,63 @@ export function validateAnswer(questionId, value) {
 
 /** Comprueba qué preguntas faltan por responder en un programa dado (por defecto 'sem-fumo'). */
 export function missingAnswers(answers, program = 'sem-fumo') {
-  const stepList = PROGRAM_STEPS[program] || STEPS;
-  const questions = stepList.filter((s) => QUESTION_TYPES.has(s.type));
-  return questions.filter((q) => answers[q.id] === undefined).map((q) => q.id);
+  // Sem Fumo acepta la v4 o la beta v5 completas: devuelve la lista a la que le falta menos.
+  const lists = program === 'sem-fumo' ? [STEPS, STEPS_V5] : [PROGRAM_STEPS[program] || STEPS];
+  return lists
+    .map((list) => list.filter((q) => QUESTION_TYPES.has(q.type) && answers[q.id] === undefined).map((q) => q.id))
+    .reduce((a, b) => (b.length < a.length ? b : a));
 }
 
 /** Versión pública del cuestionario para un programa: sin puntuaciones internas. */
-export function publicQuiz(program = 'sem-fumo') {
+export function publicQuiz(program = 'sem-fumo', variant = null) {
   const texts = program === 'sem-fumo' ? {
     duration: { byForm: FUNNEL_INSERTS.durationByForm, fallback: FUNNEL_INSERTS.durationFallback },
     friend: { friend: FUNNEL_INSERTS.friend, pleasure: FUNNEL_INSERTS.pleasure },
     goal: { tried: FUNNEL_INSERTS.tried, goal: FUNNEL_INSERTS.goal, fallback: FUNNEL_INSERTS.triedFallback },
   } : null;
-  const stepList = PROGRAM_STEPS[program] || STEPS;
+  const beta = program === 'sem-fumo' && variant === '5';
+  const stepList = beta ? STEPS_V5 : PROGRAM_STEPS[program] || STEPS;
   return {
     program,
-    version: QUIZ_VERSION,
+    version: beta ? 5 : QUIZ_VERSION,
     steps: stepList.map((s) => ({
       ...s,
       ...(texts && s.personalize ? { texts: texts[s.personalize] } : {}),
-      options: s.options?.map(({ id, label, exclusive, icon, annual }) => ({ id, label, ...(exclusive ? { exclusive } : {}), ...(icon ? { icon } : {}), ...(annual ? { annual } : {}) })),
+      options: s.options?.map(({ id, label, exclusive, icon, annual, phrase }) => ({ id, label, ...(exclusive ? { exclusive } : {}), ...(icon ? { icon } : {}), ...(annual ? { annual } : {}), ...(phrase ? { phrase } : {}), ...(beta && EMOJI_V5[s.id]?.[id] ? { emoji: EMOJI_V5[s.id][id] } : {}) })),
     })),
   };
 }
+
+// Emojis das opções da beta v5 (por pergunta → id da opção). Ficam fora dos passos para a v4 não mudar.
+const EMOJI_V5 = {
+  q_diario: { si: '✅', no: '❌' },
+  q_genero: { hombre: '👨', mujer: '👩' },
+  q_edad: { '18-24': '🎒', '25-34': '🚀', '35-44': '💼', '45-54': '🏡', '55-64': '🌅', '65+': '🌳' },
+  q_producto: { cigarrillos: '🚬', vapeador: '💨', calentado: '🔥', puros: '🍂', shisha: '🫖', snus: '🫙' },
+  q_anios: { menos1: '🌱', '1a2': '🌿', '3a5': '🌳', '6a9': '🪵', mas10: '⏳' },
+  q_cantidad: { '1a2': '🟢', '3a5': '🟡', '6a10': '🟠', '11a20': '🔴', '21mas': '🚨' },
+  q_medico: { si: '🩺', no: '🙅' },
+  q_primer: { '5min': '⏰', '30min': '☕', '60min': '🚿', mas60: '🌤️' },
+  q_enfermo: { si: '🤒', no: '🛌' },
+  q_prohibido: { calma: '😌', incomodo: '😕', irritado: '😤', tension: '😰' },
+  q_sin24h: { aguantar: '💪', cualquiera: '🏪', pedir: '🙋', sustituir: '🍬', parches: '🩹', lejos: '🚗' },
+  q_esconder: { chicle: '🍬', perfume: '🧴', ventana: '🪟', familia: '🤫', nunca: '🙌' },
+  q_despues: { alivio: '😮‍💨', culpa: '😔', olor: '👃', nada: '🤖' },
+  q_patron: { programado: '🕐', automatico: '🔁', mixto: '🔀' },
+  q_gatillos: { estres: '😣', aburrimiento: '🥱', alcohol: '🍻', comida: '☕', trabajo: '💻' },
+  q_gatillo_fuerte: { estres: '😣', aburrimiento: '🥱', alcohol: '🍻', comida: '☕', trabajo: '💻' },
+  q_disfrute: { gesto: '✋', sabor: '👅', inhalar: '🌬️', pausa: '⏸️', social: '👥', foco: '🎯' },
+  q_metodos: { nada: '🆕', golpe: '✂️', terapia: '🗣️', hipnosis: '🌀', medicacion: '💊', programa: '📋' },
+  q_recaida: { dia1: '📅', semana1: '🗓️', semanas: '⏳', nunca: '🆕' },
+  q_preocupacion: { peso: '⚖️', ansiedad: '😰', social: '🫂', vacio: '🕳️', foco: '🧠' },
+  q_objetivo: { parar: '🚭', reducir: '📉', gradual: '🩹' },
+  q_primer_logro: { escalera: '🪜', tos: '🌄', abrazo: '🤗', mente: '🧘', esconder: '🔓' },
+  q_por_quien: { yo: '🙋', hijos: '👧', pareja: '❤️', padres: '👵', perdida: '🕊️' },
+  q_gasto: { '0a49': '🪙', '50a149': '💵', '150a299': '💸', '300mas': '💰' },
+  q_ahorro: { ahorrar: '🏦', viajar: '✈️', cuidarme: '💆', familia: '🎁', deudas: '🧾' },
+  q_meta3m: { dormir: '😴', control: '💪', social: '🥂', animo: '😊', foco: '🎯' },
+  sol_tiempo: { 5: '⚡', 10: '⏱️', 15: '🧘' },
+  sol_horario: { manana: '🌅', mediodia: '🍽️', noche: '🌙' },
+  sol_aviso: { si: '🔔', no: '🔕' },
+  sol_inicio: { hoy: '🔥', manana: '🌅', lunes: '📆' },
+};

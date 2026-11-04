@@ -80,9 +80,20 @@ export async function funnels(root, _f, params) {
         h('span', { class: 'v2-grid v2-grid--3 v2-funnel__nums' },
           h('span', {}, h('b', {}, int(f.started)), h('small', {}, 'Iniciaram')),
           h('span', {}, h('b', {}, pct(f.conversion_pct)), h('small', {}, 'Conversão')),
-          h('span', {}, h('b', {}, eur(f.revenue_cents)), h('small', {}, 'Faturamento'))));
+          h('span', {}, h('b', {}, eur(f.revenue_cents)), h('small', {}, 'Faturamento'))),
+        f.versions?.length > 1 ? h('span', { class: 'v2-versions' }, f.versions.map((v) => versionRow(f.program, v, params.days ?? '7'))) : null);
     })));
   });
+}
+
+// Uma linha por versão do quiz no card do produto: abre o funil daquela versão; ⧉ copia o link dela.
+function versionRow(program, v, days) {
+  const open = (e) => { e.stopPropagation(); goto('funnel', { p: program, qv: v.key, days }); };
+  return h('span', { role: 'button', tabindex: '0', class: 'v2-version', onclick: open, onkeydown: (e) => { if (e.key === 'Enter') open(e); } },
+    h('b', {}, v.key), h('span', { class: 'v2-version__nums' }, `${int(v.started)} iniciaram · ${pct(v.lead_pct)} lead · ${pct(v.conversion_pct)} conv.`),
+    h('span', { role: 'button', tabindex: '0', class: 'v2-chip', title: `Copiar link: ${v.link}`, 'aria-label': `Copiar link do quiz ${v.key}`,
+      onclick: (e) => { e.stopPropagation(); navigator.clipboard.writeText(v.link).then(() => toast(`Link do quiz ${v.key} copiado`)); },
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); e.currentTarget.click(); } } }, '⧉'));
 }
 
 function sparkline(values) {
@@ -113,13 +124,14 @@ function segLabel(dim, v) {
 export async function funnel(root, _f, params) {
   const program = params.p ?? 'sem-fumo';
   const dim = DIM_TABS.some(([k]) => k === params.dim) ? params.dim ?? '' : '';
-  const nav = (extra) => goto('funnel', { p: program, days: params.days, dim, ...extra });
+  const qv = params.qv ?? '';
+  const nav = (extra) => goto('funnel', { p: program, qv, days: params.days, dim, ...extra });
   const back = h('button', { type: 'button', class: 'v2-back', onclick: () => goto('funnels', { days: params.days }) }, '← Analytics');
   root.replaceChildren(head(PROGRAM_NAMES[program] ?? program, null, periodSeg(params, (p) => goto('funnel', p))), h('div', { 'data-body': '' }));
   root.querySelector('.v2-head > div').prepend(back);
   const body = root.querySelector('[data-body]');
   await load(body, async () => {
-    const qs = new URLSearchParams({ days: params.days ?? '7', ...(dim ? { dim } : {}), ...(dim && params.val ? { val: params.val } : {}) });
+    const qs = new URLSearchParams({ days: params.days ?? '7', ...(qv ? { qv } : {}), ...(dim ? { dim } : {}), ...(dim && params.val ? { val: params.val } : {}) });
     const d = await gapi(`/funnels/${encodeURIComponent(program)}?${qs}`);
     state.currency = d.currency;
     const dimName = DIM_TABS.find(([k]) => k === dim)[1];
@@ -127,7 +139,7 @@ export async function funnel(root, _f, params) {
 
     // Filtros embaixo do gráfico: dimensão + valores (nome completo, sem abreviar).
     const tabs = h('div', { class: 'v2-tabs', role: 'tablist', 'aria-label': 'Separar por' }, DIM_TABS.map(([k, l]) =>
-      h('button', { type: 'button', role: 'tab', class: dim === k ? 'on' : '', 'aria-selected': String(dim === k), onclick: () => goto('funnel', { p: program, days: params.days, dim: k }) }, l)));
+      h('button', { type: 'button', role: 'tab', class: dim === k ? 'on' : '', 'aria-selected': String(dim === k), onclick: () => goto('funnel', { p: program, qv, days: params.days, dim: k }) }, l)));
     const segs = dim ? h('div', { class: 'v2-segs' }, d.segments.length
       ? [h('button', { type: 'button', class: `v2-chip v2-chip--btn${params.val ? '' : ' on'}`, onclick: () => nav({ val: '' }) }, `Comparar (${Math.min(d.segments.length, 6)} linhas)`),
         ...d.segments.map((s) => h('button', { type: 'button', class: `v2-chip v2-chip--btn${params.val === s.value ? ' on' : ''}`, onclick: () => nav({ val: params.val === s.value ? '' : s.value }) },
@@ -147,6 +159,13 @@ export async function funnel(root, _f, params) {
         int(x.people), pct(x.finished_pct), int(x.leads), int(x.offer), int(x.purchases), h('b', {}, pct(x.purchase_pct))])),
       h('p', { class: 'v2-note' }, 'Linhas = os 6 valores com mais pessoas. Clique num valor acima do gráfico para ver só ele.')) : null;
 
+    // Mais de uma versão do quiz: abas para trocar (cada uma tem as próprias telas) e o link da versão aberta.
+    const current = d.versions.find((v) => v.key === d.qv);
+    const versionTabs = d.versions.length > 1 ? h('div', { class: 'v2-row v2-mt' },
+      h('div', { class: 'v2-tabs', role: 'tablist', 'aria-label': 'Versão do quiz' }, d.versions.map((v) =>
+        h('button', { type: 'button', role: 'tab', class: v.key === d.qv ? 'on' : '', 'aria-selected': String(v.key === d.qv), onclick: () => goto('funnel', { p: program, qv: v.key, days: params.days }) }, `Quiz ${v.key}`))),
+      h('button', { type: 'button', class: 'v2-chip v2-chip--btn', onclick: () => navigator.clipboard.writeText(current.link).then(() => toast(`Link do quiz ${current.key} copiado`)) }, `⧉ Copiar link ${current.key}`)) : null;
+
     const m = d.metrics;
     const screensTable = h('details', { class: 'v2-card v2-details v2-mt' }, h('summary', {}, 'Tela a tela'),
       table(['Nº', 'Tela', N('Pessoas'), N('Retenção'), N('Saída nesta tela')],
@@ -161,6 +180,7 @@ export async function funnel(root, _f, params) {
       } }, 'Zerar métricas')) : null;
 
     body.replaceChildren(
+      versionTabs,
       card(...[chart].flat(), h('div', { class: 'v2-filters' }, tabs, segs)),
       compare,
       h('h2', { class: 'v2-h2' }, params.val ? `Métricas · ${segLabel(dim, params.val)}` : 'Métricas'),

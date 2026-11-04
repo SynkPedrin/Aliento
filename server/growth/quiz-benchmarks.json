@@ -1,0 +1,35 @@
+{
+  "_about": "Metas de retenção do funil de quiz (fonte: vídeo de referência, média de 7 funis de quiz). Todas as taxas saem de growth.events contando visitor_id distintos. Ainda não usado pelo painel: ligar no analytics depois. Copy do quiz: docs/QUIZ_COPY_V5.md.",
+  "source": "video referencia funil de quiz, transcricao recebida 2026-11-03",
+  "quiz_steps_target": { "min": 35, "max": 45 },
+  "metrics": [
+    {
+      "key": "start_quiz_rate",
+      "label": "Iniciaram o quiz / caíram na página",
+      "numerator": { "event": "quiz_started" },
+      "denominator": { "event": "page_view", "page_like": "/test%" },
+      "target": { "min": 0.35, "max": 0.55 }
+    },
+    {
+      "key": "retention_to_lead_form",
+      "label": "Chegaram na tela de e-mail / iniciaram o quiz",
+      "numerator": { "event": "quiz_step", "prop": { "step": "email" } },
+      "denominator": { "event": "quiz_started" },
+      "target": { "min": 0.55, "max": 0.75 }
+    },
+    {
+      "key": "lead_capture_rate",
+      "label": "Deixaram o e-mail / viram a tela de e-mail",
+      "numerator": { "event": "lead_created" },
+      "denominator": { "event": "quiz_step", "prop": { "step": "email" } },
+      "target": { "min": 0.55, "max": 0.65 }
+    },
+    {
+      "key": "initiate_checkout_rate",
+      "label": "Iniciaram o checkout / iniciaram o quiz",
+      "numerator": { "event": "checkout_started" },
+      "denominator": { "event": "quiz_started" },
+      "target": { "min": 0.30, "max": 0.45 }
+    }
+  ]
+}

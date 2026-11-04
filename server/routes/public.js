@@ -102,7 +102,7 @@ export function publicRoutes({ db, billing, config, store, programs }) {
   r.get('/quiz', (req, res) => {
     const program = String(req.query.program || 'sem-fumo');
     publicCache(res);
-    res.json(publicQuiz(program));
+    res.json(publicQuiz(program, req.query.v ? String(req.query.v) : null));
   });
 
   r.get('/legal', (req, res) => { publicCache(res); res.json(config.legal); });

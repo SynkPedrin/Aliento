@@ -66,8 +66,8 @@ export function trackRoutes({ db, config, growth, store, log = console }) {
         if (!question) continue;
         await db.service.exec(`insert into growth.quiz_answers (lead_id, visitor_id, program_slug, question, answer, seconds, quiz_version) values ($1,$2,$3,$4,$5,$6,$7)`,
           [identity.leadId, vis.id, program, question, clip(typeof props.answer === 'object' ? JSON.stringify(props.answer) : props.answer, 200),
-            Number.isFinite(Number(props.seconds)) ? Math.min(Number(props.seconds), 3600) : null, clip(props.version, 20)]);
-        await tracker.record({ ...base, name, program, props: { question, seconds: props.seconds ?? null } });
+            Number.isFinite(Number(props.seconds)) ? Math.min(Number(props.seconds), 3600) : null, clip(props.quiz_version ?? props.version, 20)]);
+        await tracker.record({ ...base, name, program, props: { question, seconds: props.seconds ?? null, quiz_version: clip(props.quiz_version, 10) } });
         recorded += 1; continue;
       }
       if (name === 'app_activated') {
@@ -77,7 +77,7 @@ export function trackRoutes({ db, config, growth, store, log = console }) {
         await tracker.record({ ...base, name, program: clip(props.program, 40), consentMarketing: await tracker.adConsent({ visitorId: vis.id, leadId: identity.leadId }) });
         recorded += 1; continue;
       }
-      await tracker.record({ ...base, name, program: clip(props.program, 40), props: { plan: clip(props.plan, 20), step: clip(props.step, 40) },
+      await tracker.record({ ...base, name, program: clip(props.program, 40), props: { plan: clip(props.plan, 20), step: clip(props.step, 40), quiz_version: clip(props.quiz_version, 10) },
         valueCents: Number.isInteger(props.valueCents) ? props.valueCents : null, currency: clip(props.currency, 3) });
       recorded += 1;
     }

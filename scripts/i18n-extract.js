@@ -77,7 +77,7 @@ function htmlKeys(src) {
 
 // Trechos dos outros 4 programas (fora de venda): não entram na tradução por enquanto. [primeira, última linha]
 const SKIP_LINES = {
-  'server/quiz.js': [[136, 487]],
+  'server/quiz.js': [[233, 583]],
   'server/results.js': [[187, 462]],
   'public/js/pages/resultados.js': [[20, 58], [128, 251]],
   'public/js/paywall.js': [[19, 50]],
