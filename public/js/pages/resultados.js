@@ -680,7 +680,7 @@ function salesPage(r, fmt, name, me) {
       h('div', { class: 'guarantee' },
         h('img', { src: '/assets/quiz/money-back-es.webp', alt: '100 % reembolso garantizado', class: 'guarantee__badge', loading: 'lazy' }),
         h('div', {}, h('h3', {}, 'Garantía de devolución del dinero'), h('p', {}, 'Si no ves resultados visibles, te devolveremos todo el dinero. ', h('a', { href: '/terminos' }, 'Más información.'))))));
-  if (!me.access) renderPaywall(paywallRoot, { pendingCheckout: me.pendingCheckout, variant: 'sales' });
+  if (!me.access) renderPaywall(paywallRoot, { pendingCheckout: me.pendingCheckout, variant: 'sales', signedIn: Boolean(me.user) });
   return page;
 }
 

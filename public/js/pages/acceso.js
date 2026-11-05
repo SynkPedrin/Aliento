@@ -56,7 +56,14 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-if (plan) {
+if (params.get('email')) form.email.value = params.get('email');
+if (plan && mode === 'login') {
+  // Já tem conta (link «¿Ya tienes cuenta?» ou e-mail do quiz já cadastrado): só entrar e seguir ao pagamento.
+  document.querySelector('[role=tablist]').hidden = true;
+  $('[data-subtitle]').textContent = 'Ya tienes una cuenta en Alento. Entra y seguimos directo al pago seguro.';
+  submit.textContent = 'Entrar y continuar al pago';
+  if (form.email.value) form.password.focus();
+} else if (plan) {
   $('[data-subtitle]').textContent = 'Último paso antes del pago seguro. Así guardamos tu plan y tus resultados.';
   (isNativeApp() ? loadNativePlans(program) : api(`/api/plans?program=${encodeURIComponent(program)}`)).then(({ plans }) => {
     if (!plans.some((x) => x.id === plan && x.available)) return;

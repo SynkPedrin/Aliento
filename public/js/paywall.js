@@ -59,9 +59,10 @@ let busyBtn = null;
 export function rememberPlan(id) { try { sessionStorage.setItem(PLAN_KEY, id); } catch {} }
 export function rememberedPlan() { try { return sessionStorage.getItem(PLAN_KEY); } catch { return null; } }
 
-/** Lanza Stripe Checkout para el plan; si no hay sesión, pasa por la identificación. */
+/** Lanza Stripe Checkout para el plan; sin sesión, compra con el e-mail del quiz (la contraseña se crea después). */
 export async function goToCheckout(plan, btn, { exitOffer = false, program = 'sem-fumo', fromCatalog = false } = {}) {
   rememberPlan(plan);
+  const lead = (() => { try { return { email: localStorage.getItem('alento-email'), name: localStorage.getItem('alento-name') }; } catch { return {}; } })();
   track('plan_selected', { plan, program });
   if (btn) setBusy(btn, true, 'Preparando el pago seguro…');
   try {
@@ -72,30 +73,24 @@ export async function goToCheckout(plan, btn, { exitOffer = false, program = 'se
       if (r.status === 'pending') toast('Tu compra está pendiente de aprobación. Te avisaremos cuando se active.', 6000);
       return;
     }
-    const { url, eventId } = await api('/api/checkout', { method: 'POST', body: { plan, exitOffer, program, fromCatalog } });
+    const body = { plan, exitOffer, program, fromCatalog };
+    const { url, eventId } = await api('/api/checkout', { method: 'POST', body }).catch((err) => {
+      // Sem conta aberta: compra direto com o e-mail e o nome do quiz; a senha é criada depois do pagamento.
+      // Os dois botões de compra já dizem que continuar aceita os Termos.
+      if (err.code !== 'AUTH_REQUIRED' || !lead.email) throw err;
+      return api('/api/checkout/guest', { method: 'POST', body: { ...body, email: lead.email, name: lead.name, acceptTerms: true, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale } });
+    });
     if (eventId) await Promise.race([pixelFor('checkout_started', eventId), new Promise((r) => setTimeout(r, 400))]); // mismo event_id que la API de conversiones
     if (!exitOffer) { try { sessionStorage.setItem(LEFT_KEY, JSON.stringify({ plan, program })); } catch {} }
     busyBtn = btn;
     window.location.assign(url);
   } catch (err) {
     if (btn) setBusy(btn, false);
-    if (err.code === 'AUTH_REQUIRED') {
-      // Sem cadastro antes da compra: usa o e-mail e o nome do quiz (a senha vem depois do pagamento).
-      const lead = (() => { try { return { email: localStorage.getItem('alento-email'), name: localStorage.getItem('alento-name'), terms: sessionStorage.getItem('alento-terms') === '1' }; } catch { return {}; } })();
-      if (lead.email && lead.terms) {
-        try {
-          if (btn) setBusy(btn, true, 'Preparando el pago seguro…');
-          const { url } = await api('/api/checkout/guest', { method: 'POST', body: { plan, exitOffer, program, email: lead.email, name: lead.name, acceptTerms: true, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, locale } });
-          busyBtn = btn;
-          return window.location.assign(url);
-        } catch (e2) {
-          if (btn) setBusy(btn, false);
-          if (e2.code === 'LOGIN_REQUIRED') return window.location.assign(`/acceso?modo=entrar&email=${encodeURIComponent(lead.email)}&plan=${encodeURIComponent(plan)}&program=${encodeURIComponent(program)}${exitOffer ? '&oferta=1' : ''}`);
-          return toast(e2.message, 6000);
-        }
-      }
-      return window.location.assign(`/acceso?plan=${encodeURIComponent(plan)}&program=${encodeURIComponent(program)}${exitOffer ? '&oferta=1' : ''}`);
-    }
+    const q = `plan=${encodeURIComponent(plan)}&program=${encodeURIComponent(program)}${exitOffer ? '&oferta=1' : ''}`;
+    // E-mail do quiz que já tem conta: só a senha e segue para o pagamento.
+    if (err.code === 'LOGIN_REQUIRED') return window.location.assign(`/acceso?modo=entrar&email=${encodeURIComponent(lead.email)}&${q}`);
+    // Sem e-mail do quiz neste navegador (raro): cadastro completo antes de pagar.
+    if (err.code === 'AUTH_REQUIRED') return window.location.assign(`/acceso?${q}`);
     if (err.code === 'ALREADY_SUBSCRIBED') return window.location.assign(program === 'sem-fumo' ? '/dashboard' : `/programa?p=${program}`);
     if (err.code === 'NO_RESULT') return window.location.assign(program === 'sem-fumo' ? '/test' : `/quiz/${program}`);
     toast(err.message, 6000);
@@ -233,7 +228,7 @@ function weeklyUpsell(plans, program, onChoose) {
   return true;
 }
 
-export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo', purchasable = true, variant = 'default' } = {}) {
+export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo', purchasable = true, variant = 'default', signedIn = false } = {}) {
   // Embudo: quiz → e-mail → plan. A quien aún no dejó su e-mail se lo pedimos antes de mostrar los precios.
   if (!isNativeApp() && await needsLead()) {
     return renderLeadGate(root, { program, onDone: () => renderPaywall(root, { pendingCheckout, program, purchasable }) });
@@ -279,7 +274,7 @@ export async function renderPaywall(root, { pendingCheckout, program = 'sem-fumo
     ));
   }
 
-  if (variant === 'sales') return renderSalesPlans(root, { plans, selected, canPurchase, program, pendingCheckout });
+  if (variant === 'sales') return renderSalesPlans(root, { plans, selected, canPurchase, program, pendingCheckout, signedIn });
 
   const resume = pendingCheckout
     ? h('div', { class: 'notice notice--wide' }, icon('info', 'notice__icon'),
@@ -316,7 +311,7 @@ const SALES_TITLES = { semanal: 'Prueba de una semana', trimestral: 'Plan de 3 m
 const FIRST_PERIOD = { semanal: 'por la primera semana', mensual: 'por el primer mes', trimestral: 'por los primeros 3 meses', anual: 'por el primer año' };
 const SALES_CTA = 'Empieza sin ningún riesgo';
 
-function renderSalesPlans(root, { plans, selected, canPurchase, program, pendingCheckout }) {
+function renderSalesPlans(root, { plans, selected, canPurchase, program, pendingCheckout, signedIn }) {
   const legal = h('p', { class: 'sales-plans__legal' });
   const terms = h('input', { type: 'checkbox', id: 'sales-terms' });
   const choose = (id, btn) => {
@@ -335,7 +330,7 @@ function renderSalesPlans(root, { plans, selected, canPurchase, program, pending
     const renewal = moneyCents(p.renewalAmount ?? p.amount, p.currency);
     legal.textContent = `Al hacer clic en «${SALES_CTA}», acepto pagar ${first} ${FIRST_PERIOD[p.id] ?? ''}. Si no cancelo antes de que termine este periodo introductorio, Alento me cobrará automáticamente ${renewal} ${p.periodLabel} a través de mi método de pago a partir de entonces, hasta que cancele. Puedo cancelar en cualquier momento a través de la web, entrando en la página de suscripción de mi cuenta.`;
   };
-  terms.addEventListener('change', () => { try { sessionStorage.setItem('alento-terms', terms.checked ? '1' : '0'); } catch { /* modo privado */ } update(); });
+  terms.addEventListener('change', update);
   root.replaceChildren(
     pendingCheckout ? h('div', { class: 'notice notice--wide' }, h('strong', {}, 'Tu pago quedó pendiente. '), 'Puedes retomarlo cuando quieras.') : '',
     planList(plans, selected, (id) => { selected = id; rememberPlan(id); update(); }, { titles: SALES_TITLES, discountBadge: true }),
@@ -345,6 +340,9 @@ function renderSalesPlans(root, { plans, selected, canPurchase, program, pending
       h('span', {}, 'Al marcar esta casilla, acepto los ', h('a', { href: '/terminos', target: '_blank' }, 'Términos y condiciones'), ' de Alento.')),
     h('div', { class: 'sales-plans__pay', 'aria-label': 'Métodos de pago' }, ['paypal', 'applepay', 'visa', 'mastercard', 'maestro', 'discover', 'amex'].map((n) => h('img', { src: `/assets/quiz/pay/${n}.svg`, alt: n, width: 32, height: 20 }))),
     cta,
+    // Quem já tem conta entra e segue direto para o pagamento do plano escolhido; não bloqueia quem é novo.
+    signedIn || isNativeApp() ? '' : h('p', { class: 'tiny u-text-center u-mt-8' }, h('button', { type: 'button', class: 'link',
+      onclick: () => window.location.assign(`/acceso?modo=entrar&plan=${encodeURIComponent(selected)}&program=${encodeURIComponent(program)}`) }, '¿Ya tienes cuenta? Inicia sesión')),
     h('p', { class: 'sales-plans__refund' }, 'Solo se pueden solicitar reembolsos dentro del plazo de garantía de devolución del dinero de 14 días, siempre y cuando el producto se haya utilizado de forma activa durante al menos 7 días (o 4 días en el caso de los planes semanales) y se pueda demostrar su uso con pruebas verificables.'));
   update();
   if (canPurchase && !isNativeApp()) armExitOffer(program);

@@ -36,7 +36,7 @@ export function renderLeadGate(root, { program, onDone }) {
     setBusy(cta, true, 'Guardando…');
     try {
       await submitLead({ email: email.value.trim(), program, marketingEmail: mkt.checked });
-      try { localStorage.setItem(FLAG, '1'); } catch { /* modo privado */ }
+      try { localStorage.setItem(FLAG, '1'); localStorage.setItem('alento-email', email.value.trim()); } catch { /* modo privado */ } // e-mail da compra sem cadastro
       onDone();
     } catch (ex) {
       // Errores de validación se muestran; un fallo del servidor nunca debe bloquear la venta (se continúa).
